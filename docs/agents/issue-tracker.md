@@ -2,8 +2,6 @@
 
 Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
-> **Setup note:** at the time this file was written, this directory was not yet a git repo and had no GitHub remote. The `gh` commands below resolve the repo from `git remote -v`, so they only work once you've run `git init`, created the GitHub repo, and added the `origin` remote (e.g. `gh repo create`). Until then, skills that need the tracker will fail to resolve a repo.
-
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
