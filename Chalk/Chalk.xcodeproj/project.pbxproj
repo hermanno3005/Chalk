@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXFileReference section */
+		CH00000000000000000050 /* Chalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Chalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CH00000000000000000010 /* Chalk */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -118,10 +122,6 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin PBXFileReference section */
-		CH00000000000000000050 /* Chalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Chalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
 /* Begin XCBuildConfiguration section */
 		CH000000000000000000C0 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -188,6 +188,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = P9J393594X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -214,6 +215,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = P9J393594X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -235,20 +237,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CH000000000000000000B0 /* Build configuration list for PBXProject "Chalk" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				CH000000000000000000C0 /* Debug */,
-				CH000000000000000000D0 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		CH00000000000000000070 /* Build configuration list for PBXNativeTarget "Chalk" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CH000000000000000000E0 /* Debug */,
 				CH000000000000000000F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CH000000000000000000B0 /* Build configuration list for PBXProject "Chalk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CH000000000000000000C0 /* Debug */,
+				CH000000000000000000D0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
