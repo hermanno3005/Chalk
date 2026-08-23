@@ -11,6 +11,9 @@ struct ProtoRecord: Identifiable, Hashable {
     var reps: Int
     var weight: Double
     var date: Date
+    /// Nil for a free-weight exercise. Added on the exercise-detail branch — see
+    /// Prototypes/ExerciseDetail/DetailPrototypeData.swift
+    var machineID: UUID? = nil
 }
 
 /// Everything the prototype needs to feel like a real exercise with history.
@@ -20,6 +23,15 @@ final class ProtoStore {
     var isGymBound = false
     var currentGym = "PureGym Islington"
     var records: [ProtoRecord]
+
+    // Exercise-detail branch additions.
+    var dataset: ProtoDataset = .typical
+    var machines: [ProtoMachine] = [
+        ProtoMachine(gym: "PureGym Islington", label: "Hammer Strength"),
+        ProtoMachine(gym: "The Gym Old Street", label: "Technogym"),
+        ProtoMachine(gym: "Basement Fitness", label: "Unbranded"),
+    ]
+    var currentMachineID: UUID?
 
     /// Set by whichever variant just saved, so the host screen can flash confirmation.
     var lastSaved: ProtoRecord?
@@ -39,7 +51,7 @@ final class ProtoStore {
     /// Monotonic backfill, per https://github.com/hermanno3005/Chalk/issues/3
     /// best[n] = max(weight) over all records with reps >= n
     func best(at reps: Int) -> Double? {
-        records.filter { $0.reps >= reps }.map(\.weight).max()
+        scopedRecords.filter { $0.reps >= reps }.map(\.weight).max()
     }
 
     var curve: [(reps: Int, weight: Double)] {
@@ -49,26 +61,27 @@ final class ProtoStore {
     /// Epley ghost: seeded by the record with the highest estimated 1RM,
     /// projected back across the axis. Guidance only — never a record.
     var ghostCurve: [(reps: Int, weight: Double)] {
-        guard let e1rm = records.map({ $0.weight * (1 + Double($0.reps) / 30) }).max() else { return [] }
+        guard let e1rm = scopedRecords.map({ $0.weight * (1 + Double($0.reps) / 30) }).max() else { return [] }
         return (1...12).map { n in (n, e1rm / (1 + Double(n) / 30)) }
     }
 
     /// The most recent entry, whatever the rep count — the "do it again" seed.
     var mostRecent: ProtoRecord? {
-        records.max(by: { $0.date < $1.date })
+        scopedRecords.max(by: { $0.date < $1.date })
     }
 
     /// Distinct recent reps x weight combinations, newest first — the repeat chips.
     var recentCombos: [ProtoRecord] {
         var seen = Set<String>()
-        return records.sorted(by: { $0.date > $1.date }).filter {
+        return scopedRecords.sorted(by: { $0.date > $1.date }).filter {
             let key = "\($0.reps)x\($0.weight)"
             return seen.insert(key).inserted
         }
     }
 
     func save(reps: Int, weight: Double) {
-        let record = ProtoRecord(reps: reps, weight: weight, date: .now)
+        let record = ProtoRecord(reps: reps, weight: weight, date: .now,
+                                 machineID: isGymBound ? currentMachineID : nil)
         records.append(record)
         lastSaved = record
     }
