@@ -2,6 +2,9 @@
 
 Throwaway. Answers [Prototype the exercise detail screen: curve or table?](https://github.com/hermanno3005/Chalk/issues/7).
 
+**Verdict: curve-first, compact — a 150pt curve with points on the line, scrubbed to read
+exact numbers, and the space below it left empty for now.**
+
 Three variants of the exercise detail screen, switchable from a floating bottom bar,
 over four sample datasets and both exercise kinds — so "what does the curve look like
 with four points?" and "where does the machine qualifier go?" are each one tap away.
@@ -24,11 +27,14 @@ height — everything else held constant — and the three screens are:
 
 ![sparkline](r2-sparkline.png) ![compact](r2-compact.png) ![half](r2-half.png) ![compact gym-bound](r2-compact-gym.png)
 
-Two fixes came with it:
+**Compact won.** Two bugs were found and fixed along the way:
 
-- **Scrubbing.** Round one hand-rolled a `DragGesture` in a `chartOverlay` and layered a
-  tap gesture on top of it; the two fought and the drag usually did nothing. It now uses
-  Charts' own `chartXSelection`, which handles both tap and drag.
+- **Scrubbing did nothing.** Round one hand-rolled a `DragGesture` in a `chartOverlay` and
+  layered a tap gesture on top of it; the two fought. It now uses Charts' own
+  `chartXSelection`, which handles both tap and drag.
+- **The readout snapped back to 5 reps.** `chartXSelection` clears its binding the moment
+  your finger lifts, so the selection never survived the gesture. The screen now holds the
+  last scrubbed rep count in its own state and only the *live* value comes from Charts.
 - **Navigation chrome.** A back button (`‹ Exercises`) and an overflow menu (rename / edit
   records / delete) now sit in the toolbar. **Both are dead** — placement only, so the
   screen can be judged with its real chrome. What is actually behind them belongs to

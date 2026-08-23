@@ -17,10 +17,14 @@ struct DetailVariantACurveFirst: View {
     let size: CurveSize
     let onLog: () -> Void
 
+    /// Charts clears its selection the moment your finger lifts, so this is only the
+    /// live value during a drag. `heldReps` is what the readout actually shows —
+    /// without it the screen snapped back to 5 reps after every scrub.
     @State private var scrubbedReps: Int?
+    @State private var heldReps = 5
     @State private var historyReps: Int?
 
-    private var readoutReps: Int { scrubbedReps ?? 5 }
+    private var readoutReps: Int { heldReps }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -139,6 +143,9 @@ struct DetailVariantACurveFirst: View {
             if size != .sparkline { AxisMarks(position: .leading) }
         }
         .chartXSelection(value: $scrubbedReps)
+        .onChange(of: scrubbedReps) { _, new in
+            if let new { heldReps = min(12, max(1, new)) }
+        }
         .frame(height: size.height)
         .padding(.horizontal)
         .padding(.top, 12)
