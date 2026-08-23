@@ -11,22 +11,34 @@
 
 import SwiftUI
 
-enum DetailVariant: String, CaseIterable {
-    case a, b, c
+/// Round two. Curve-first won, but the full-bleed chart was too big — so the switcher
+/// now varies only the curve's height, everything else held constant.
+/// Round one's table-first and answer-first screens stay in the tree as the primary
+/// source of that comparison; they are no longer reachable from the switcher.
+enum CurveSize: String, CaseIterable {
+    case sparkline, compact, half
 
-    var key: String { rawValue.uppercased() }
+    var key: String { String(rawValue.prefix(1)).uppercased() }
 
     var name: String {
         switch self {
-        case .a: "Curve-first"
-        case .b: "Table-first"
-        case .c: "Answer-first"
+        case .sparkline: "Sparkline — 56pt"
+        case .compact: "Compact — 150pt"
+        case .half: "Half — 240pt"
+        }
+    }
+
+    var height: CGFloat {
+        switch self {
+        case .sparkline: 56
+        case .compact: 150
+        case .half: 240
         }
     }
 }
 
 struct ExerciseDetailPrototypeRoot: View {
-    @AppStorage("prototype.detail.variant") private var variantKey = DetailVariant.a.rawValue
+    @AppStorage("prototype.detail.variant") private var variantKey = CurveSize.compact.rawValue
     @AppStorage("prototype.detail.dataset") private var datasetKey = ProtoDataset.typical.rawValue
     @AppStorage("prototype.detail.gymBound") private var gymBound = false
 
@@ -35,20 +47,14 @@ struct ExerciseDetailPrototypeRoot: View {
     @State private var isLogging = UserDefaults.standard.bool(forKey: "autoOpenLog")
     @State private var flash: ProtoRecord?
 
-    private var variant: DetailVariant { DetailVariant(rawValue: variantKey) ?? .a }
+    private var variant: CurveSize { CurveSize(rawValue: variantKey) ?? .compact }
     private var dataset: ProtoDataset { ProtoDataset(rawValue: datasetKey) ?? .typical }
 
     var body: some View {
         ZStack(alignment: .bottom) {
             NavigationStack {
-                Group {
-                    switch variant {
-                    case .a: DetailVariantACurveFirst(store: store, onLog: { isLogging = true })
-                    case .b: DetailVariantBTableFirst(store: store, onLog: { isLogging = true })
-                    case .c: DetailVariantCAnswerFirst(store: store, onLog: { isLogging = true })
-                    }
-                }
-                .overlay(alignment: .top) { flashBanner }
+                DetailVariantACurveFirst(store: store, size: variant, onLog: { isLogging = true })
+                    .overlay(alignment: .top) { flashBanner }
             }
             switcher
         }
@@ -89,10 +95,10 @@ struct ExerciseDetailPrototypeRoot: View {
             HStack(spacing: 10) {
                 arrow("chevron.left", -1)
                 VStack(spacing: 0) {
-                    Text("\(variant.key) — \(variant.name)").font(.footnote.weight(.semibold))
+                    Text(variant.name).font(.footnote.weight(.semibold))
                     Text("prototype").font(.system(size: 9)).opacity(0.6)
                 }
-                .frame(width: 150)
+                .frame(width: 168)
                 arrow("chevron.right", 1)
             }
             HStack(spacing: 8) {
@@ -128,7 +134,7 @@ struct ExerciseDetailPrototypeRoot: View {
 
     private func arrow(_ icon: String, _ offset: Int) -> some View {
         Button {
-            let all = DetailVariant.allCases
+            let all = CurveSize.allCases
             let i = all.firstIndex(of: variant) ?? 0
             variantKey = all[(i + offset + all.count) % all.count].rawValue
         } label: {

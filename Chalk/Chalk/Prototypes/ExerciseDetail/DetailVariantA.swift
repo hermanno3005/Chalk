@@ -1,15 +1,20 @@
-// PROTOTYPE — throwaway. Variant A — Curve-first.
+// PROTOTYPE — throwaway. Curve-first — the round-one winner, now under refinement.
 //
-// The argument: the shape of your strength is the screen. One big chart, nothing
-// competing with it. Exact numbers are not displayed at all until you touch the
-// curve — a drag scrubs it and the readout follows your thumb.
-// Cost: reading "what do I load for 5?" is a deliberate act, not a glance.
+// The argument: the shape of your strength is the screen. Exact numbers are not
+// displayed until you touch the curve — dragging scrubs it and the readout follows
+// your thumb. Round two varies only the curve's height (the dev found round one's
+// full-bleed chart too big) and adds the navigation chrome that was missing.
+//
+// Scrubbing now uses Charts' own `chartXSelection` rather than a hand-rolled drag
+// gesture — the round-one gesture fought with the tap gesture layered on top of it
+// and often did nothing.
 
 import Charts
 import SwiftUI
 
 struct DetailVariantACurveFirst: View {
     @Bindable var store: ProtoStore
+    let size: CurveSize
     let onLog: () -> Void
 
     @State private var scrubbedReps: Int?
@@ -22,17 +27,53 @@ struct DetailVariantACurveFirst: View {
             readout
             chart
             Spacer(minLength: 0)
+            if size != .half { hole }
+            Spacer(minLength: 0)
             logBar
         }
         .navigationTitle(store.exerciseName)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(size == .half ? .inline : .large)
         .toolbar {
+            // Dead chrome — placement only. Real navigation belongs to
+            // https://github.com/hermanno3005/Chalk/issues/8
+            ToolbarItem(placement: .topBarLeading) {
+                Button {} label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "chevron.left").font(.body.weight(.semibold))
+                        Text("Exercises")
+                    }
+                }
+            }
             if store.isGymBound { ToolbarItem(placement: .topBarTrailing) { machineMenu } }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button("Rename exercise") {}
+                    Button("Edit records") {}
+                    Button("Delete exercise", role: .destructive) {}
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+            }
         }
         .sheet(item: Binding(get: { historyReps.map(RepsBox.init) },
                              set: { historyReps = $0?.reps })) { box in
             HistorySheet(store: store, reps: box.reps)
         }
+    }
+
+    /// Shrinking the curve leaves a hole. Marked, not filled — what goes here is the
+    /// open question this round hands back.
+    private var hole: some View {
+        VStack(spacing: 4) {
+            Text("empty").font(.footnote.weight(.semibold))
+            Text("what fills the space the smaller curve freed up?").font(.caption2)
+        }
+        .foregroundStyle(.tertiary)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(RoundedRectangle(cornerRadius: 12).strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+            .foregroundStyle(.quaternary))
+        .padding(.horizontal)
     }
 
     // The only numbers on the screen, driven by where your thumb is.
@@ -80,10 +121,10 @@ struct DetailVariantACurveFirst: View {
                 LineMark(x: .value("Reps", point.reps), y: .value("kg", point.weight),
                          series: .value("Series", "best"))
                     .foregroundStyle(.tint)
-                    .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .lineStyle(StrokeStyle(lineWidth: size == .sparkline ? 2.5 : 3, lineCap: .round))
                 PointMark(x: .value("Reps", point.reps), y: .value("kg", point.weight))
                     .foregroundStyle(.tint)
-                    .symbolSize(point.reps == readoutReps ? 160 : 40)
+                    .symbolSize(point.reps == readoutReps ? (size == .sparkline ? 90 : 160) : (size == .sparkline ? 22 : 40))
             }
             if store.best(at: readoutReps) != nil {
                 RuleMark(x: .value("Reps", readoutReps))
@@ -94,24 +135,11 @@ struct DetailVariantACurveFirst: View {
         .chartYScale(domain: .automatic(includesZero: false))
         .chartXScale(domain: 0.6...12.4)
         .chartXAxis { AxisMarks(values: Array(1...12)) { AxisValueLabel() } }
-        .chartYAxis { AxisMarks(position: .leading) }
-        .chartOverlay { proxy in
-            GeometryReader { geo in
-                Rectangle().fill(.clear).contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                guard let plotFrame = proxy.plotFrame else { return }
-                                let x = value.location.x - geo[plotFrame].origin.x
-                                if let raw: Double = proxy.value(atX: x) {
-                                    scrubbedReps = min(12, max(1, Int(raw.rounded())))
-                                }
-                            }
-                    )
-                    .onTapGesture { historyReps = readoutReps }
-            }
+        .chartYAxis {
+            if size != .sparkline { AxisMarks(position: .leading) }
         }
-        .frame(maxHeight: .infinity)
+        .chartXSelection(value: $scrubbedReps)
+        .frame(height: size.height)
         .padding(.horizontal)
         .padding(.top, 12)
     }

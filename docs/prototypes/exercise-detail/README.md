@@ -10,12 +10,45 @@ The Log button opens the *winning* log sheet from
 [Prototype the log-entry modal](https://github.com/hermanno3005/Chalk/issues/6)
 (variant A, staged steppers), so each screen is judged with its real primary action attached.
 
+## Round two — curve-first won, now how big?
+
+The dev picked **curve-first**, with three notes: the curve is too big, scrubbing did not
+work, and there is no navigation chrome. So the switcher now varies only the curve's
+height — everything else held constant — and the three screens are:
+
+| | Curve height | Y axis | Title |
+|---|---|---|---|
+| **Sparkline** | 56pt | hidden | large |
+| **Compact** | 150pt | shown | large |
+| **Half** | 240pt | shown | inline |
+
+![sparkline](r2-sparkline.png) ![compact](r2-compact.png) ![half](r2-half.png) ![compact gym-bound](r2-compact-gym.png)
+
+Two fixes came with it:
+
+- **Scrubbing.** Round one hand-rolled a `DragGesture` in a `chartOverlay` and layered a
+  tap gesture on top of it; the two fought and the drag usually did nothing. It now uses
+  Charts' own `chartXSelection`, which handles both tap and drag.
+- **Navigation chrome.** A back button (`‹ Exercises`) and an overflow menu (rename / edit
+  records / delete) now sit in the toolbar. **Both are dead** — placement only, so the
+  screen can be judged with its real chrome. What is actually behind them belongs to
+  [Prototype the exercise library screen](https://github.com/hermanno3005/Chalk/issues/8)
+  and [What happens when a record is wrong?](https://github.com/hermanno3005/Chalk/issues/11).
+
+Shrinking the curve leaves a hole between it and the Log button. It is deliberately left
+**empty and labelled** rather than filled — what belongs there is the open question this
+round hands back.
+
+Round one's table-first and answer-first screens are still in the tree
+(`DetailVariantB.swift`, `DetailVariantC.swift`) as the primary source of that comparison.
+They are no longer reachable from the switcher.
+
 ## Run it
 
 Open `Chalk/Chalk.xcodeproj` on this branch and run. The app is rooted at
 `ExerciseDetailPrototypeRoot`. The black pill at the bottom carries three controls:
 
-- **‹ ›** — cycle variant A / B / C.
+- **‹ ›** — cycle curve height: sparkline / compact / half.
 - **dataset pill** — cycle `1 record` → `4 records, gappy` → `6 records` → `26 records`.
 - **kind pill** — flip between `free-weight` (Bench Press) and `gym-bound` (Chest Press,
   three machines across three gyms).
