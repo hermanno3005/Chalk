@@ -22,7 +22,8 @@ struct ChalkApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            // PROTOTYPE BRANCH ONLY — rooted at the log-entry-modal prototype.
+            LogEntryPrototypeRoot()
         }
         .modelContainer(modelContainer)
     }
