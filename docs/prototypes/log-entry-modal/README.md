@@ -5,6 +5,10 @@ Throwaway. Answers [Prototype the log-entry modal](https://github.com/hermanno30
 Three variants of the log-entry modal, switchable from a floating bottom bar, hosted
 on a rough exercise detail screen so the modal is judged against real density.
 
+**Verdict: A wins.** A has since gained a tappable big number that swaps the steppers
+for a keypad, so a large jump costs one tap plus the digits. B and C are kept here as
+the primary source of the comparison, not as live candidates.
+
 ## Run it
 
 Open `Chalk/Chalk.xcodeproj` on this branch and run. The app is rooted at
@@ -29,4 +33,4 @@ still fog on [the map](https://github.com/hermanno3005/Chalk/issues/1).
 
 Host screen — ![host](host.png)
 
-A — ![A](variant-a.png) · B — ![B](variant-b.png) · C — ![C](variant-c.png) · C keypad — ![C keypad](variant-c-keypad.png)
+A — ![A](variant-a.png) · A keypad — ![A keypad](variant-a-keypad.png) · B — ![B](variant-b.png) · C — ![C](variant-c.png) · C keypad — ![C keypad](variant-c-keypad.png)
