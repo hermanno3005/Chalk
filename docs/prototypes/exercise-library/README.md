@@ -3,7 +3,8 @@
 Throwaway. Answers [Prototype the exercise library screen](https://github.com/hermanno3005/Chalk/issues/8).
 
 **Round one verdict: C — resume card, tiles, type to find.**
-**Round two verdict: not yet — awaiting the dev.**
+**Round two verdict: C1 — the sectioned grid.**
+**Round three: two real bugs fixed, assignment de-risked. Awaiting a re-test.**
 
 Three variants of the app's home screen, switchable from a floating bottom bar, over
 four library sizes — so "empty first launch", "three exercises", and "forty-two
@@ -97,6 +98,54 @@ presented.
 
 Round one's A and B remain in the tree (`LibraryVariantA.swift`, `LibraryVariantB.swift`) as
 the primary source of that comparison. They are no longer reachable from the switcher.
+
+
+## Round three — C1 won, and the drag was genuinely broken
+
+The dev picked **C1 — sectioned grid**, and reported that menus felt slow and
+drag-and-drop "hasn't been working", wondering whether that was just prototype roughness.
+
+It was not. Two real bugs, both introduced in round two:
+
+**1. `.draggable` and `.contextMenu` on the same view fight.** Both are driven by
+long-press. The context menu won every time, so the drag never started — on any tile, ever.
+The context menu is gone. The "Log a set" shortcut it carried moved into the tile's own menu
+in Arrange mode.
+
+**2. `.draggable` on a `Button` rarely fires.** The button's gesture claims the press
+first. Round two's tiles and recent-strip chips were both Buttons. They are plain views with
+`.onTapGesture` now.
+
+**3. The slowness was self-inflicted.** `byRecency` and `alphabetical` were computed
+properties that sorted the entire library, and `exercises(in:)` filtered that sorted array
+once *per group*. Because `dropTarget` is `@Observable` state, every frame of a drag
+re-rendered the screen — six groups x 42 exercises x every frame. They are caches now,
+refreshed on mutation.
+
+Note that a **Debug build of SwiftUI is dramatically slower than Release**, independent of
+any of the above. If it still feels sticky after this, switch the scheme to Release before
+concluding anything about the design.
+
+### Assignment no longer depends on the drag
+
+Even with the gesture fixed, dragging a tile the length of a 42-tile scroll to reach
+Ungrouped was never going to be pleasant — that was already round two's finding against C1,
+and it does not go away by making the gesture work.
+
+So C1 gains an **Arrange mode** (overflow menu → Arrange). Every tile grows a `•••` button
+carrying a group picker, so filing an exercise is a tap and a pick, with no gesture at all.
+Dragging still works and is still the fast path for a nearby group; Arrange is the one that
+always works, and it is what makes "drag into a group" safe to commit to.
+
+![C1](r3-c1.png) ![Arrange mode](r3-arrange.png)
+
+### Not verified
+
+**The drag fix is reasoned, not tested.** There is no UI automation available in this
+environment — no `idb`, and `simctl` cannot synthesise touches — so the screenshots prove
+the screens render and nothing more. Both bugs are well-understood SwiftUI gesture
+conflicts and the fixes address them directly, but whether a drag now lands is something
+only a real finger can confirm. That is the one thing the next run needs to check.
 
 ## Round one — the variants
 

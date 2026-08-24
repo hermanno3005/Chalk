@@ -72,16 +72,13 @@ final class LibraryStore {
     /// Ordered, renameable, user-owned. Shipped as a suggestion, not a schema.
     var groups: [String] = ["Compound", "Legs", "Push", "Pull", "Core"]
 
-    func exercises(in group: String) -> [ProtoExercise] {
-        byRecency.filter { $0.group == group }
-    }
-
-    var ungrouped: [ProtoExercise] { byRecency.filter { $0.group == nil } }
+    func exercises(in group: String) -> [ProtoExercise] { groupedCache[group] ?? [] }
 
     /// The whole point of round two: assignment happens by dragging, after the fact.
     func assign(_ exerciseName: String, to group: String?) {
         guard let index = exercises.firstIndex(where: { $0.name == exerciseName }) else { return }
         exercises[index].group = group
+        refreshCaches()
     }
 
     func moveGroup(from source: IndexSet, to destination: Int) {
@@ -93,14 +90,24 @@ final class LibraryStore {
 
     // MARK: - Slices the variants organise by
 
-    var alphabetical: [ProtoExercise] {
-        exercises.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
+    // Round three. These were computed properties, so every section re-sorted the
+    // whole library on every render — and because `dropTarget` is @Observable state,
+    // a drag re-rendered the screen continuously. Six groups x 42 exercises x every
+    // frame of a drag is why the screen felt slow. They are caches now, refreshed on
+    // mutation.
+    private(set) var alphabetical: [ProtoExercise] = []
+    private(set) var byRecency: [ProtoExercise] = []
+    private var groupedCache: [String: [ProtoExercise]] = [:]
+    private(set) var ungrouped: [ProtoExercise] = []
 
-    var byRecency: [ProtoExercise] {
-        exercises.sorted {
-            ($0.lastDate ?? .distantPast) > ($1.lastDate ?? .distantPast)
+    func refreshCaches() {
+        alphabetical = exercises.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
+        byRecency = exercises.sorted { ($0.lastDate ?? .distantPast) > ($1.lastDate ?? .distantPast) }
+        groupedCache = Dictionary(grouping: byRecency.filter { $0.group != nil },
+                                  by: { $0.group ?? "" })
+        ungrouped = byRecency.filter { $0.group == nil }
     }
 
     /// Logged in the last 24h — the "you're mid-session" bucket.
@@ -144,15 +151,18 @@ final class LibraryStore {
             exercise.machines = [ProtoMachine(gym: gym, label: machineLabel.isEmpty ? "Unbranded" : machineLabel)]
         }
         exercises.append(exercise)
+        refreshCaches()
     }
 
     func delete(_ exercise: ProtoExercise) {
         exercises.removeAll { $0.id == exercise.id }
+        refreshCaches()
     }
 
     func rename(_ exercise: ProtoExercise, to name: String) {
         guard let index = exercises.firstIndex(where: { $0.id == exercise.id }) else { return }
         exercises[index].name = name
+        refreshCaches()
     }
 
     /// Appends a record straight from the library screen — variants B and C log
@@ -165,6 +175,7 @@ final class LibraryStore {
             : nil
         exercises[index].records.append(
             ProtoRecord(reps: reps, weight: weight, date: .now, machineID: machineID))
+        refreshCaches()
     }
 
     /// Bridges a library row into the *winning* detail screen from
@@ -186,6 +197,7 @@ final class LibraryStore {
     func load(_ size: LibrarySize) {
         self.size = size
         exercises = Self.sample(count: size.count)
+        refreshCaches()
     }
 
     /// A realistic library: free weights, barbell work, and machines that only exist

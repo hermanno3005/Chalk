@@ -65,41 +65,76 @@ struct ResumeCard: View {
     }
 }
 
-/// A draggable tile. `.draggable` carries the name, which is all the drop targets need.
+/// A draggable tile.
+///
+/// Round three — the dev reported that dragging never started. Two real bugs, not
+/// prototype roughness:
+///
+///  1. **`.draggable` and `.contextMenu` on the same view fight.** Both are driven by
+///     long-press, and the context menu won every time. The context menu is gone; the
+///     "Log a set" shortcut it carried now lives behind the tile's own menu button in
+///     Arrange mode, and on the search-result rows.
+///  2. **`.draggable` on a `Button` rarely fires.** The button's gesture claims the
+///     press first. The tile is a plain view with a tap gesture now, not a Button.
+///
+/// Assignment no longer depends on the drag working at all — see `arranging`.
 struct ExerciseTile: View {
     let exercise: ProtoExercise
+    let arranging: Bool
+    let groups: [String]
     let onOpen: () -> Void
     let onLog: () -> Void
+    let onAssign: (String?) -> Void
 
     var body: some View {
-        Button(action: onOpen) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 4) {
-                    Text(exercise.name)
-                        .font(.subheadline.weight(.medium))
-                        .lineLimit(2, reservesSpace: true)
-                        .multilineTextAlignment(.leading)
-                    if exercise.isGymBound {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 8)).foregroundStyle(.tertiary)
-                    }
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Text(exercise.name)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(2, reservesSpace: true)
+                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(.primary)
+                if exercise.isGymBound {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 8)).foregroundStyle(.tertiary)
                 }
-                Text(exercise.summary ?? "never logged")
-                    .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                Spacer(minLength: 0)
+                if arranging { menuButton }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+            Text(exercise.summary ?? "never logged")
+                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        // Plain tap, not a Button — a Button's gesture swallows the drag.
+        .onTapGesture { if !arranging { onOpen() } }
         .draggable(exercise.name) {
             Text(exercise.name)
                 .font(.subheadline.weight(.medium))
                 .padding(10)
                 .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 10))
         }
-        .contextMenu {
+    }
+
+    /// The escape hatch. Dragging a tile the length of a 42-tile scroll to reach
+    /// Ungrouped was never going to be pleasant even when the gesture works, so
+    /// assignment has a plain-menu path that does not involve a gesture at all.
+    private var menuButton: some View {
+        Menu {
+            Picker("Group", selection: Binding(get: { exercise.group ?? "" },
+                                               set: { onAssign($0.isEmpty ? nil : $0) })) {
+                Text("Ungrouped").tag("")
+                ForEach(groups, id: \.self) { Text($0).tag($0) }
+            }
+            Divider()
             Button("Log a set", systemImage: "plus.circle", action: onLog)
+            Button("Open", systemImage: "chart.line.uptrend.xyaxis", action: onOpen)
+        } label: {
+            Image(systemName: "ellipsis.circle.fill")
+                .font(.footnote)
+                .foregroundStyle(.tint)
         }
     }
 }
@@ -141,6 +176,10 @@ struct LibraryGrouped: View {
     @State private var selectedGroup: String? = nil   // C3 only; nil = All
     @State private var collapsed: Set<String> = []    // C2 only
     @State private var dropTarget: String?
+    /// Arrange mode puts a menu on every tile, so filing an exercise never depends
+    /// on a drag landing.
+    /// Screenshot hook: `-autoArrange 1`.
+    @State private var arranging = UserDefaults.standard.bool(forKey: "autoArrange")
 
     var body: some View {
         VStack(spacing: 0) {
@@ -175,6 +214,10 @@ struct LibraryGrouped: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("New exercise", systemImage: "plus") { creating = true }
+                    Button(arranging ? "Done arranging" : "Arrange",
+                           systemImage: "square.grid.2x2") {
+                        withAnimation(.snappy) { arranging.toggle() }
+                    }
                     Button("Edit groups", systemImage: "folder.badge.gearshape") {}
                     Menu("Gym") {
                         ForEach(store.gyms, id: \.self) { gym in
@@ -234,7 +277,7 @@ struct LibraryGrouped: View {
     }
 
     private func recentChip(_ exercise: ProtoExercise) -> some View {
-        Button { onOpen(exercise) } label: {
+        Group {
             VStack(alignment: .leading, spacing: 3) {
                 Text(exercise.name)
                     .font(.caption.weight(.semibold))
@@ -245,7 +288,8 @@ struct LibraryGrouped: View {
             .padding(.horizontal, 12).padding(.vertical, 9)
             .background(Color.accentColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
         }
-        .buttonStyle(.plain)
+        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .onTapGesture { onOpen(exercise) }
         .draggable(exercise.name)
     }
 
@@ -374,12 +418,17 @@ struct LibraryGrouped: View {
 
     private func tile(_ exercise: ProtoExercise) -> some View {
         ExerciseTile(exercise: exercise,
+                     arranging: arranging,
+                     groups: store.groups,
                      onOpen: { onOpen(exercise) },
-                     onLog: { onLog(exercise) })
+                     onLog: { onLog(exercise) },
+                     onAssign: { store.assign(exercise.name, to: $0) })
     }
 
     private var footerCount: some View {
-        Text("\(store.exercises.count) exercises · hold a tile and drag it into a group")
+        Text(arranging
+             ? "Drag a tile into a group, or use the ••• on any tile"
+             : "\(store.exercises.count) exercises · Arrange (••• menu) to file them into groups")
             .font(.caption2).foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity).padding(.top, 2)
     }
