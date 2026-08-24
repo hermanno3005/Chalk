@@ -24,6 +24,7 @@ struct CreateExerciseSheet: View {
     @State private var gym: String
     @State private var machineLabel = ""
     @FocusState private var nameFocused: Bool
+    @State private var addingGym = false
 
     init(store: LibraryStore, seedName: String = "", onCreated: @escaping (ProtoExercise) -> Void) {
         self.store = store
@@ -61,11 +62,10 @@ struct CreateExerciseSheet: View {
                 if isGymBound {
                     Section("This machine") {
                         Picker("Gym", selection: $gym) {
-                            ForEach(store.gyms.isEmpty ? [store.currentGym] : store.gyms, id: \.self) {
-                                Text($0).tag($0)
-                            }
-                            Text("Add a gym…").tag("__new__")
+                            ForEach(store.gyms, id: \.self) { Text($0).tag($0) }
                         }
+                        // Was a picker tag that selected a sentinel and did nothing.
+                        Button("Add a gym…", systemImage: "plus") { addingGym = true }
                         TextField("Make (optional)", text: $machineLabel)
                     }
                 }
@@ -87,6 +87,8 @@ struct CreateExerciseSheet: View {
                 }
             }
             .task { nameFocused = seedName.isEmpty }
+            .addGymAlert(store: store, isPresented: $addingGym)
+            .onChange(of: store.currentGym) { _, new in gym = new }
         }
         .presentationDetents([.medium, .large])
     }

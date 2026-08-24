@@ -85,6 +85,7 @@ struct ExerciseTile: View {
     let onOpen: () -> Void
     let onLog: () -> Void
     let onAssign: (String?) -> Void
+    let onRename: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -129,6 +130,7 @@ struct ExerciseTile: View {
                 ForEach(groups, id: \.self) { Text($0).tag($0) }
             }
             Divider()
+            Button("Rename…", systemImage: "pencil", action: onRename)
             Button("Log a set", systemImage: "plus.circle", action: onLog)
             Button("Open", systemImage: "chart.line.uptrend.xyaxis", action: onOpen)
         } label: {
@@ -180,6 +182,11 @@ struct LibraryGrouped: View {
     /// on a drag landing.
     /// Screenshot hook: `-autoArrange 1`.
     @State private var arranging = UserDefaults.standard.bool(forKey: "autoArrange")
+    /// Screenshot hook: `-autoEditGroups 1`.
+    @State private var editingGroups = UserDefaults.standard.bool(forKey: "autoEditGroups")
+    @State private var addingGym = false
+    @State private var renameTarget: ProtoExercise?
+    @State private var renameText = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -211,20 +218,40 @@ struct LibraryGrouped: View {
         .navigationTitle("Chalk")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button("New exercise", systemImage: "plus") { creating = true }
-                    Button(arranging ? "Done arranging" : "Arrange",
-                           systemImage: "square.grid.2x2") {
-                        withAnimation(.snappy) { arranging.toggle() }
-                    }
-                    Button("Edit groups", systemImage: "folder.badge.gearshape") {}
-                    Menu("Gym") {
-                        ForEach(store.gyms, id: \.self) { gym in
-                            Button(gym) { store.currentGym = gym }
+            // Arrange mode is a mode, so it gets a visible way out rather than making
+            // you go back through the menu you entered by.
+            if arranging {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { withAnimation(.snappy) { arranging = false } }
+                        .font(.body.weight(.semibold))
+                }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("New exercise", systemImage: "plus") { creating = true }
+                        Button("Arrange", systemImage: "square.grid.2x2") {
+                            withAnimation(.snappy) { arranging = true }
                         }
-                    }
-                } label: { Image(systemName: "ellipsis.circle") }
+                        Button("Edit groups", systemImage: "folder.badge.gearshape") {
+                            editingGroups = true
+                        }
+                        Menu("Gym") {
+                            ForEach(store.gyms, id: \.self) { gym in
+                                Button {
+                                    store.currentGym = gym
+                                } label: {
+                                    if gym == store.currentGym {
+                                        Label(gym, systemImage: "checkmark")
+                                    } else {
+                                        Text(gym)
+                                    }
+                                }
+                            }
+                            Divider()
+                            Button("Add a gym…", systemImage: "plus") { addingGym = true }
+                        }
+                    } label: { Image(systemName: "ellipsis.circle") }
+                }
             }
         }
         .sheet(isPresented: $creating) {
@@ -232,6 +259,15 @@ struct LibraryGrouped: View {
                 query = ""
                 onOpen(created)
             }
+        }
+        .sheet(isPresented: $editingGroups) { EditGroupsSheet(store: store) }
+        .addGymAlert(store: store, isPresented: $addingGym)
+        .alert("Rename exercise", isPresented: Binding(
+            get: { renameTarget != nil }, set: { if !$0 { renameTarget = nil } })
+        ) {
+            TextField("Name", text: $renameText)
+            Button("Cancel", role: .cancel) {}
+            Button("Rename") { if let target = renameTarget { store.rename(target, to: renameText) } }
         }
     }
 
@@ -422,7 +458,8 @@ struct LibraryGrouped: View {
                      groups: store.groups,
                      onOpen: { onOpen(exercise) },
                      onLog: { onLog(exercise) },
-                     onAssign: { store.assign(exercise.name, to: $0) })
+                     onAssign: { store.assign(exercise.name, to: $0) },
+                     onRename: { renameTarget = exercise; renameText = exercise.name })
     }
 
     private var footerCount: some View {

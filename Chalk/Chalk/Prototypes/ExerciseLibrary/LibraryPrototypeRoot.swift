@@ -26,6 +26,8 @@ struct ExerciseLibraryPrototypeRoot: View {
     /// Set when a variant wants to log straight from the list, bypassing detail.
     @State private var loggingTarget: ProtoExercise?
     @State private var flash: String?
+    @State private var renameFromDetail: ProtoExercise?
+    @State private var renameText = ""
     // Screenshot hooks: `-autoCreate 1` opens the create sheet, `-autoLogFirst 1`
     // opens the log sheet for the most recent exercise.
     @State private var creating = UserDefaults.standard.bool(forKey: "autoCreate")
@@ -42,7 +44,12 @@ struct ExerciseLibraryPrototypeRoot: View {
                         DetailVariantACurveFirst(
                             store: store.detailStore(for: exercise),
                             size: .compact,
-                            onLog: { loggingTarget = exercise })
+                            onLog: { loggingTarget = exercise },
+                            onRename: { renameFromDetail = exercise; renameText = exercise.name },
+                            onDelete: {
+                                path.removeAll()
+                                store.delete(exercise)
+                            })
                     }
                     .overlay(alignment: .top) { flashBanner }
             }
@@ -53,6 +60,18 @@ struct ExerciseLibraryPrototypeRoot: View {
             if UserDefaults.standard.bool(forKey: "autoLogFirst") { loggingTarget = store.byRecency.first }
         }
         .sheet(isPresented: $creating) { CreateExerciseSheet(store: store) { _ in } }
+        .alert("Rename exercise", isPresented: Binding(
+            get: { renameFromDetail != nil }, set: { if !$0 { renameFromDetail = nil } })
+        ) {
+            TextField("Name", text: $renameText)
+            Button("Cancel", role: .cancel) {}
+            Button("Rename") {
+                if let target = renameFromDetail {
+                    store.rename(target, to: renameText)
+                    path.removeAll()  // the pushed copy still carries the old name
+                }
+            }
+        }
         .sheet(item: $loggingTarget) { exercise in
             VariantAStagedSteppers(store: store.detailStore(for: exercise)) { record in
                 store.log(exercise, reps: record.reps, weight: record.weight)

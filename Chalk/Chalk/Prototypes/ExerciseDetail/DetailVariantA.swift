@@ -16,6 +16,9 @@ struct DetailVariantACurveFirst: View {
     @Bindable var store: ProtoStore
     let size: CurveSize
     let onLog: () -> Void
+    /// Supplied by the library, which owns the exercise this screen is a view onto.
+    var onRename: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
 
     /// Charts clears its selection the moment your finger lifts, so this is only the
     /// live value during a drag. `heldReps` is what the readout actually shows —
@@ -38,22 +41,20 @@ struct DetailVariantACurveFirst: View {
         .navigationTitle(store.exerciseName)
         .navigationBarTitleDisplayMode(size == .half ? .inline : .large)
         .toolbar {
-            // Dead chrome — placement only. Real navigation belongs to
-            // https://github.com/hermanno3005/Chalk/issues/8
-            ToolbarItem(placement: .topBarLeading) {
-                Button {} label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: "chevron.left").font(.body.weight(.semibold))
-                        Text("Exercises")
-                    }
-                }
-            }
+            // The hand-drawn "< Exercises" button that used to sit here was placement
+            // chrome from when this screen had nothing above it. The library pushes it
+            // for real now, so NavigationStack supplies a working back button and the
+            // fake one was a dead duplicate sitting next to it.
             if store.isGymBound { ToolbarItem(placement: .topBarTrailing) { machineMenu } }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Rename exercise") {}
+                    Button("Rename exercise") { onRename?() }
+                    // Deliberately still a stub. What editing or deleting a record does
+                    // to an append-only history is precisely the question
+                    // https://github.com/hermanno3005/Chalk/issues/11 exists to answer,
+                    // and answering it here would pre-empt that ticket.
                     Button("Edit records") {}
-                    Button("Delete exercise", role: .destructive) {}
+                    Button("Delete exercise", role: .destructive) { onDelete?() }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }

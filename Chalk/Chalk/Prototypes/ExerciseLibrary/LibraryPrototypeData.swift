@@ -85,8 +85,48 @@ final class LibraryStore {
         groups.move(fromOffsets: source, toOffset: destination)
     }
 
-    /// Every gym the library knows about — the sticky current gym picks from these.
-    var gyms: [String] { Array(Set(exercises.flatMap { $0.machines.map(\.gym) })).sorted() }
+    /// Gyms are held explicitly, not derived from the machines that happen to exist.
+    /// Derived was a bug: a gym you had just added had no machines yet, so it vanished
+    /// from the picker the moment the sheet closed.
+    var gymNames: [String] = ["PureGym Islington", "The Gym Old Street", "Basement Fitness"]
+
+    var gyms: [String] {
+        Array(Set(gymNames).union(exercises.flatMap { $0.machines.map(\.gym) })).sorted()
+    }
+
+    func addGym(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, !gyms.contains(trimmed) else { return }
+        gymNames.append(trimmed)
+        currentGym = trimmed
+    }
+
+    // MARK: - Groups are user-owned, so they need real editing
+
+    func addGroup(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, !groups.contains(trimmed) else { return }
+        groups.append(trimmed)
+    }
+
+    func renameGroup(_ old: String, to new: String) {
+        let trimmed = new.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, let index = groups.firstIndex(of: old) else { return }
+        groups[index] = trimmed
+        for exerciseIndex in exercises.indices where exercises[exerciseIndex].group == old {
+            exercises[exerciseIndex].group = trimmed
+        }
+        refreshCaches()
+    }
+
+    /// Deleting a group never deletes exercises — they fall back to Ungrouped.
+    func deleteGroup(_ name: String) {
+        groups.removeAll { $0 == name }
+        for index in exercises.indices where exercises[index].group == name {
+            exercises[index].group = nil
+        }
+        refreshCaches()
+    }
 
     // MARK: - Slices the variants organise by
 

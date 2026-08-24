@@ -4,7 +4,8 @@ Throwaway. Answers [Prototype the exercise library screen](https://github.com/he
 
 **Round one verdict: C — resume card, tiles, type to find.**
 **Round two verdict: C1 — the sectioned grid.**
-**Round three: two real bugs fixed, assignment de-risked. Awaiting a re-test.**
+**Round three: two real bugs fixed, assignment de-risked.**
+**Round four: the stubs are real. Awaiting a re-test.**
 
 Three variants of the app's home screen, switchable from a floating bottom bar, over
 four library sizes — so "empty first launch", "three exercises", and "forty-two
@@ -146,6 +147,56 @@ environment — no `idb`, and `simctl` cannot synthesise touches — so the scre
 the screens render and nothing more. Both bugs are well-understood SwiftUI gesture
 conflicts and the fixes address them directly, but whether a drag now lands is something
 only a real finger can confirm. That is the one thing the next run needs to check.
+
+
+## Round four — the dead chrome comes alive
+
+The dev's list after running round three: Arrange mode has no visible way out, several
+menu items do nothing (rename exercise, edit records, edit groups), there is no way to add
+a gym at all, and the detail screen's `‹ Exercises` button is obsolete.
+
+Four of the five are now real.
+
+**Arrange mode has a Done button.** It is a mode, so it gets a visible exit rather than
+making you go back through the menu you entered by. While arranging, the overflow `•••` is
+replaced by `Done` — the menu is not what you want mid-arrange anyway.
+
+**Rename works, from two places.** A tile's `•••` in Arrange mode, and the detail screen's
+overflow. The detail screen renames through a callback into the library, because
+`detailStore(for:)` hands it a *copy* — a rename applied to the copy would have looked
+like it worked and then vanished.
+
+**Edit groups is a real sheet.** Reorder (which is the section order on the library screen —
+the dev's original "compounds at the top" ask), rename, delete, add. Deleting a group never
+deletes exercises; they fall back to Ungrouped.
+
+**Adding a gym works.** From the overflow's Gym menu and from the create sheet. This one
+exposed a modelling bug: `gyms` was *derived* from the machines that happened to exist, so
+a gym you had just added — with no machines attached yet — vanished the moment the sheet
+closed. Gyms are held explicitly on the store now.
+
+**The `‹ Exercises` button is gone.** It was placement chrome from when the detail screen
+had nothing above it. The library pushes it for real now, so `NavigationStack` supplies a
+working back button and the hand-drawn one was a dead duplicate sitting next to it.
+
+![Arrange with Done](r4-arrange.png) ![Groups](r4-groups.png) ![Add a gym](r4-creategym.png)
+
+### Edit records stays a stub, deliberately
+
+It is the one item on the list not implemented. What editing or deleting a record does to
+an append-only history *is* the question
+[What happens when a record is wrong?](https://github.com/hermanno3005/Chalk/issues/11)
+exists to answer — whether a correction rewrites history or appends a reversal, and what
+that does to a derived rep-max. Building it here would pre-empt that ticket with whatever
+I happened to choose. The menu item stays, doing nothing, with a comment saying why.
+
+### Still assumed
+
+- **Where gym selection lives at log time** is still
+  [issue 13](https://github.com/hermanno3005/Chalk/issues/13)'s call. Round four only makes a
+  gym *creatable*; it does not decide when you are asked which one you are at.
+- **Renaming a gym, deleting a gym, and what happens to a machine's records when its gym
+  goes** are untouched — that is the map's "Managing gyms and machines over time" fog.
 
 ## Round one — the variants
 
