@@ -22,8 +22,8 @@ struct ChalkApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // PROTOTYPE BRANCH ONLY — rooted at the exercise-detail prototype.
-            ExerciseDetailPrototypeRoot()
+            // PROTOTYPE BRANCH ONLY — rooted at the exercise-library prototype.
+            ExerciseLibraryPrototypeRoot()
         }
         .modelContainer(modelContainer)
     }
