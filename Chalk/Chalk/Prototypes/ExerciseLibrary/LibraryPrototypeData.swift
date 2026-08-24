@@ -15,6 +15,11 @@ struct ProtoExercise: Identifiable, Hashable {
     var isGymBound: Bool
     var machines: [ProtoMachine] = []
     var records: [ProtoRecord] = []
+    /// Round two. Nil means Ungrouped — nothing is asked at create time, you drag
+    /// a tile into a group later. Groups are your own buckets, not a taxonomy:
+    /// "Compound" sitting next to "Legs" is incoherent as a classification and
+    /// entirely fine as a shelf.
+    var group: String? = nil
 
     /// Monotonic backfill again, but only enough of it for a list row.
     func best(at reps: Int) -> Double? {
@@ -63,6 +68,25 @@ final class LibraryStore {
     var exercises: [ProtoExercise] = []
     var size: LibrarySize = .medium
     var currentGym = "PureGym Islington"
+
+    /// Ordered, renameable, user-owned. Shipped as a suggestion, not a schema.
+    var groups: [String] = ["Compound", "Legs", "Push", "Pull", "Core"]
+
+    func exercises(in group: String) -> [ProtoExercise] {
+        byRecency.filter { $0.group == group }
+    }
+
+    var ungrouped: [ProtoExercise] { byRecency.filter { $0.group == nil } }
+
+    /// The whole point of round two: assignment happens by dragging, after the fact.
+    func assign(_ exerciseName: String, to group: String?) {
+        guard let index = exercises.firstIndex(where: { $0.name == exerciseName }) else { return }
+        exercises[index].group = group
+    }
+
+    func moveGroup(from source: IndexSet, to destination: Int) {
+        groups.move(fromOffsets: source, toOffset: destination)
+    }
 
     /// Every gym the library knows about — the sticky current gym picks from these.
     var gyms: [String] { Array(Set(exercises.flatMap { $0.machines.map(\.gym) })).sorted() }
@@ -183,6 +207,24 @@ final class LibraryStore {
         ("Cable Crunch", true), ("Reverse Curl", false), ("Zercher Squat", false),
     ]
 
+    /// Pre-assigned so the grouped screens have something to show. Deliberately
+    /// incomplete — the exercises missing here land in Ungrouped, which is the
+    /// state the design has to survive.
+    private static let defaultGroups: [String: String] = [
+        "Squat": "Compound", "Deadlift": "Compound", "Bench Press": "Compound",
+        "Overhead Press": "Compound", "Pull-up": "Compound", "Barbell Row": "Compound",
+        "Front Squat": "Compound", "Romanian Deadlift": "Compound", "Dip": "Compound",
+        "Leg Press": "Legs", "Leg Extension": "Legs", "Hamstring Curl": "Legs",
+        "Hip Thrust": "Legs", "Bulgarian Split Squat": "Legs",
+        "Chest Press": "Push", "Cable Fly": "Push",
+        "Tricep Pushdown": "Push", "Incline Bench Press": "Push", "Skull Crusher": "Push",
+        "Arnold Press": "Push", "Pec Deck": "Push",
+        "Lat Pulldown": "Pull", "Seated Row": "Pull",
+        "Dumbbell Curl": "Pull", "Hammer Curl": "Pull", "Chin-up": "Pull",
+        "Preacher Curl": "Pull",
+        "Ab Wheel": "Core", "Hanging Leg Raise": "Core", "Cable Crunch": "Core",
+    ]
+
     private static let gymNames = ["PureGym Islington", "The Gym Old Street", "Basement Fitness"]
     private static let brands = ["Hammer Strength", "Technogym", "Cybex", "Unbranded"]
 
@@ -190,6 +232,7 @@ final class LibraryStore {
         let day = 86_400.0
         return catalogue.prefix(count).enumerated().map { index, entry in
             var exercise = ProtoExercise(name: entry.0, isGymBound: entry.1)
+            exercise.group = defaultGroups[entry.0]
             if entry.1 {
                 // One or two machines — most exercises live at your usual gym only.
                 let machineCount = index % 3 == 0 ? 2 : 1

@@ -12,28 +12,13 @@
 
 import SwiftUI
 
-enum LibraryVariant: String, CaseIterable {
-    case directory, recency, resume
-
-    var key: String {
-        switch self {
-        case .directory: "A"
-        case .recency: "B"
-        case .resume: "C"
-        }
-    }
-
-    var name: String {
-        switch self {
-        case .directory: "A — Directory (A–Z)"
-        case .recency: "B — Recency + row Log"
-        case .resume: "C — Resume, then type"
-        }
-    }
-}
+/// Round two. C won — resume card, tiles, type to find — but the flat grid "feels
+/// unordered", so the switcher now varies only *how the grouping is presented*.
+/// Everything else is held constant. Round one's A and B stay in the tree as the
+/// primary source of that comparison; they are no longer reachable from the switcher.
 
 struct ExerciseLibraryPrototypeRoot: View {
-    @AppStorage("prototype.library.variant") private var variantKey = LibraryVariant.directory.rawValue
+    @AppStorage("prototype.library.variant") private var variantKey = GroupedLayout.sectioned.rawValue
     @AppStorage("prototype.library.size") private var sizeKey = LibrarySize.medium.rawValue
 
     @State private var store = LibraryStore()
@@ -45,7 +30,7 @@ struct ExerciseLibraryPrototypeRoot: View {
     // opens the log sheet for the most recent exercise.
     @State private var creating = UserDefaults.standard.bool(forKey: "autoCreate")
 
-    private var variant: LibraryVariant { LibraryVariant(rawValue: variantKey) ?? .directory }
+    private var variant: GroupedLayout { GroupedLayout(rawValue: variantKey) ?? .sectioned }
     private var size: LibrarySize { LibrarySize(rawValue: sizeKey) ?? .medium }
 
     var body: some View {
@@ -77,20 +62,11 @@ struct ExerciseLibraryPrototypeRoot: View {
         }
     }
 
-    @ViewBuilder
     private var screen: some View {
-        switch variant {
-        case .directory:
-            LibraryVariantADirectory(store: store, onOpen: { path.append($0) })
-        case .recency:
-            LibraryVariantBRecency(store: store,
-                                   onOpen: { path.append($0) },
-                                   onLog: { loggingTarget = $0 })
-        case .resume:
-            LibraryVariantCResume(store: store,
-                                  onOpen: { path.append($0) },
-                                  onLog: { loggingTarget = $0 })
-        }
+        LibraryGrouped(store: store,
+                       layout: variant,
+                       onOpen: { path.append($0) },
+                       onLog: { loggingTarget = $0 })
     }
 
     private func announce(_ text: String) {
@@ -122,7 +98,7 @@ struct ExerciseLibraryPrototypeRoot: View {
                     Text(variant.name).font(.footnote.weight(.semibold))
                     Text("prototype").font(.system(size: 9)).opacity(0.6)
                 }
-                .frame(width: 180)
+                .frame(width: 190)
                 arrow("chevron.right", 1)
             }
             Button {
@@ -149,7 +125,7 @@ struct ExerciseLibraryPrototypeRoot: View {
 
     private func arrow(_ icon: String, _ offset: Int) -> some View {
         Button {
-            let all = LibraryVariant.allCases
+            let all = GroupedLayout.allCases
             let index = all.firstIndex(of: variant) ?? 0
             variantKey = all[(index + offset + all.count) % all.count].rawValue
             path = []
