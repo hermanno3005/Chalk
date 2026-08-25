@@ -63,8 +63,8 @@ _Note_: the Swift type is `ExerciseGroup`, to leave SwiftUI's `Group` view alone
 ### Where you lift
 
 **Gym**:
-A place you train, held by name alone. Gyms churn, which is why one is a thing you can
-rename rather than a string repeated on every entry.
+A place you train, held in its own right with an identity independent of its name — which
+is what makes renaming one cost nothing. Gyms churn, so one can also be archived.
 _Avoid_: Location, club, venue
 
 **Machine**:
@@ -76,6 +76,12 @@ _Avoid_: Station, equipment, apparatus
 The gym you are standing in, chosen once per visit and remembered until you change it.
 A property of a device in a moment, not of your account.
 _Avoid_: Home gym, default gym, active location
+
+**Archived**:
+The state of a gym you have stopped visiting. It leaves the current gym picker but keeps
+every entry it holds, and un-archives itself the moment you log there again. A matter of
+display alone — no rep-max is ever affected by it.
+_Avoid_: Hidden, deleted, inactive, retired
 
 **Hint**:
 Your numbers for the same exercise on a different machine, shown when the machine in
