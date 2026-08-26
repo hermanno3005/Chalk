@@ -28,3 +28,8 @@ exists to be right about.
   running-total field would.
 - Performance is a non-issue at personal scale: one fetch of an exercise's entries and a
   single pass produces all twelve cells. Do not write twelve `reps >= n` predicates.
+- It is also what makes bulk re-pointing safe. Merging two machines is a relationship edit
+  and nothing more — reassign each `Entry.machine`, delete the emptied machine, and the
+  curve is simply correct on the next read. With a materialised best, that same repair
+  would have been the most dangerous code in the app. The one ordering rule: reassign and
+  flush *before* deleting, or the cascade from `Machine` takes the entries with it.

@@ -72,6 +72,13 @@ A gym-bound exercise at a particular gym, optionally distinguished by manufactur
 label. One gym may hold several for the same exercise, and their numbers are separate.
 _Avoid_: Station, equipment, apparatus
 
+**Merge**:
+Moving every entry from one machine onto a sibling — same exercise, same gym — and
+deleting the emptied machine. The repair for a split curve, when the same physical
+machine was recorded twice because you learned its name late. Costs nothing to the
+numbers, because no rep-max is stored to recompute.
+_Avoid_: Combine, de-duplicate, consolidate
+
 **Current gym**:
 The gym you are standing in, chosen once per visit and remembered until you change it.
 A property of a device in a moment, not of your account.
