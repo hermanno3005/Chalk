@@ -42,7 +42,11 @@ final class LibraryFixture {
     }
 
     func log(_ exercise: Exercise, on date: Date) {
-        context.insert(Entry(reps: 8, weight: 52.5, date: date, exercise: exercise))
+        log(exercise, reps: 8, weight: 52.5, on: date)
+    }
+
+    func log(_ exercise: Exercise, reps: Int, weight: Double, on date: Date = .now) {
+        context.insert(Entry(reps: reps, weight: weight, date: date, exercise: exercise))
     }
 
     func save() throws {
@@ -60,6 +64,12 @@ final class LibraryFixture {
     /// A model over this store's context, seeded against this fixture's own defaults.
     func libraryModel() -> LibraryModel {
         LibraryModel(context: context, defaults: defaults)
+    }
+
+    /// A detail model over this store's context. `refreshing` stands in for the library
+    /// left behind the screen, which a delete has to put back in step.
+    func detailModel(for exercise: Exercise, refreshing library: LibraryModel? = nil) -> ExerciseDetailModel {
+        ExerciseDetailModel(exercise: exercise, context: context) { library?.refresh() }
     }
 
     /// The same file read through a second container, so what a test asserts is what
