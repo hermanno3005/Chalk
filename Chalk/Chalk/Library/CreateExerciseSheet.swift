@@ -41,15 +41,13 @@ struct CreateExerciseSheet: View {
                         Text("Gym machine").tag(ExerciseKind.gymBound)
                     }
                     .pickerStyle(.segmented)
-                } header: {
-                    Text("Does the load transfer between gyms?")
                 } footer: {
-                    // The test, stated on whichever option is showing. It is the whole
-                    // distinction: transferability, not whether the thing is colloquially
-                    // a machine — a cable stack is gym-bound.
+                    // The test itself, restated under whichever option is showing. It is
+                    // the whole distinction: transferability, not whether the thing is
+                    // colloquially a machine — a cable stack is gym-bound.
                     Text(kind == .gymBound
-                         ? "No — the weight means something different at each gym, so its numbers are kept per machine."
-                         : "Yes — 60 kg is 60 kg wherever you lift it, so its numbers are kept together.")
+                         ? "Does the load transfer between gyms? No — the weight means something different at each gym, so its numbers are kept per machine."
+                         : "Does the load transfer between gyms? Yes — 60 kg is 60 kg wherever you lift it, so its numbers are kept together.")
                 }
             }
             .navigationTitle("New exercise")

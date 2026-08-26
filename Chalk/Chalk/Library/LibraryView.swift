@@ -132,35 +132,6 @@ private struct CreateRequest: Identifiable {
     let name: String
 }
 
-/// First launch: **real copy saying what the app is for, and a way in. Not a wordmark**
-/// (SPEC §7.1).
-struct EmptyLibraryView: View {
-    let onCreate: () -> Void
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Spacer()
-            Text("Keep the lifts you actually do")
-                .font(.title2.bold())
-                .multilineTextAlignment(.center)
-            Text("Log what you lifted as plain reps × weight. Chalk works out what you have proven at every rep count, and what to load next time.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 36)
-            Button(action: onCreate) {
-                Text("Add your first exercise")
-                    .frame(maxWidth: 260)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .padding(.top, 6)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
 #Preview("Empty") {
     LibraryPreview.view(exercises: [])
 }
@@ -176,18 +147,26 @@ struct EmptyLibraryView: View {
 private enum LibraryPreview {
     @MainActor
     static func view(exercises: [(String, String?)]) -> some View {
-        let container = try! ModelContainer(
-            for: Schema(versionedSchema: ChalkSchemaV1.self),
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        guard
+            let container = try? ModelContainer(
+                for: Schema(versionedSchema: ChalkSchemaV1.self),
+                configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+            ),
+            // A suite of its own, so a preview never writes the seed flag into the
+            // defaults a running app reads.
+            let defaults = UserDefaults(suiteName: "chalk-preview-\(UUID().uuidString)")
+        else {
+            return AnyView(Text("No preview store."))
+        }
         let context = ModelContext(container)
-        let defaults = UserDefaults(suiteName: "chalk-preview-\(UUID().uuidString)")!
         SuggestedGroups.seedIfNeeded(in: context, defaults: defaults)
         let groups = (try? context.fetch(FetchDescriptor<ExerciseGroup>())) ?? []
         for (name, group) in exercises {
             context.insert(Exercise(name: name, group: groups.first { $0.name == group }))
         }
-        return LibraryView(model: LibraryModel(context: context, defaults: defaults))
-            .modelContainer(container)
+        return AnyView(
+            LibraryView(model: LibraryModel(context: context, defaults: defaults))
+                .modelContainer(container)
+        )
     }
 }

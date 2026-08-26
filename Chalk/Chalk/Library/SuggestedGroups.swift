@@ -25,17 +25,22 @@ enum SuggestedGroups {
     /// seeding again would duplicate groups the user already arranged.
     static func seedIfNeeded(in context: ModelContext, defaults: UserDefaults = .standard) {
         guard !defaults.bool(forKey: seededKey) else { return }
-        defaults.set(true, forKey: seededKey)
 
+        // A store that already holds groups counts as seeded, whatever the flag says.
+        // On the error path it counts as seeded too: a fetch that failed is no reason to
+        // write five rows into a store that may already have them.
         let existing = (try? context.fetchCount(FetchDescriptor<ExerciseGroup>())) ?? 1
-        guard existing == 0 else { return }
+        guard existing == 0 else {
+            defaults.set(true, forKey: seededKey)
+            return
+        }
 
         for (sortIndex, name) in names.enumerated() {
             context.insert(ExerciseGroup(name: name, sortIndex: sortIndex))
         }
-        // A failed save leaves the flag set, so the suggestion is not retried on every
-        // launch. Nothing is lost by that: the groups are a convenience, and Edit groups
-        // makes the same five by hand.
-        try? context.save()
+        // The flag follows the save rather than leading it, so a seed that never reached
+        // the disk is tried again next launch instead of being lost silently.
+        guard (try? context.save()) != nil else { return }
+        defaults.set(true, forKey: seededKey)
     }
 }

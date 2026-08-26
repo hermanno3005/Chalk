@@ -49,6 +49,18 @@ struct LibraryModelTests {
         #expect(relaunched.map(\.name) == ["Bench Press"])
     }
 
+    @Test("A gym machine records the kind, and no machine — that comes with a gym")
+    func aGymMachineRecordsOnlyItsKind() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+
+        let created = try #require(model.create(name: "Leg Press", kind: .gymBound))
+
+        #expect(created.kind == ExerciseKind.gymBound.rawValue)
+        #expect(created.machines?.isEmpty == true)
+        #expect(model.content.drawn == "grid Ungrouped[Leg Press]")
+    }
+
     @Test("A name that is blank once trimmed creates nothing")
     func aBlankNameCreatesNothing() throws {
         let fixture = try LibraryFixture()

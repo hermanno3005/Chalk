@@ -73,22 +73,26 @@ enum LibraryOrdering {
     }
 
     /// Most recently logged first, never-logged after them, ties by name (SPEC §7.1).
+    ///
+    /// Each exercise's last entry is read **once**, before the sort, rather than inside
+    /// the comparator: the comparator runs O(n log n) times and every call would fault
+    /// the whole entries relationship back in.
     private static func byRecency(_ exercises: [Exercise]) -> [Exercise] {
-        exercises.sorted { left, right in
-            switch (lastEntryDate(left), lastEntryDate(right)) {
-            case let (leftDate?, rightDate?) where leftDate != rightDate:
-                leftDate > rightDate
-            case (nil, _?):
-                false
-            case (_?, nil):
-                true
-            default:
-                left.name.localizedStandardCompare(right.name) == .orderedAscending
+        exercises
+            .map { (exercise: $0, lastLogged: $0.entries?.map(\.date).max()) }
+            .sorted { left, right in
+                switch (left.lastLogged, right.lastLogged) {
+                case let (leftDate?, rightDate?) where leftDate != rightDate:
+                    leftDate > rightDate
+                case (nil, _?):
+                    false
+                case (_?, nil):
+                    true
+                default:
+                    left.exercise.name.localizedStandardCompare(right.exercise.name)
+                        == .orderedAscending
+                }
             }
-        }
-    }
-
-    private static func lastEntryDate(_ exercise: Exercise) -> Date? {
-        exercise.entries?.map(\.date).max()
+            .map(\.exercise)
     }
 }
