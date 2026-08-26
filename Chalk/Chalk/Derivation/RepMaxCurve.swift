@@ -45,10 +45,7 @@ struct RepMaxCurve {
         var highestEstimated1RM: Double = 0
 
         for entry in entries {
-            // Every `Entry` attribute is defaulted to keep the schema CloudKit-shaped
-            // (ADR-0001), so a zeroed row is representable even though SPEC §3's
-            // write-time guards reject one. It is not a lift, and it does not derive.
-            guard entry.reps >= 1, entry.weight > 0 else { continue }
+            guard entry.isALift else { continue }
 
             let cell = min(entry.reps, Self.repRange.upperBound)
             heaviest[cell] = max(heaviest[cell] ?? 0, entry.weight)
@@ -88,6 +85,21 @@ struct RepMaxCurve {
                 (n, highestEstimated1RM / Self.epleyFactor(reps: n))
             }
         )
+    }
+
+    /// `best[n]` at **one** rep count, by the same rule — `max(weight) where reps >= n`
+    /// — but off the drawn axis: the log sheet's verdict can be sitting on 15 reps, and
+    /// a curve keyed 1...12 has nothing to say about that (SPEC §6.5).
+    ///
+    /// Nil where no entry reaches that rep count. One O(n) pass, no state: this is a
+    /// single cell, not a curve, and deriving a whole curve to read one of them would
+    /// be the wrong shape.
+    static func best(atLeast reps: Int, in entries: [Entry]) -> Double? {
+        entries
+            .lazy
+            .filter { $0.isALift && $0.reps >= reps }
+            .map(\.weight)
+            .max()
     }
 
     /// The Epley multiplier: an estimated 1RM is `w × (1 + reps/30)`, and projecting

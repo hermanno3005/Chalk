@@ -35,10 +35,9 @@ struct ScrubReadout: View {
         .accessibilityLabel("\(weight), best for \(readout.reps) reps, \(entriesBehind)")
     }
 
-    /// Kilograms, always (SPEC §2). Half plates matter; trailing zeroes do not.
     private var weight: String {
         guard let weight = readout.weight else { return "—" }
-        return "\(weight.formatted(.number.precision(.fractionLength(0...1)))) kg"
+        return "\(weight.kilogramsText) kg"
     }
 
     /// `record` is the screen's word, quoted from SPEC §5.1; the thing counted is an

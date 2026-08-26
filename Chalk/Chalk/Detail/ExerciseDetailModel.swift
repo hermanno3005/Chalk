@@ -106,6 +106,16 @@ final class ExerciseDetailModel {
         onLibraryChange()
     }
 
+    /// The log sheet over this exercise, wired to put the curve back in step when it
+    /// writes (SPEC §6.7). The context stays private: the sheet is handed one rather
+    /// than reaching for the environment's, so it writes where this screen reads.
+    func logSheet(onSave: @escaping () -> Void) -> LogSheetModel {
+        LogSheetModel(exercise: exercise, context: context) { [weak self] in
+            self?.refresh()
+            onSave()
+        }
+    }
+
     /// Re-reads the exercise and re-derives the whole curve. Called at init, and again
     /// by the log sheet when it writes an entry (#24).
     func refresh() {
