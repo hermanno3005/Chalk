@@ -2,13 +2,13 @@ import SwiftData
 import SwiftUI
 
 struct ContentView: View {
-    @Query private var placeholders: [Placeholder]
+    @Query private var exercises: [Exercise]
 
     var body: some View {
         VStack(spacing: 12) {
             Text("Chalk")
                 .font(.largeTitle.bold())
-            Text("Skeleton — store opened, \(placeholders.count) rows.")
+            Text("Store opened — \(exercises.count) exercises.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
@@ -18,5 +18,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Placeholder.self, inMemory: true)
+        .modelContainer(for: Exercise.self, inMemory: true)
 }

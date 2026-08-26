@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		CH00000000000000000170 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CH000000000000000000A0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CH00000000000000000060;
+			remoteInfo = Chalk;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		CH00000000000000000050 /* Chalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Chalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CH00000000000000000100 /* ChalkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ChalkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +27,22 @@
 			path = Chalk;
 			sourceTree = "<group>";
 		};
+		CH00000000000000000110 /* ChalkTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ChalkTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		CH00000000000000000020 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CH00000000000000000130 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				CH00000000000000000010 /* Chalk */,
+				CH00000000000000000110 /* ChalkTests */,
 				CH00000000000000000040 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				CH00000000000000000050 /* Chalk.app */,
+				CH00000000000000000100 /* ChalkTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,6 +93,27 @@
 			productReference = CH00000000000000000050 /* Chalk.app */;
 			productType = "com.apple.product-type.application";
 		};
+		CH00000000000000000150 /* ChalkTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CH000000000000000001A0 /* Build configuration list for PBXNativeTarget "ChalkTests" */;
+			buildPhases = (
+				CH00000000000000000120 /* Sources */,
+				CH00000000000000000130 /* Frameworks */,
+				CH00000000000000000140 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CH00000000000000000160 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CH00000000000000000110 /* ChalkTests */,
+			);
+			name = ChalkTests;
+			productName = ChalkTests;
+			productReference = CH00000000000000000100 /* ChalkTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -80,6 +126,10 @@
 				TargetAttributes = {
 					CH00000000000000000060 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					CH00000000000000000150 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = CH00000000000000000060;
 					};
 				};
 			};
@@ -98,12 +148,20 @@
 			projectRoot = "";
 			targets = (
 				CH00000000000000000060 /* Chalk */,
+				CH00000000000000000150 /* ChalkTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		CH00000000000000000090 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CH00000000000000000140 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -120,7 +178,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CH00000000000000000120 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CH00000000000000000160 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CH00000000000000000060 /* Chalk */;
+			targetProxy = CH00000000000000000170 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CH000000000000000000C0 /* Debug */ = {
@@ -234,6 +307,44 @@
 			};
 			name = Release;
 		};
+		CH00000000000000000180 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P9J393594X;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hermannaust.ChalkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Chalk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Chalk";
+			};
+			name = Debug;
+		};
+		CH00000000000000000190 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = P9J393594X;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hermannaust.ChalkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Chalk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Chalk";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -251,6 +362,15 @@
 			buildConfigurations = (
 				CH000000000000000000C0 /* Debug */,
 				CH000000000000000000D0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CH000000000000000001A0 /* Build configuration list for PBXNativeTarget "ChalkTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CH00000000000000000180 /* Debug */,
+				CH00000000000000000190 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
