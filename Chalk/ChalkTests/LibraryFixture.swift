@@ -72,6 +72,12 @@ final class LibraryFixture {
         ExerciseDetailModel(exercise: exercise, context: context) { library?.refresh() }
     }
 
+    /// A log sheet over this store's context. `onSave` stands in for the detail screen
+    /// behind the sheet, which a write has to put back in step.
+    func logSheetModel(for exercise: Exercise, onSave: @escaping () -> Void = {}) -> LogSheetModel {
+        LogSheetModel(exercise: exercise, context: context, onSave: onSave)
+    }
+
     /// The same file read through a second container, so what a test asserts is what
     /// reached the disk rather than what is sitting in this context's cache.
     func afterRelaunch() throws -> ModelContext {

@@ -21,6 +21,14 @@ final class Entry {
     /// Gym-bound exercises only.
     var machine: Machine?
 
+    /// Whether this row is a lift: `reps >= 1` and `weight > 0`.
+    ///
+    /// The guard is app-level, not a schema rule — every attribute here is defaulted to
+    /// keep the schema CloudKit-shaped (ADR-0001), so a zeroed row is representable even
+    /// though SPEC §3's write-time guards reject one. It is not a lift, it does not
+    /// derive, and it never seeds the log sheet.
+    var isALift: Bool { reps >= 1 && weight > 0 }
+
     init(
         id: UUID = UUID(),
         reps: Int = 0,

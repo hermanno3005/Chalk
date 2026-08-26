@@ -19,6 +19,8 @@ struct ExerciseDetailView: View {
     @State private var renaming = false
     @State private var draftName = ""
     @State private var confirmingDelete = false
+    @State private var logging = false
+    @State private var flashingConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -61,6 +63,10 @@ struct ExerciseDetailView: View {
             }
         }
         .safeAreaInset(edge: .bottom) { logBar }
+        .overlay(alignment: .bottom) { confirmation }
+        .sheet(isPresented: $logging) {
+            LogSheet(model: model.logSheet { flashConfirmation() })
+        }
         .alert("Rename", isPresented: $renaming) {
             TextField("Name", text: $draftName)
             Button("Cancel", role: .cancel) {}
@@ -79,6 +85,33 @@ struct ExerciseDetailView: View {
         }
     }
 
+    /// The brief confirmation the screen flashes after a save, while the curve behind
+    /// it has already moved (SPEC §6.7). It says the entry landed and then gets out of
+    /// the way — there is nothing to undo here and nothing to tap.
+    @ViewBuilder
+    private var confirmation: some View {
+        if flashingConfirmation {
+            Label("Logged", systemImage: "checkmark.circle.fill")
+                .font(.subheadline.weight(.medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.regularMaterial, in: .capsule)
+                .padding(.bottom, 24)
+                .transition(.opacity)
+                // Nothing to tap and nothing to undo — but it is still the only word
+                // the screen says about a write, so it is not hidden from VoiceOver.
+                .allowsHitTesting(false)
+        }
+    }
+
+    private func flashConfirmation() {
+        withAnimation(.snappy) { flashingConfirmation = true }
+        Task {
+            try? await Task.sleep(for: .seconds(1.4))
+            withAnimation(.easeOut) { flashingConfirmation = false }
+        }
+    }
+
     /// Zero entries: short text where the chart would be, and the Log bar beneath it
     /// (SPEC §5.4). No axes, no flat line at zero, no ghost — a chart frame with no data
     /// implies numbers that do not exist. The machine hint belongs to gym-bound
@@ -94,11 +127,12 @@ struct ExerciseDetailView: View {
         .padding(.top, 8)
     }
 
-    /// Full width, pinned at the bottom. **Dead in this ticket** — it opens the log
-    /// sheet with #24.
+    /// Full width, pinned at the bottom. Opens the log sheet (SPEC §6.1), which for a
+    /// free-weight exercise is all the caller has to supply — resolving a machine is
+    /// the gym-bound caller's job (§6.4, #26).
     private var logBar: some View {
         Button {
-            // #24.
+            logging = true
         } label: {
             Text("Log")
                 .font(.headline)
