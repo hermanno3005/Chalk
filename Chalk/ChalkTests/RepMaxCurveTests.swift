@@ -111,6 +111,47 @@ struct RepMaxCurveTests {
         #expect(isClose(curve.ghost[5], 55.0))
     }
 
+    // MARK: - The entries behind a cell
+
+    @Test("The entries behind a cell are every entry at or above its rep count")
+    func entriesBehindACellCountFromItsRepCountUp() {
+        let curve = RepMaxCurve(entries: [
+            Entry(reps: 3, weight: 100),
+            Entry(reps: 5, weight: 90),
+            Entry(reps: 5, weight: 85),
+        ])
+
+        #expect(curve.entriesBehind[1] == 3)
+        #expect(curve.entriesBehind[3] == 3)
+        #expect(curve.entriesBehind[4] == 2)
+        #expect(curve.entriesBehind[5] == 2)
+    }
+
+    @Test("A rep count no entry reaches has no count at all")
+    func entriesBehindIsKeyedWhereBestIs() {
+        let curve = RepMaxCurve(entries: [Entry(reps: 5, weight: 55)])
+
+        #expect(curve.entriesBehind[5] == 1)
+        #expect(curve.entriesBehind[6] == nil)
+        #expect(curve.entriesBehind.keys.sorted() == curve.best.keys.sorted())
+    }
+
+    @Test("An entry above 12 reps counts towards every cell it floors")
+    func entriesBehindCountEntriesAboveTwelveReps() {
+        let curve = RepMaxCurve(entries: [Entry(reps: 25, weight: 30)])
+
+        #expect(curve.entriesBehind[1] == 1)
+        #expect(curve.entriesBehind[12] == 1)
+        #expect(curve.entriesBehind.keys.sorted() == Array(1...12))
+    }
+
+    @Test("A zeroed row is counted no more than it is derived from")
+    func entriesBehindIgnoreZeroedRows() {
+        let curve = RepMaxCurve(entries: [Entry(), Entry(reps: 5, weight: 55)])
+
+        #expect(curve.entriesBehind[5] == 1)
+    }
+
     // MARK: - The Epley ghost
 
     @Test("The ghost projects one estimated 1RM back across all twelve rep counts")

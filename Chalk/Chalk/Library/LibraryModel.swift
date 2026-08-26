@@ -67,6 +67,19 @@ final class LibraryModel {
         return exercise
     }
 
+    /// The detail screen's state for one exercise (SPEC §5), made here so the store's
+    /// context stays this model's own and so a rename or a delete over there puts the
+    /// grid behind it back in step.
+    ///
+    /// A plain factory, not a cache: the pushed screen holds the first one it is given
+    /// in `@State` and drops the rest, which costs one derivation pass per rebuild of
+    /// the destination and keeps no model alive behind a screen that has been popped.
+    func detail(for exercise: Exercise) -> ExerciseDetailModel {
+        ExerciseDetailModel(exercise: exercise, context: context) { [weak self] in
+            self?.refresh()
+        }
+    }
+
     /// Re-reads the store and rebuilds the cached ordering. Called after every mutation
     /// this model makes, and by anything that changes the library behind its back.
     func refresh() {

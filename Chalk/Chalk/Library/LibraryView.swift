@@ -8,15 +8,19 @@ import SwiftUI
 /// with #25; Arrange mode and Edit groups with #30.
 struct LibraryView: View {
     let model: LibraryModel
-    /// Opening an exercise. The detail screen arrives with #23; the tap is wired now so
-    /// the tile stays a plain view when it does.
-    var onOpen: (Exercise) -> Void = { _ in }
 
     @State private var creating: CreateRequest?
+    /// What is pushed on top of the library. A path of its own rather than
+    /// `NavigationLink`-per-tile: a tile is a plain view so Arrange mode (#30) can drag
+    /// it, and a link would claim the press exactly as a `Button` does (SPEC §7.2).
+    @State private var opened: [Exercise] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $opened) {
             content
+                .navigationDestination(for: Exercise.self) { exercise in
+                    ExerciseDetailView(model: model.detail(for: exercise))
+                }
                 .navigationTitle("Chalk")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -64,7 +68,7 @@ struct LibraryView: View {
                         header(section)
                         LazyVGrid(columns: Self.tileColumns, spacing: 10) {
                             ForEach(section.exercises) { exercise in
-                                ExerciseTile(exercise: exercise) { onOpen(exercise) }
+                                ExerciseTile(exercise: exercise) { opened.append(exercise) }
                             }
                         }
                     }
@@ -102,7 +106,7 @@ struct LibraryView: View {
         List {
             ForEach(matches) { exercise in
                 Button {
-                    onOpen(exercise)
+                    opened.append(exercise)
                 } label: {
                     Text(exercise.name)
                         .foregroundStyle(.primary)
