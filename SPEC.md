@@ -6,7 +6,8 @@ is one click away. **The reasoning is not repeated here — the decisions are.**
 
 Read `CONTEXT.md` first: it is the glossary, and this document uses its words exactly
 (**Entry**, **rep-max**, **monotonic backfill**, **strength curve**, **ghost curve**,
-**free-weight**, **gym-bound**, **Group**, **Gym**, **Machine**, **Merge**, **current gym**,
+**free-weight**, **gym-bound**, **Group**, **Ungrouped**, **Gym**, **Machine**, **Merge**,
+**current gym**,
 **Archived**, **Hint**). Read `docs/adr/0001` and `docs/adr/0002` before touching persistence
 or the derivation — they record the two decisions most likely to be "helpfully" undone.
 
@@ -585,12 +586,15 @@ is incoherent as a classification and entirely fine as a shelf you arranged your
 to beat typing three letters, so it does not need to be fast, only legible. It does nothing at
 three exercises and starts paying at roughly twenty.
 
-- **Nothing is asked at create time.** New exercises land in **Ungrouped**.
-- **Assignment happens after the fact, two ways:** drag a tile into a section (the fast path for
+- **The group is asked for at create time** (§7.3), defaulting to **Ungrouped** — filing an
+  exercise is one step, not two. Ungrouped stays a free answer: you often meet a machine before
+  you know which shelf it belongs on (ADR-0003).
+- **Re-filing happens after the fact, two ways:** drag a tile into a section (the fast path for
   a nearby group), or **Arrange mode** — overflow → *Arrange*, exited by a visible **Done** that
   replaces the overflow button — which puts a `•••` group picker on every tile. **The menu is the
   path that always works**; dragging the length of a 42-tile scroll to reach Ungrouped never will
-  be pleasant.
+  be pleasant. **Arrange is the periodic re-shelving pass**, not the primary way an exercise
+  reaches a group — you open it every few months to look over the whole library at once.
 - **Edit groups** (overflow) is a sheet: reorder — which *is* the section order on this screen —
   rename, delete, add. **Deleting a group never deletes exercises**; they fall back to Ungrouped.
 
@@ -609,11 +613,24 @@ anything about perceived performance.
 
 ### 7.3 Creating an exercise
 
-A sheet: **a name field and a two-way segmented control, Free weight / Gym machine.** Progressive
-disclosure — **the gym and make fields do not exist until you pick *Gym machine***. Each option
-carries a one-line footer stating the test: **does the load transfer between gyms?**
+A sheet: **a name field, a `Group` menu row beside it, and a two-way segmented control,
+Free weight / Gym machine.** Progressive disclosure — **the gym and make fields do not exist
+until you pick *Gym machine***. Each kind option carries a one-line footer stating the test:
+**does the load transfer between gyms?**
 
-No group is asked for. No increment is asked for. Nothing else.
+**The group row sits in the first section, with the name**, which keeps the reveal
+**append-only** — picking *Gym machine* appends the machine section and moves nothing above it —
+and splits the sheet along its real seam: name and group are library concerns, kind and machine
+are derivation concerns.
+
+**It lists the groups in `sortIndex` order with `Ungrouped` last and selected by default.** It
+says *Ungrouped*, not *None*, and sorts it last, so the picker reads as a small map of the
+library screen the exercise is about to land on (§7.1). This deliberately differs from the `Gym`
+picker below it, which says `None`: a machine with no gym is not somewhere called None, it does
+not exist yet. **There is no `New group…` row** — a missing group has a correct answer, Ungrouped,
+where a missing gym does not; new shelves are made in *Edit groups* (§7.2, ADR-0003).
+
+No increment is asked for. Nothing else.
 
 ### 7.4 Gyms
 

@@ -64,8 +64,9 @@ final class LibraryModel {
         refresh()
     }
 
-    /// Creates a free-weight or gym-bound exercise in **Ungrouped** — no group is asked
-    /// for at create time, and no increment (SPEC §7.3) — and returns to the grid.
+    /// Creates a free-weight or gym-bound exercise **on the group the sheet picked**
+    /// (SPEC §7.3, ADR-0003) — `nil` is **Ungrouped**, the picker's default and a free
+    /// answer — and returns to the grid. No increment is asked for.
     ///
     /// `gym` and `manufacturer` are the **gym-bound branch's** answers — the sheet calls
     /// the second one *make*, which is what is written on the stack — and both are
@@ -80,13 +81,14 @@ final class LibraryModel {
     func create(
         name: String,
         kind: ExerciseKind,
+        group: ExerciseGroup? = nil,
         gym: Gym? = nil,
         manufacturer: String? = nil
     ) -> Exercise? {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return nil }
 
-        let exercise = Exercise(name: name, kind: kind)
+        let exercise = Exercise(name: name, kind: kind, group: group)
         context.insert(exercise)
 
         if kind == .gymBound, let gym {
@@ -112,8 +114,9 @@ final class LibraryModel {
     /// Files `exercise` under `group`, or under **Ungrouped** when that is `nil`.
     ///
     /// The one mutation behind both of SPEC §7.2's assignment paths — a tile dragged into a
-    /// section, and the ••• group picker Arrange mode puts on every tile. Nothing is
-    /// asked at create time, so this is the only way an exercise ever lands in a group.
+    /// section, and the ••• group picker Arrange mode puts on every tile. **Re-filing, not
+    /// first filing**: an exercise reaches its group at create time (§7.3, ADR-0003), and
+    /// these two paths are the periodic re-shelving pass that corrects it afterwards.
     func assign(_ exercise: Exercise, to group: ExerciseGroup?) {
         exercise.group = group
         // As elsewhere: v1 has no error state past §3's container failure.

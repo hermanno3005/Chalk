@@ -84,10 +84,21 @@ struct LibraryView: View {
                     LogSheet(model: model.logSheet(for: request.exercise))
                 }
                 .sheet(item: $creating) { request in
-                    CreateExerciseSheet(seedName: request.name, gyms: model.gyms) { name, kind, gym, manufacturer in
-                        // Creating leaves you on the grid with the new tile on it — the
-                        // detail screen is a tap away and has nothing on it yet.
-                        model.create(name: name, kind: kind, gym: gym, manufacturer: manufacturer)
+                    CreateExerciseSheet(
+                        seedName: request.name,
+                        gyms: model.gyms,
+                        groups: model.groups
+                    ) { name, kind, group, gym, manufacturer in
+                        // Creating leaves you on the grid with the new tile on it — under
+                        // the group that was picked (§7.3) — and the detail screen is a
+                        // tap away with nothing on it yet.
+                        model.create(
+                            name: name,
+                            kind: kind,
+                            group: group,
+                            gym: gym,
+                            manufacturer: manufacturer
+                        )
                     }
                 }
                 .sheet(isPresented: $editingGroups) {
