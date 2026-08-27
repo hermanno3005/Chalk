@@ -20,6 +20,10 @@ struct ExerciseDetailView: View {
     @State private var renaming = false
     @State private var draftName = ""
     @State private var confirmingDelete = false
+    /// `Change kind` in flight: the confirmation for the flip that needs no machine,
+    /// and the prompt for the one that does (SPEC §8).
+    @State private var confirmingKindChange = false
+    @State private var changingKind = false
     @State private var logging = false
     @State private var history: HistorySheetModel?
     @State private var flashingConfirmation = false
@@ -63,8 +67,17 @@ struct ExerciseDetailView: View {
                         draftName = model.name
                         renaming = true
                     }
-                    // *Change kind* is §8, and there is deliberately no *edit records*
-                    // item: the curve is how you find a bad entry.
+                    // The free-weight ↔ gym-bound flip (SPEC §8). One verb either
+                    // way: which direction it runs is the kind the exercise is now,
+                    // never something to choose. There is deliberately no *edit
+                    // records* item — the curve is how you find a bad entry.
+                    Button("Change kind", systemImage: "arrow.left.arrow.right") {
+                        if model.kindChange.needsAMachine {
+                            changingKind = true
+                        } else {
+                            confirmingKindChange = true
+                        }
+                    }
                     Button("Delete exercise", systemImage: "trash", role: .destructive) {
                         confirmingDelete = true
                     }
@@ -83,6 +96,37 @@ struct ExerciseDetailView: View {
             TextField("Name", text: $draftName)
             Button("Cancel", role: .cancel) {}
             Button("Save") { model.rename(to: draftName) }
+        }
+        // The flip that asks for a machine — free-weight → gym-bound with entries to
+        // place. Answering it is the whole decision; there is no second confirmation.
+        .sheet(isPresented: $changingKind) {
+            ChangeKindSheet(change: model.kindChange, gyms: model.gyms) { gym, name in
+                model.makeGymBound(at: gym, named: name)
+            }
+        }
+        // The flip that asks nothing else: pooling, which names the consequence out
+        // loud, and the flip of an exercise with nothing logged, which has no entry to
+        // place and so nothing to ask about.
+        .confirmationDialog(
+            model.kindChange.question,
+            isPresented: $confirmingKindChange,
+            titleVisibility: .visible
+        ) {
+            // Destructive one way only: pooling hard-deletes the machine rows, and
+            // going the other way creates one and takes nothing.
+            Button(
+                model.kindChange.confirmButton,
+                role: model.isGymBound ? .destructive : nil
+            ) {
+                if model.isGymBound {
+                    model.makeFreeWeight()
+                } else {
+                    model.makeGymBound()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(model.kindChange.detail)
         }
         .confirmationDialog(
             model.deleteConfirmation,

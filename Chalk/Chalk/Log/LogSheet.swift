@@ -25,7 +25,6 @@ struct LogSheet: View {
     /// **Always asked** — you cannot know at creation time whether a second machine is
     /// coming (SPEC §6.4).
     @State private var naming: Gym?
-    @State private var draftMachineName = ""
     @State private var creatingGym = false
 
     var body: some View {
@@ -68,12 +67,8 @@ struct LogSheet: View {
             // One field, optional, with Skip — the machine is created at the gym its
             // row sat in and **the sheet resolves to it**, so there is no second
             // decision (SPEC §6.4).
-            .alert("Name this machine", isPresented: namingIsPresented, presenting: naming) { gym in
-                TextField("Optional", text: $draftMachineName)
-                Button("Add") { model.createMachine(at: gym, named: draftMachineName) }
-                Button("Skip") { model.createMachine(at: gym, named: nil) }
-            } message: { _ in
-                Text("Optional — you can leave it unnamed.")
+            .namingMachine(at: $naming) { gym, name in
+                model.createMachine(at: gym, named: name)
             }
             // `New gym…`: standing in an unfamiliar gym is exactly when you need one.
             // The gym alone, though — the machine you are at is `New machine here`'s
@@ -82,10 +77,6 @@ struct LogSheet: View {
                 NewGymSheet(gyms: model.gyms, onCreate: model.gymCreated)
             }
         }
-    }
-
-    private var namingIsPresented: Binding<Bool> {
-        Binding(get: { naming != nil }, set: { if !$0 { naming = nil } })
     }
 
     /// **The machine, on both stages** (SPEC §6.4). It reads as a caption, not a
@@ -103,10 +94,7 @@ struct LogSheet: View {
                     menu: model.machineMenu,
                     selected: model.machine,
                     onSelect: model.select,
-                    onNewMachine: { gym in
-                        draftMachineName = ""
-                        naming = gym
-                    },
+                    onNewMachine: { naming = $0 },
                     onNewGym: { creatingGym = true }
                 )
             } label: {

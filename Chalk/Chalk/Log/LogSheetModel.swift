@@ -316,9 +316,8 @@ final class LogSheetModel: Identifiable {
     /// machine is coming.
     func createMachine(at gym: Gym, named name: String?) {
         guard exercise.isGymBound else { return }
-        let label = name?.trimmingCharacters(in: .whitespacesAndNewlines)
         let machine = Machine(
-            label: (label?.isEmpty == false) ? label : nil,
+            label: Machine.label(from: name),
             exercise: exercise,
             gym: gym
         )
