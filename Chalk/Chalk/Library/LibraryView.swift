@@ -2,9 +2,10 @@ import SwiftData
 import SwiftUI
 
 /// The exercise library — the app's home screen and the root of the `NavigationStack`
-/// (SPEC §7.1). A sectioned tile grid with search pinned in thumb reach, and the two
-/// ways an exercise is filed into a group (SPEC §7.2): **dragging a tile into a section**,
-/// and **Arrange mode**, which puts a picker on every tile.
+/// (SPEC §7.1). A sectioned tile grid with search pinned in thumb reach. An exercise is
+/// filed into a group when it is created (SPEC §7.3), and **re-filed** here two ways
+/// (§7.2): **dragging a tile into a section**, and **Arrange mode**, which puts a picker
+/// on every tile.
 struct LibraryView: View {
     let model: LibraryModel
 
@@ -84,10 +85,21 @@ struct LibraryView: View {
                     LogSheet(model: model.logSheet(for: request.exercise))
                 }
                 .sheet(item: $creating) { request in
-                    CreateExerciseSheet(seedName: request.name, gyms: model.gyms) { name, kind, gym, manufacturer in
-                        // Creating leaves you on the grid with the new tile on it — the
-                        // detail screen is a tap away and has nothing on it yet.
-                        model.create(name: name, kind: kind, gym: gym, manufacturer: manufacturer)
+                    CreateExerciseSheet(
+                        seedName: request.name,
+                        gyms: model.gyms,
+                        groups: model.groups
+                    ) { name, kind, group, gym, manufacturer in
+                        // Creating leaves you on the grid with the new tile on it — under
+                        // the group that was picked (§7.3) — and the detail screen is a
+                        // tap away with nothing on it yet.
+                        model.create(
+                            name: name,
+                            kind: kind,
+                            group: group,
+                            gym: gym,
+                            manufacturer: manufacturer
+                        )
                     }
                 }
                 .sheet(isPresented: $editingGroups) {

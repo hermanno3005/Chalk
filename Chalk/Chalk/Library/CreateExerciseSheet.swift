@@ -1,11 +1,19 @@
 import SwiftData
 import SwiftUI
 
-/// Creating an exercise: **a name field and a two-way segmented control** (SPEC §7.3),
-/// with the gym and make fields revealed by *Gym machine* and by nothing else.
+/// Creating an exercise: **a name field, a `Group` row beside it, and a two-way segmented
+/// control** (SPEC §7.3), with the gym and make fields revealed by *Gym machine* and by
+/// nothing else.
 ///
-/// No group is asked for — new exercises land in Ungrouped and are filed later (§7.2) —
-/// and no increment. Nothing else.
+/// **The group is asked for here** (ADR-0003), because this is the moment you already know
+/// where the exercise goes — filing it costs one step rather than a later trip through
+/// Arrange mode. **Ungrouped** is the default and a free answer: meeting a machine before
+/// you know its shelf is ordinary. No increment is asked for. Nothing else.
+///
+/// The group row sits in the **first section, with the name**, which is what keeps the
+/// reveal **append-only** — picking *Gym machine* appends the machine section and moves
+/// nothing above it — and splits the sheet along its real seam: name and group are library
+/// concerns, kind and machine are derivation concerns.
 ///
 /// **Progressive disclosure, not a disabled row**: the gym and make fields do not exist
 /// until you pick *Gym machine*, because they are meaningless for an exercise whose load
@@ -18,11 +26,21 @@ struct CreateExerciseSheet: View {
     /// The gyms, for the gym-bound branch — and the third of the three doors `New gym…`
     /// opens behind (§7.4).
     let gyms: GymsModel
-    let onCreate: (String, ExerciseKind, Gym?, String?) -> Void
+    /// The groups the `Group` row offers, in the order you arranged them (§7.2). Every
+    /// group, including the empty ones the grid leaves out — a shelf with nothing on it
+    /// is still somewhere to put this.
+    let groups: GroupsModel
+    let onCreate: (String, ExerciseKind, ExerciseGroup?, Gym?, String?) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var kind: ExerciseKind = .freeWeight
+    /// The group the exercise is filed on, **held as its id** for the same reason `gymID`
+    /// is: identity is `ExerciseGroup.id`, and a picker tag has to survive a rebuild.
+    /// `nil` is **Ungrouped** — the default, and a real destination rather than a missing
+    /// value. Held outside the kind branch, so flipping *Free weight* / *Gym machine*
+    /// cannot discard an answer that has nothing to do with the kind.
+    @State private var groupID: UUID?
     /// The gym the first machine is made at, **held as its id**: identity is `Gym.id`
     /// (SPEC §7.4), and a picker tag has to stay the same value across the rebuild that
     /// creating a gym causes. Seeded with the current gym — creating an exercise is
@@ -37,10 +55,12 @@ struct CreateExerciseSheet: View {
     init(
         seedName: String = "",
         gyms: GymsModel,
-        onCreate: @escaping (String, ExerciseKind, Gym?, String?) -> Void
+        groups: GroupsModel,
+        onCreate: @escaping (String, ExerciseKind, ExerciseGroup?, Gym?, String?) -> Void
     ) {
         self.seedName = seedName
         self.gyms = gyms
+        self.groups = groups
         self.onCreate = onCreate
         _name = State(initialValue: seedName)
         _gymID = State(initialValue: gyms.currentGym?.id)
@@ -54,6 +74,17 @@ struct CreateExerciseSheet: View {
                         .focused($nameFocused)
                         .font(.title3)
                         .textInputAutocapitalization(.words)
+                    Picker("Group", selection: $groupID) {
+                        ForEach(groups.groups, id: \.id) { group in
+                            Text(group.name).tag(UUID?.some(group.id))
+                        }
+                        // Last, and the word the library screen's own last section uses:
+                        // the picker reads as a small map of where the tile is about to
+                        // land. Deliberately not `None`, which is what the `Gym` row
+                        // below says and means — a machine with no gym does not exist
+                        // yet, where Ungrouped is a real, named, visible place.
+                        Text(LibraryLayout.ungroupedTitle).tag(UUID?.none)
+                    }
                 }
 
                 Section {
@@ -83,7 +114,7 @@ struct CreateExerciseSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {
-                        onCreate(trimmedName, kind, kind == .gymBound ? gym : nil, manufacturer)
+                        onCreate(trimmedName, kind, group, kind == .gymBound ? gym : nil, manufacturer)
                         dismiss()
                     }
                     .disabled(trimmedName.isEmpty)
@@ -130,6 +161,14 @@ struct CreateExerciseSheet: View {
         gyms.gyms.first { $0.id == gymID }
     }
 
+    /// The picked group, resolved for the same reason the gym above it is: a group
+    /// deleted while the sheet was open resolves to **Ungrouped** rather than to a stale
+    /// row, which is the honest answer — it is no longer a shelf of yours. Through
+    /// `GroupsModel`, which owns the one place an id becomes a group.
+    private var group: ExerciseGroup? {
+        groups.group(id: groupID)
+    }
+
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -157,7 +196,7 @@ private enum CreateExercisePreview {
         let gyms = GymsModel(context: context, defaults: defaults)
         return AnyView(
             Color.clear.sheet(isPresented: .constant(true)) {
-                CreateExerciseSheet(gyms: gyms) { _, _, _, _ in }
+                CreateExerciseSheet(gyms: gyms, groups: GroupsModel(context: context)) { _, _, _, _, _ in }
             }
         )
     }

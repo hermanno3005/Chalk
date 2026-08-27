@@ -62,15 +62,26 @@ _Avoid_: Machine exercise, fixed-weight
 **Group**:
 A user-owned, ordered bucket that an exercise may sit in, and a shelf rather than a
 taxonomy — "Compound" next to "Legs" is incoherent as a classification and entirely
-fine here. An exercise sits in at most one; those in none are Ungrouped. Its job is
-structure, not navigation, which is why it never has to beat search.
+fine here. An exercise sits in at most one, chosen when it is created and changed
+whenever you like. Its job is structure, not navigation, which is why it never has to
+beat search.
 _Avoid_: Category, muscle group, tag
 _Note_: the Swift type is `ExerciseGroup`, to leave SwiftUI's `Group` view alone.
+
+**Ungrouped**:
+The state of an exercise that sits in no group — a named place, not a missing value. It
+is the last section on the library screen and the default answer in the create sheet's
+group picker, because meeting a machine before you know which shelf it belongs on is
+ordinary rather than an omission to be nagged about.
+_Avoid_: None, unfiled, uncategorised
 
 **Arrange mode**:
 The state the library screen is in while you are filing exercises rather than using them:
 every tile carries a group picker and a tap no longer opens anything. Entered from the
-overflow and left by a visible Done that replaces it. It exists because dragging a tile
+overflow and left by a visible Done that replaces it. It is the periodic re-shelving pass
+— where you look over the whole library at once, months apart — rather than how an
+exercise first reaches a group, which happens when it is created. It exists because
+dragging a tile
 the length of a long scroll is the path that cannot be relied on, and this one always
 works.
 _Avoid_: Edit mode, organise mode, jiggle mode

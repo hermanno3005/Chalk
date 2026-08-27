@@ -78,6 +78,93 @@ struct LibraryModelTests {
         #expect(model.create(name: "  Front Squat ", kind: .freeWeight)?.name == "Front Squat")
     }
 
+    // MARK: - Creating into a group
+
+    @Test("An exercise created into a group lands in its section and survives relaunch")
+    func aCreatedExerciseLandsInThePickedGroup() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+
+        let created = try #require(model.create(name: "Squat", kind: .freeWeight, group: compound))
+
+        #expect(created.group === compound)
+        #expect(model.content.drawn == "grid Compound[Squat]")
+        let relaunched = try fixture.afterRelaunch().fetch(FetchDescriptor<Exercise>())
+        #expect(relaunched.first?.group?.name == "Compound")
+    }
+
+    @Test("An exercise created with no group is Ungrouped — the picker's default answer")
+    func aCreatedExerciseWithNoGroupIsUngrouped() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+
+        let created = try #require(model.create(name: "Squat", kind: .freeWeight, group: nil))
+
+        #expect(created.group == nil)
+        #expect(model.content.drawn == "grid Ungrouped[Squat]")
+    }
+
+    @Test("A gym-bound exercise created into a group gets both the group and its machine")
+    func aGymBoundExerciseCreatedIntoAGroupGetsBoth() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let legs = try #require(model.groups.groups.first { $0.name == "Legs" })
+        let gym = try #require(model.gyms.create(named: "Fitness X"))
+
+        let created = try #require(model.create(
+            name: "Leg Press",
+            kind: .gymBound,
+            group: legs,
+            gym: gym,
+            manufacturer: "Hammer Strength"
+        ))
+
+        // Where it is shelved and where it is lifted are separate answers, and picking
+        // a group changes nothing about how the machine is made (ADR-0003).
+        #expect(created.group === legs)
+        #expect(created.machines?.count == 1)
+        #expect(created.machines?.first?.gym === gym)
+        #expect(created.machines?.first?.manufacturer == "Hammer Strength")
+        #expect(model.content.drawn == "grid Legs[Leg Press]")
+    }
+
+    @Test("A blank name creates nothing even with a group picked")
+    func aBlankNameWithAGroupCreatesNothing() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+
+        #expect(model.create(name: "   ", kind: .freeWeight, group: compound) == nil)
+        #expect(model.content.drawn == "empty")
+    }
+
+    @Test("Create it into a group files the exercise and returns to the grid")
+    func createItIntoAGroupFilesAndReturnsToTheGrid() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+        model.search("Hip Thrust")
+
+        let created = try #require(model.create(name: "Hip Thrust", kind: .freeWeight, group: compound))
+
+        #expect(created.group === compound)
+        #expect(model.query.isEmpty)
+        #expect(model.content.drawn == "grid Compound[Hip Thrust]")
+    }
+
+    @Test("An exercise created into a group falls back to Ungrouped when the group goes")
+    func aCreatedExercisesGroupDeletedFallsBackToUngrouped() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+        model.create(name: "Squat", kind: .freeWeight, group: compound)
+
+        model.groups.delete(compound)
+
+        #expect(model.content.drawn == "grid Ungrouped[Squat]")
+    }
+
     // MARK: - Search
 
     @Test("Searching filters the library to its matches")
