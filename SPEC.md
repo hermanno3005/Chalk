@@ -45,9 +45,8 @@ From [#5](https://github.com/hermanno3005/Chalk/issues/5) (measured, not assumed
 | Capabilities | **none** — no iCloud, no Push, no App Groups |
 | UI | SwiftUI + Swift Charts + SwiftData |
 
-The skeleton exists on branch `skeleton/xcode-project`: `Chalk/Chalk.xcodeproj` plus
-`Chalk/Chalk/{ChalkApp.swift, ContentView.swift, Placeholder.swift, Assets.xcassets}`.
-`Placeholder.swift` is throwaway and is deleted by §3.
+The skeleton is on `main`, landed by [#19](https://github.com/hermanno3005/Chalk/issues/19):
+`Chalk/Chalk.xcodeproj` plus the sources under `Chalk/Chalk/`.
 
 The `.xcodeproj` is hand-written in the synchronized-folder format (`objectVersion = 77`), so
 **new source files dropped into `Chalk/Chalk/` are picked up without editing the project file**.
@@ -798,7 +797,6 @@ to fail.
 Each step leaves the app runnable on the phone.
 
 1. **Schema and container** (§3) — five entities, `ChalkSchemaV1`, local-only configuration.
-   Delete `Placeholder.swift`.
 2. **`RepMaxCurve`** (§4) with unit tests: backfill, the `reps > 12` flooring rule, the ghost.
    No `ModelContainer` in these tests.
 3. **Library screen** (§7.1–7.3) — tiles, sections, search, create sheet, empty state. Groups
