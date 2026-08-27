@@ -65,10 +65,84 @@ final class GymsModel {
 
         let gym = Gym(name: name)
         context.insert(gym)
-        // As elsewhere: v1 has no error state past §3's container failure.
-        try? context.save()
-        refresh()
+        save()
         return gym
+    }
+
+    /// Renames a gym. **Cosmetic, and that is the whole point**: identity is `Gym.id`
+    /// and the current-gym setting holds that UUID rather than the name, so a rename
+    /// leaves every machine, every entry and where you are standing untouched.
+    ///
+    /// A blank name leaves it alone — an unnamed gym is not a rename anyone meant.
+    func rename(_ gym: Gym, to name: String) {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+
+        gym.name = name
+        save()
+    }
+
+    /// Archives a gym — **the removal primitive** (SPEC §7.4). It **hides, never
+    /// destroys**: the gym keeps its machines and every entry they hold, and its
+    /// rep-maxes stay derivable forever, because the derivation never sees `isArchived`.
+    ///
+    /// **Archiving the gym you are standing in clears the current-gym setting** rather
+    /// than leaving it pointed at something hidden. There is no `restore` verb to pair
+    /// with this one: logging at the gym un-archives it, and the moment you need one back
+    /// is the moment you are standing in it.
+    func archive(_ gym: Gym) {
+        gym.isArchived = true
+        // The stored UUID is cleared, not merely resolved past: `refresh()` would read
+        // an archived gym as *no gym selected* anyway, but leaving the key behind would
+        // let un-archiving it elsewhere silently put you back in it.
+        if defaults.string(forKey: Self.currentGymKey) == gym.id.uuidString {
+            defaults.removeObject(forKey: Self.currentGymKey)
+        }
+        save()
+    }
+
+    /// Whether the hard delete is offered at all: **only for a gym with no machines** —
+    /// the typo you just made, where there is nothing to lose. "Delete" and "lose
+    /// history" never share a tap, so everything else archives instead.
+    func canDelete(_ gym: Gym) -> Bool {
+        (gym.machines ?? []).isEmpty
+    }
+
+    /// Hard-deletes an empty gym, and **refuses any other** — the guard is here rather
+    /// than only in the row that draws the swipe, because this is the one call in the
+    /// gym admin surface that takes something out of the store for good.
+    func delete(_ gym: Gym) {
+        guard canDelete(gym) else { return }
+
+        if defaults.string(forKey: Self.currentGymKey) == gym.id.uuidString {
+            defaults.removeObject(forKey: Self.currentGymKey)
+        }
+        context.delete(gym)
+        save()
+    }
+
+    /// `Move to another gym…` — repoints a machine at another gym (SPEC §7.5).
+    ///
+    /// **Its entries follow it**, because they hang off the machine and never off the
+    /// gym: nothing is re-pointed here but the one relationship, and the curves are
+    /// simply correct on the next read (ADR-0002). This fixes the commoner mistake — a
+    /// machine filed under the wrong gym — and is half the duplicate-gym repair: move the
+    /// machines across, then archive the husk. **There is no gym merge.**
+    /// The gyms `Move to another gym…` offers for a machine held at `gym`: **every other
+    /// gym you own**, the ones you still use first and archived ones after them.
+    ///
+    /// Archived gyms are targets too, deliberately. Moving a machine *out* of a husk is
+    /// half the duplicate-gym repair, and the mistake it repairs runs both ways — archive
+    /// the wrong one of a pair and the machines you want back together are on the hidden
+    /// side of it. There is no `restore` verb to reach for instead (SPEC §7.4).
+    func moveTargets(excluding gym: Gym) -> [Gym] {
+        let list = ManageGymsList(gyms: allGyms)
+        return (list.inUse + list.archived).filter { $0.id != gym.id }
+    }
+
+    func move(_ machine: Machine, to gym: Gym) {
+        machine.gym = gym
+        save()
     }
 
     /// The existing gym a typed name looks like, archived ones included (SPEC §7.4).
@@ -91,5 +165,13 @@ final class GymsModel {
         currentGym = (stored?.isArchived == true) ? nil : stored
 
         gyms = GymOrder.byRecency(allGyms.filter { !$0.isArchived }, current: currentGym)
+    }
+
+    /// As everywhere else: v1 has no error state past §3's container failure and no
+    /// network, so there is nothing here to report and nothing to retry — the change
+    /// stays in the context either way and the next save takes it with it.
+    private func save() {
+        try? context.save()
+        refresh()
     }
 }

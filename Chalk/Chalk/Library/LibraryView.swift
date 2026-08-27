@@ -25,6 +25,9 @@ struct LibraryView: View {
     /// (SPEC §7.2). A mode, so it has a visible way out — see the toolbar.
     @State private var arranging = false
     @State private var editingGroups = false
+    /// `Manage gyms…`, the one gym admin surface (SPEC §7.4) — a sheet from the same
+    /// menu *Edit groups…* opens from, and the only door to it.
+    @State private var managingGyms = false
     /// The section a drag is currently over, for its highlight.
     ///
     /// **View state, deliberately not the model's** — SPEC §7.2's third hazard. This
@@ -93,6 +96,12 @@ struct LibraryView: View {
                     // by the time the sheet is dismissed.
                     EditGroupsSheet(groups: model.groups)
                 }
+                .sheet(isPresented: $managingGyms) {
+                    // Every verb on it writes through `GymsModel`, which the create
+                    // sheet, the log sheet and the detail screen all read, so the app
+                    // behind the sheet is already in step when it closes.
+                    ManageGymsSheet(gyms: model.gyms)
+                }
                 .sheet(isPresented: $creatingGym) {
                     // Created here and selected here: you opened this door standing in
                     // the gym, so that is where you now are.
@@ -114,7 +123,7 @@ struct LibraryView: View {
             }
             // The current-gym picker. *Manage gyms…* joins it at the foot of this menu,
             // a direct sibling of *Edit groups* (§7.4, #31).
-            GymMenu(gyms: model.gyms) { creatingGym = true }
+            GymMenu(gyms: model.gyms, onNewGym: { creatingGym = true }, onManageGyms: { managingGyms = true })
         } label: {
             Label("More", systemImage: "ellipsis.circle")
         }
