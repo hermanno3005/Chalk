@@ -67,6 +67,14 @@ structure, not navigation, which is why it never has to beat search.
 _Avoid_: Category, muscle group, tag
 _Note_: the Swift type is `ExerciseGroup`, to leave SwiftUI's `Group` view alone.
 
+**Arrange mode**:
+The state the library screen is in while you are filing exercises rather than using them:
+every tile carries a group picker and a tap no longer opens anything. Entered from the
+overflow and left by a visible Done that replaces it. It exists because dragging a tile
+the length of a long scroll is the path that cannot be relied on, and this one always
+works.
+_Avoid_: Edit mode, organise mode, jiggle mode
+
 **Last entry**:
 What you last did for an exercise, written `8 × 52.5 kg · today` — the most recent entry
 that is a lift, read for display and never stored. The tile subtitles and the resume card

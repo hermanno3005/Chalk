@@ -246,6 +246,108 @@ struct LibraryModelTests {
 
         #expect(model.content.drawn == "grid Legs[Squat]")
     }
+
+    // MARK: - Assignment
+
+    @Test("A tile assigned to a group moves section and survives relaunch")
+    func anAssignedTileMovesSection() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let squat = try #require(model.create(name: "Squat", kind: .freeWeight))
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+
+        model.assign(squat, to: compound)
+
+        #expect(model.content.drawn == "grid Compound[Squat]")
+        let relaunched = try fixture.afterRelaunch().fetch(FetchDescriptor<Exercise>())
+        #expect(relaunched.first?.group?.name == "Compound")
+    }
+
+    @Test("Assigning to no group returns a tile to Ungrouped")
+    func assigningToNoGroupReturnsToUngrouped() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let squat = try #require(model.create(name: "Squat", kind: .freeWeight))
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+        model.assign(squat, to: compound)
+
+        model.assign(squat, to: nil)
+
+        #expect(model.content.drawn == "grid Ungrouped[Squat]")
+    }
+
+    @Test("A drop files the tile whose id it carried")
+    func aDropFilesTheTileItCarried() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let squat = try #require(model.create(name: "Squat", kind: .freeWeight))
+        model.create(name: "Curl", kind: .freeWeight)
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+
+        #expect(model.assign(exerciseWithID: squat.id, to: compound))
+
+        #expect(model.content.drawn == "grid Compound[Squat] Ungrouped[Curl]")
+    }
+
+    @Test("A drop carrying an id the library does not hold files nothing")
+    func aDropOfAnUnknownIDFilesNothing() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        model.create(name: "Squat", kind: .freeWeight)
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+
+        // A drag can carry text from anywhere; a drop that resolves to nothing is
+        // refused rather than guessed at.
+        #expect(model.assign(exerciseWithID: UUID(), to: compound) == false)
+        #expect(model.content.drawn == "grid Ungrouped[Squat]")
+    }
+
+    // MARK: - Editing groups behind the grid
+
+    @Test("Reordering groups reorders the grid's sections")
+    func reorderingGroupsReordersTheGrid() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let squat = try #require(model.create(name: "Squat", kind: .freeWeight))
+        let curl = try #require(model.create(name: "Leg Curl", kind: .freeWeight))
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+        let legs = try #require(model.groups.groups.first { $0.name == "Legs" })
+        model.assign(squat, to: compound)
+        model.assign(curl, to: legs)
+        #expect(model.content.drawn == "grid Compound[Squat] Legs[Leg Curl]")
+
+        // Legs is second of the five seeded groups; moving it to the front is the
+        // section order on the library screen changing (SPEC §7.2).
+        model.groups.move(fromOffsets: IndexSet(integer: 1), toOffset: 0)
+
+        #expect(model.content.drawn == "grid Legs[Leg Curl] Compound[Squat]")
+    }
+
+    @Test("Deleting a group drops its tiles into Ungrouped on the grid")
+    func deletingAGroupDropsItsTilesIntoUngrouped() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let squat = try #require(model.create(name: "Squat", kind: .freeWeight))
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+        model.assign(squat, to: compound)
+
+        model.groups.delete(compound)
+
+        #expect(model.content.drawn == "grid Ungrouped[Squat]")
+    }
+
+    @Test("A group renamed behind the grid retitles its section")
+    func aRenamedGroupRetitlesItsSection() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let squat = try #require(model.create(name: "Squat", kind: .freeWeight))
+        let compound = try #require(model.groups.groups.first { $0.name == "Compound" })
+        model.assign(squat, to: compound)
+
+        model.groups.rename(compound, to: "Big lifts")
+
+        #expect(model.content.drawn == "grid Big lifts[Squat]")
+    }
 }
 
 // MARK: - Reading a Content

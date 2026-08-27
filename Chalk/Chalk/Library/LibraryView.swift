@@ -2,9 +2,9 @@ import SwiftData
 import SwiftUI
 
 /// The exercise library — the app's home screen and the root of the `NavigationStack`
-/// (SPEC §7.1). A sectioned tile grid with search pinned in thumb reach.
-///
-/// Arrange mode and Edit groups land with #30.
+/// (SPEC §7.1). A sectioned tile grid with search pinned in thumb reach, and the two
+/// ways an exercise is filed into a group (SPEC §7.2): **dragging a tile into a section**,
+/// and **Arrange mode**, which puts a picker on every tile.
 struct LibraryView: View {
     let model: LibraryModel
 
@@ -21,6 +21,17 @@ struct LibraryView: View {
     /// The `New gym…` sheet, opened from the overflow's Gym menu — one of the three
     /// doors gyms are created behind (SPEC §7.4).
     @State private var creatingGym = false
+    /// Arrange mode: every tile grows a group picker and a tap no longer navigates
+    /// (SPEC §7.2). A mode, so it has a visible way out — see the toolbar.
+    @State private var arranging = false
+    @State private var editingGroups = false
+    /// The section a drag is currently over, for its highlight.
+    ///
+    /// **View state, deliberately not the model's** — SPEC §7.2's third hazard. This
+    /// changes on every frame of a drag, and the ordering it would otherwise invalidate
+    /// is cached in `LibraryModel` and refreshed on mutation, so a drag re-renders the
+    /// grid without re-sorting a thing.
+    @State private var dropTarget: LibraryDropTarget?
 
     var body: some View {
         NavigationStack(path: $opened) {
@@ -35,15 +46,20 @@ struct LibraryView: View {
                         Button("New exercise", systemImage: "plus") {
                             creating = CreateRequest(name: "")
                         }
+                        .disabled(arranging)
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            // The current-gym picker. *Manage gyms…* joins it at the
-                            // foot of this menu, a direct sibling of *Edit groups*
-                            // (§7.4, #31).
-                            GymMenu(gyms: model.gyms) { creatingGym = true }
-                        } label: {
-                            Label("More", systemImage: "ellipsis.circle")
+                        // **Done replaces the overflow** rather than joining it: Arrange
+                        // is a mode, so it gets a visible exit instead of making you go
+                        // back through the menu you entered by — and the menu is not what
+                        // you want mid-arrange anyway (SPEC §7.2).
+                        if arranging {
+                            Button("Done") {
+                                withAnimation(.snappy) { arranging = false }
+                            }
+                            .fontWeight(.semibold)
+                        } else {
+                            overflow
                         }
                     }
                 }
@@ -65,11 +81,36 @@ struct LibraryView: View {
                         model.create(name: name, kind: kind, gym: gym, manufacturer: manufacturer)
                     }
                 }
+                .sheet(isPresented: $editingGroups) {
+                    // The grid behind it moves as you edit: `GroupsModel` is wired to
+                    // the library's refresh, so a rename or a reorder has already landed
+                    // by the time the sheet is dismissed.
+                    EditGroupsSheet(groups: model.groups)
+                }
                 .sheet(isPresented: $creatingGym) {
                     // Created here and selected here: you opened this door standing in
                     // the gym, so that is where you now are.
                     NewGymSheet(gyms: model.gyms) { model.gyms.select($0) }
                 }
+        }
+    }
+
+    /// The overflow. *Arrange* and *Edit groups…* are the two halves of §7.2 — one files
+    /// exercises into groups, the other edits the groups themselves — and the Gym menu
+    /// carries §7.4's symmetric pair.
+    private var overflow: some View {
+        Menu {
+            Section {
+                Button("Arrange", systemImage: "square.grid.2x2") {
+                    withAnimation(.snappy) { arranging = true }
+                }
+                Button("Edit groups…", systemImage: "folder") { editingGroups = true }
+            }
+            // The current-gym picker. *Manage gyms…* joins it at the foot of this menu,
+            // a direct sibling of *Edit groups* (§7.4, #31).
+            GymMenu(gyms: model.gyms) { creatingGym = true }
+        } label: {
+            Label("More", systemImage: "ellipsis.circle")
         }
     }
 
@@ -100,19 +141,59 @@ struct LibraryView: View {
                     )
                 }
                 ForEach(sections) { section in
-                    VStack(alignment: .leading, spacing: 8) {
-                        header(section)
-                        LazyVGrid(columns: Self.tileColumns, spacing: 10) {
-                            ForEach(section.tiles) { tile in
-                                ExerciseTile(tile: tile) { opened.append(tile.exercise) }
-                            }
-                        }
-                    }
+                    self.section(section)
                 }
             }
             .padding(.horizontal)
             .padding(.top, 4)
             .padding(.bottom, 24)
+        }
+    }
+
+    /// One section of the grid, and **one drop target** (SPEC §7.2). The whole section
+    /// takes the drop, header and tiles alike, because the header alone is a 20-point
+    /// strip to land a finger on.
+    ///
+    /// A group holding nothing has no section, so it is not a drop target either — which
+    /// is exactly why the drag is never the path that has to work. The picker offers
+    /// every group, empty ones included.
+    private func section(_ section: LibrarySection) -> some View {
+        let isTarget = dropTarget == section.dropTarget
+        return VStack(alignment: .leading, spacing: 8) {
+            header(section)
+            LazyVGrid(columns: Self.tileColumns, spacing: 10) {
+                ForEach(section.tiles) { tile in
+                    ExerciseTile(
+                        tile: tile,
+                        arranging: arranging,
+                        groups: model.groups.groups,
+                        onOpen: { opened.append(tile.exercise) },
+                        onAssign: { model.assign(tile.exercise, to: $0) }
+                    )
+                }
+            }
+        }
+        .padding(isTarget ? 8 : 0)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.accentColor.opacity(isTarget ? 0.12 : 0))
+        )
+        .dropDestination(for: DraggedExercise.self) { dropped, _ in
+            let group = section.id.flatMap { id in model.groups.groups.first { $0.id == id } }
+            // Every id that resolves is filed; a payload from outside the app resolves to
+            // nothing, and the drop says so rather than swallowing it.
+            return dropped.compactMap(\.id).reduce(false) { filed, id in
+                model.assign(exerciseWithID: id, to: group) || filed
+            }
+        } isTargeted: { over in
+            // Cleared only by the section that owns it: `isTargeted` fires `false` for
+            // the section being left *after* `true` for the one being entered, and
+            // clearing unconditionally would drop the new highlight on the floor.
+            if over {
+                dropTarget = section.dropTarget
+            } else if dropTarget == section.dropTarget {
+                dropTarget = nil
+            }
         }
     }
 

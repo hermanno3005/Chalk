@@ -38,12 +38,23 @@ final class LibraryModel {
     /// sheet's gym-bound branch and the detail screen's opening cascade both read it.
     let gyms: GymsModel
 
+    /// The groups, and Edit groups' four verbs (SPEC §7.2). Held here for the same
+    /// reason the gyms are: the library's overflow is where they are edited, and the
+    /// grid's sections and the tiles' group picker both read them.
+    let groups: GroupsModel
+
     @ObservationIgnored private let context: ModelContext
 
     init(context: ModelContext, defaults: UserDefaults = .standard) {
         self.context = context
         self.gyms = GymsModel(context: context, defaults: defaults)
+        // Seeded before the groups are read, so first launch opens on the suggestion
+        // rather than on an empty sheet.
         SuggestedGroups.seedIfNeeded(in: context, defaults: defaults)
+        self.groups = GroupsModel(context: context)
+        // Wired after `init`, not through it: a stored property cannot capture the
+        // owner that is still initialising it.
+        groups.onChange = { [weak self] in self?.refresh() }
         refresh()
     }
 
@@ -98,6 +109,34 @@ final class LibraryModel {
         return exercise
     }
 
+    /// Files `exercise` under `group`, or under **Ungrouped** when that is `nil`.
+    ///
+    /// The one mutation behind both of SPEC §7.2's assignment paths — a tile dragged into a
+    /// section, and the ••• group picker Arrange mode puts on every tile. Nothing is
+    /// asked at create time, so this is the only way an exercise ever lands in a group.
+    func assign(_ exercise: Exercise, to group: ExerciseGroup?) {
+        exercise.group = group
+        // As elsewhere: v1 has no error state past §3's container failure.
+        try? context.save()
+        refresh()
+    }
+
+    /// The same, for a **drop**, which carries an id rather than a model — a
+    /// `PersistentModel` is not `Transferable` and must not cross a drag.
+    ///
+    /// Returns whether anything was filed. A drag can carry text from anywhere on the
+    /// system, so an id this library does not hold is refused rather than guessed at, and
+    /// the drop reports itself as not accepted.
+    @discardableResult
+    func assign(exerciseWithID id: UUID, to group: ExerciseGroup?) -> Bool {
+        var descriptor = FetchDescriptor<Exercise>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        guard let exercise = try? context.fetch(descriptor).first else { return false }
+
+        assign(exercise, to: group)
+        return true
+    }
+
     /// The detail screen's state for one exercise (SPEC §5), made here so the store's
     /// context stays this model's own and so a rename or a delete over there puts the
     /// grid behind it back in step.
@@ -142,11 +181,13 @@ final class LibraryModel {
     func refresh() {
         // Gym order is derived from entries, so anything logged anywhere can move it.
         gyms.refresh()
+        // The groups are re-read too: a rename, a reorder or a delete behind the grid
+        // is a change to the sections it draws.
+        groups.refresh()
         let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
-        let groups = (try? context.fetch(FetchDescriptor<ExerciseGroup>())) ?? []
         let typed = query.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let layout = LibraryLayout(exercises: exercises, groups: groups)
+        let layout = LibraryLayout(exercises: exercises, groups: groups.groups)
         resume = layout.resume
 
         if typed.isEmpty {

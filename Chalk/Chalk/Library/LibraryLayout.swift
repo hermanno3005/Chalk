@@ -7,9 +7,19 @@ struct LibraryTile: Identifiable {
     let exercise: Exercise
     /// `nil` for an exercise with nothing logged — that tile shows no subtitle at all.
     let lastEntry: LastEntry?
+    /// Where this tile is filed, `nil` for Ungrouped. Read here with everything else so
+    /// Arrange mode's group picker can tick the current group without faulting the
+    /// relationship back in behind `var body`.
+    let groupID: UUID?
 
     var id: UUID { exercise.id }
     var name: String { exercise.name }
+
+    init(exercise: Exercise, lastEntry: LastEntry?) {
+        self.exercise = exercise
+        self.lastEntry = lastEntry
+        self.groupID = exercise.group?.id
+    }
 }
 
 /// One section of the library grid: a group and the exercises filed under it, or the
@@ -22,6 +32,23 @@ struct LibrarySection: Identifiable {
     let tiles: [LibraryTile]
 
     var isUngrouped: Bool { id == nil }
+
+    /// This section as a drop target, so the highlight can be compared without the
+    /// double-optional an `Identifiable` with an optional id would otherwise force on
+    /// the view holding it.
+    var dropTarget: LibraryDropTarget { id.map(LibraryDropTarget.group) ?? .ungrouped }
+}
+
+/// Where a dragged tile can land: a section of the grid (SPEC §7.2).
+///
+/// A type of its own rather than the section's title, because two groups may share a
+/// name — this is a shelf, not a classification — and a highlight that lit both would be
+/// a lie about where the tile is going.
+enum LibraryDropTarget: Hashable {
+    case group(UUID)
+    /// The bucket that ends the screen. Filing *out* of a group is as real a move as
+    /// filing into one, so Ungrouped is a drop target like any other.
+    case ungrouped
 }
 
 /// The last thing you logged, anywhere in the library — what the resume card at the top
@@ -87,17 +114,17 @@ struct LibraryLayout {
         var filed: [UUID: [LibraryTile]] = [:]
         var ungrouped: [LibraryTile] = []
         for tile in tiles {
-            if let groupID = tile.exercise.group?.id {
+            if let groupID = tile.groupID {
                 filed[groupID, default: []].append(tile)
             } else {
                 ungrouped.append(tile)
             }
         }
 
-        // `sortIndex` is the user's arrangement; the name only settles a tie, so that two
-        // groups sharing an index still draw in a stable order rather than a fetch's.
-        var sections = groups
-            .sorted { ($0.sortIndex, $0.name) < ($1.sortIndex, $1.name) }
+        // The user's arrangement, read through the one rule Edit groups rearranges —
+        // `LibraryModel` already hands these over in order, and sorting again here keeps
+        // the type honest for any caller that does not.
+        var sections = GroupOrder.inOrder(groups)
             .compactMap { group -> LibrarySection? in
                 guard let tiles = filed[group.id], !tiles.isEmpty else { return nil }
                 return LibrarySection(id: group.id, title: group.name, tiles: tiles)
