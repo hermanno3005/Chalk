@@ -64,6 +64,22 @@ final class LibraryModel {
         refresh()
     }
 
+    /// Ends the search: clears the query and returns the screen to the grid.
+    ///
+    /// The closing half of the pair `search(_:)` opens — searching is not a mode and
+    /// carries no Done, so its exits are clearing the field and **opening something**,
+    /// and this is the second one (#58). Named rather than spelled `search("")` because
+    /// the act is what the view calls and what a test can assert; an empty query is
+    /// merely how it looks afterwards.
+    ///
+    /// Ending a search that was never started is a no-op, so the view can call it on
+    /// every push rather than only the ones that leave a query behind.
+    func endSearch() {
+        guard !query.isEmpty else { return }
+        query = ""
+        refresh()
+    }
+
     /// Creates a free-weight or gym-bound exercise **on the group the sheet picked**
     /// (SPEC §7.3, ADR-0003) — `nil` is **Ungrouped**, the picker's default and a free
     /// answer — and returns to the grid. No increment is asked for.
@@ -105,7 +121,9 @@ final class LibraryModel {
         try? context.save()
 
         // Creating from a search that found nothing returns you to the grid, with the
-        // thing you just made in it.
+        // thing you just made in it — the third exit from a search. Spelled out rather
+        // than `endSearch()` because the new exercise has to be picked up either way,
+        // and going through it would cost a second `refresh` for the search case alone.
         query = ""
         refresh()
         return exercise

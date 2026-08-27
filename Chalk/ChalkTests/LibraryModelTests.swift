@@ -215,6 +215,44 @@ struct LibraryModelTests {
         #expect(model.content.drawn == "grid Ungrouped[Squat]")
     }
 
+    @Test("Ending a search clears the query and returns to the grid")
+    func endingASearchReturnsToTheGrid() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        model.create(name: "Squat", kind: .freeWeight)
+        model.search("sq")
+
+        model.endSearch()
+
+        #expect(model.query.isEmpty)
+        #expect(model.content.drawn == "grid Ungrouped[Squat]")
+    }
+
+    @Test("Ending a search that matched nothing returns to the grid too")
+    func endingASearchThatMatchedNothingReturnsToTheGrid() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        model.create(name: "Squat", kind: .freeWeight)
+        model.search("zzz")
+
+        model.endSearch()
+
+        #expect(model.query.isEmpty)
+        #expect(model.content.drawn == "grid Ungrouped[Squat]")
+    }
+
+    @Test("Ending a search that was never started leaves the grid as it was")
+    func endingASearchThatNeverStartedLeavesTheGrid() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        model.create(name: "Squat", kind: .freeWeight)
+
+        model.endSearch()
+
+        #expect(model.query.isEmpty)
+        #expect(model.content.drawn == "grid Ungrouped[Squat]")
+    }
+
     @Test("An empty store searched still offers Create it rather than the empty state")
     func anEmptyStoreSearchedOffersCreateIt() throws {
         let fixture = try LibraryFixture()
