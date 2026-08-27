@@ -126,13 +126,24 @@ final class LibraryFixture {
     }
 
     /// A log sheet over this store's context. `onSave` stands in for the detail screen
-    /// behind the sheet, which a write has to put back in step.
+    /// behind the sheet, which a write has to put back in step. `editing` is the entry
+    /// being corrected, which is the whole difference between the sheet's two
+    /// presentations (SPEC §6.6).
     func logSheetModel(
         for exercise: Exercise,
         on machine: Machine? = nil,
+        editing: Entry? = nil,
+        gyms: GymsModel? = nil,
         onSave: @escaping () -> Void = {}
     ) -> LogSheetModel {
-        LogSheetModel(exercise: exercise, machine: machine, context: context, onSave: onSave)
+        LogSheetModel(
+            exercise: exercise,
+            machine: machine,
+            editing: editing,
+            context: context,
+            gyms: gyms ?? gymsModel(),
+            onSave: onSave
+        )
     }
 
     /// A history sheet over this store's context, at one rep count. `onChange` stands
@@ -142,6 +153,7 @@ final class LibraryFixture {
         for exercise: Exercise,
         on machine: Machine? = nil,
         atLeast reps: Int,
+        gyms: GymsModel? = nil,
         onChange: @escaping () -> Void = {}
     ) -> HistorySheetModel {
         HistorySheetModel(
@@ -149,6 +161,7 @@ final class LibraryFixture {
             machine: machine,
             atLeast: reps,
             context: context,
+            gyms: gyms ?? gymsModel(),
             onChange: onChange
         )
     }

@@ -31,7 +31,14 @@ struct MachineMenu {
     /// Sections in gym recency order, **the current gym first** — it is where you are
     /// standing, so its machines are the ones your thumb is reaching for. Gym-less
     /// machines follow, and the one `Archived` section closes the menu.
-    init(machines: [Machine], currentGym: Gym? = nil) {
+    ///
+    /// `including` adds a section for a gym that holds **no machine for this exercise
+    /// yet**, which the log sheet needs and the nav-bar qualifier does not (SPEC §6.4):
+    /// `New machine here` sits in a gym section, so the gym you are standing in has to
+    /// have one before you have ever logged this exercise there. An empty section is
+    /// worth nothing without that row, so the qualifier passes nothing and never draws
+    /// one.
+    init(machines: [Machine], currentGym: Gym? = nil, including empty: [Gym] = []) {
         var byGym: [UUID: [Machine]] = [:]
         var gyms: [UUID: Gym] = [:]
         var gymless: [Machine] = []
@@ -42,6 +49,9 @@ struct MachineMenu {
             }
             gyms[gym.id] = gym
             byGym[gym.id, default: []].append(machine)
+        }
+        for gym in empty {
+            gyms[gym.id] = gym
         }
 
         let ordered = GymOrder.byRecency(Array(gyms.values), current: currentGym)

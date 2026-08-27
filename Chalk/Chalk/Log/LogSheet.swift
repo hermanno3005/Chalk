@@ -8,8 +8,11 @@ import SwiftUI
 /// from that entry and writes back in place, differing only in the date it states and
 /// will not let you change.
 ///
-/// Free-weight only. The machine caption (§6.4) is a line above the number and a fifth
-/// verdict state below it, and lands with machine resolution (#28, #29).
+/// **The machine caption sits above the number, on both stages and gym-bound only**
+/// (§6.4): one quiet tappable line reading `Hammer Strength · Fitness X`. It is never
+/// hidden "unless something is odd" — a strip that comes and goes shifts the layout and
+/// stops being trusted — and a free-weight sheet carries no machine row at all. The
+/// fifth verdict state, the machine hint, is #29.
 struct LogSheet: View {
     /// Held in `@State` for the life of the presentation, as the detail screen holds
     /// its own model: the sheet's content is rebuilt as the screen behind it changes,
@@ -18,12 +21,19 @@ struct LogSheet: View {
     @State var model: LogSheetModel
 
     @Environment(\.dismiss) private var dismiss
+    /// The gym `New machine here` was tapped in, held while its one-field alert is up.
+    /// **Always asked** — you cannot know at creation time whether a second machine is
+    /// coming (SPEC §6.4).
+    @State private var naming: Gym?
+    @State private var draftMachineName = ""
+    @State private var creatingGym = false
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 header
                 Spacer(minLength: 0)
+                caption
                 number
                 verdict
                 Spacer(minLength: 0)
@@ -55,6 +65,61 @@ struct LogSheet: View {
                     }
                 }
             }
+            // One field, optional, with Skip — the machine is created at the gym its
+            // row sat in and **the sheet resolves to it**, so there is no second
+            // decision (SPEC §6.4).
+            .alert("Name this machine", isPresented: namingIsPresented, presenting: naming) { gym in
+                TextField("Optional", text: $draftMachineName)
+                Button("Add") { model.createMachine(at: gym, named: draftMachineName) }
+                Button("Skip") { model.createMachine(at: gym, named: nil) }
+            } message: { _ in
+                Text("Optional — you can leave it unnamed.")
+            }
+            // `New gym…`: standing in an unfamiliar gym is exactly when you need one.
+            // The gym alone, though — the machine you are at is `New machine here`'s
+            // always-asked decision, and the new gym's section is where you make it.
+            .sheet(isPresented: $creatingGym) {
+                NewGymSheet(gyms: model.gyms, onCreate: model.gymCreated)
+            }
+        }
+    }
+
+    private var namingIsPresented: Binding<Bool> {
+        Binding(get: { naming != nil }, set: { if !$0 { naming = nil } })
+    }
+
+    /// **The machine, on both stages** (SPEC §6.4). It reads as a caption, not a
+    /// control — the number below stays the only thing on screen with weight — and
+    /// tapping it opens **the app's one machine picker** (§5.3), plus the two rows only
+    /// this sheet needs: `New machine here` in each gym section, and `New gym…` at the
+    /// bottom.
+    ///
+    /// Absent altogether for a free-weight exercise, which has no machine to carry.
+    @ViewBuilder
+    private var caption: some View {
+        if let machineCaption = model.machineCaption {
+            Menu {
+                MachinePicker(
+                    menu: model.machineMenu,
+                    selected: model.machine,
+                    onSelect: model.select,
+                    onNewMachine: { gym in
+                        draftMachineName = ""
+                        naming = gym
+                    },
+                    onNewGym: { creatingGym = true }
+                )
+            } label: {
+                Label(machineCaption, systemImage: "square.stack.3d.up")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .padding(.vertical, 8)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Changes the machine this is logged on")
         }
     }
 

@@ -122,7 +122,8 @@ final class LibraryModel {
         LogSheetModel(
             exercise: exercise,
             machine: resumedMachine(for: exercise),
-            context: context
+            context: context,
+            gyms: gyms
         ) { [weak self] in
             self?.refresh()
             onSave()
