@@ -78,9 +78,27 @@ final class LibraryFixture {
         LogSheetModel(exercise: exercise, context: context, onSave: onSave)
     }
 
+    /// A history sheet over this store's context, at one rep count. `onChange` stands
+    /// in for the screens behind it — the detail curve and the library — which an edit
+    /// or a delete has to put back in step.
+    func historySheetModel(
+        for exercise: Exercise,
+        atLeast reps: Int,
+        onChange: @escaping () -> Void = {}
+    ) -> HistorySheetModel {
+        HistorySheetModel(exercise: exercise, atLeast: reps, context: context, onChange: onChange)
+    }
+
     /// The same file read through a second container, so what a test asserts is what
     /// reached the disk rather than what is sitting in this context's cache.
     func afterRelaunch() throws -> ModelContext {
         ModelContext(try store.reopened())
+    }
+}
+
+extension Date {
+    /// A date `days` back, for seeding history that has to come out in a known order.
+    static func days(ago days: Int) -> Date {
+        .now.addingTimeInterval(-Double(days) * 86_400)
     }
 }

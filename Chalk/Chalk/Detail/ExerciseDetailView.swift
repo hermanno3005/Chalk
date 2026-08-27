@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 /// The exercise detail screen (SPEC §5.1). Free-weight only: the machine qualifier is
-/// #26, and its absence here is deliberate — the screen has two shapes, and a
+/// #27, and its absence here is deliberate — the screen has two shapes, and a
 /// free-weight exercise shows no qualifier at all, not a disabled one (§5.3).
 ///
 /// Top to bottom: the scrub readout, the 150 pt curve, empty space, the Log bar. **The
@@ -20,13 +20,20 @@ struct ExerciseDetailView: View {
     @State private var draftName = ""
     @State private var confirmingDelete = false
     @State private var logging = false
+    @State private var history: HistorySheetModel?
     @State private var flashingConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             if model.hasCurve {
                 if let readout = model.readout {
+                    // The one way into raw history (SPEC §5.6). A plain tap on the
+                    // readout, not a `Button`: the number keeps its own colour, and
+                    // nothing on this screen should look tappable twice over. An
+                    // unproven cell hands back no sheet, and shows no chevron.
                     ScrubReadout(readout: readout)
+                        .contentShape(.rect)
+                        .onTapGesture { history = model.historySheet() }
                 }
                 StrengthCurve(
                     curve: model.curve,
@@ -67,6 +74,7 @@ struct ExerciseDetailView: View {
         .sheet(isPresented: $logging) {
             LogSheet(model: model.logSheet { flashConfirmation() })
         }
+        .sheet(item: $history) { HistorySheet(model: $0) }
         .alert("Rename", isPresented: $renaming) {
             TextField("Name", text: $draftName)
             Button("Cancel", role: .cancel) {}
@@ -115,7 +123,7 @@ struct ExerciseDetailView: View {
     /// Zero entries: short text where the chart would be, and the Log bar beneath it
     /// (SPEC §5.4). No axes, no flat line at zero, no ghost — a chart frame with no data
     /// implies numbers that do not exist. The machine hint belongs to gym-bound
-    /// exercises and lands with the qualifier (#26).
+    /// exercises and lands with the qualifier (#29).
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
@@ -129,7 +137,7 @@ struct ExerciseDetailView: View {
 
     /// Full width, pinned at the bottom. Opens the log sheet (SPEC §6.1), which for a
     /// free-weight exercise is all the caller has to supply — resolving a machine is
-    /// the gym-bound caller's job (§6.4, #26).
+    /// the gym-bound caller's job (§6.4, #28).
     private var logBar: some View {
         Button {
             logging = true

@@ -5,15 +5,21 @@ import SwiftData
 /// The two-stage log sheet's state: reps, then weight, one giant number at a time
 /// (SPEC §6.1–6.3, §6.5, §6.7).
 ///
-/// **Free-weight only for now** — the machine caption and its hint verdict are #26.
+/// **Free-weight only for now** — the machine caption is #28 and its hint verdict #29.
 /// The sheet never resolves a machine anyway (§6.4): its caller hands it one, so that
 /// lands here as an extra line and a fifth verdict state, not a third stage.
+///
+/// **One sheet, two presentations** (SPEC §6.6): handed an entry, it seeds from that
+/// entry rather than your most recent one and writes back in place. Reps and weight are
+/// editable; the date is not — nothing here can reach it.
 ///
 /// Both numbers are optional because **blank is a real state**: the cold-start weight
 /// opens empty rather than guessing a load (§6.3), and the keypad can be cleared back
 /// to nothing. Nothing is savable until both are filled (§6.7).
 @Observable
-final class LogSheetModel {
+final class LogSheetModel: Identifiable {
+
+    let id = UUID()
 
     enum Stage {
         case reps, weight
@@ -32,6 +38,10 @@ final class LogSheetModel {
     }
 
     let exercise: Exercise
+
+    /// The entry being corrected, or nil for a new one. **The only difference between
+    /// the two presentations** — everything below this line is the same sheet.
+    @ObservationIgnored private let editing: Entry?
 
     private(set) var stage: Stage = .reps
     private(set) var mode: InputMode = .steppers
@@ -66,21 +76,43 @@ final class LogSheetModel {
     /// (SPEC §6.7) — just the point past which a thumb is holding a key down by mistake.
     private static let maxTypedLength = 6
 
-    init(exercise: Exercise, context: ModelContext, onSave: @escaping () -> Void = {}) {
+    init(
+        exercise: Exercise,
+        editing: Entry? = nil,
+        context: ModelContext,
+        onSave: @escaping () -> Void = {}
+    ) {
         self.exercise = exercise
+        self.editing = editing
         self.context = context
         self.onSave = onSave
-        self.entries = exercise.entries ?? []
+        // The entry being edited is not part of its own verdict: the line says how this
+        // lift stands against the rest of your history, and an entry compared with
+        // itself says nothing (SPEC §6.5).
+        self.entries = (exercise.entries ?? []).filter { $0 !== editing }
 
-        // Seeded from your most recent entry, so the common log is two taps (SPEC §6.3).
-        // For a free-weight exercise the weight seed is the same entry as the rep seed;
-        // scoping to one machine's entries is what splits them (#26).
-        let latest = LastEntry.latest(in: entries)
-        reps = latest?.reps ?? Self.defaultReps
-        weight = latest?.weight
+        if let editing {
+            // Seeded from *that* entry — the numbers you tapped, ready to be corrected.
+            reps = editing.reps
+            weight = editing.weight
+        } else {
+            // Seeded from your most recent entry, so the common log is two taps
+            // (SPEC §6.3). For a free-weight exercise the weight seed is the same entry
+            // as the rep seed; scoping to one machine's entries is what splits them.
+            let latest = LastEntry.latest(in: entries)
+            reps = latest?.reps ?? Self.defaultReps
+            weight = latest?.weight
+        }
     }
 
     // MARK: - What the sheet shows
+
+    /// The day the entry being edited was logged — **and the sheet's only tell that it
+    /// is an edit**, which is as much difference as §6.6 asks for. **Shown, not editable** — the sheet
+    /// says which lift you are correcting, and offers no way to move it.
+    var dateLabel: String? {
+        editing.flatMap(LastEntry.init)?.day()
+    }
 
     /// The giant number, on whichever stage is in view. Empty while the value is blank —
     /// an absence, not a zero.
@@ -113,7 +145,7 @@ final class LogSheetModel {
     /// silent: the line is meaningless until both numbers exist, and showing the target
     /// there would turn the sheet into a lookup surface — the detail screen's job.
     ///
-    /// The fifth state, the machine hint, arrives with the caption (#26).
+    /// The fifth state, the machine hint, arrives with the caption (#29).
     var verdict: String? {
         guard stage == .weight, let reps else { return nil }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
@@ -235,11 +267,20 @@ final class LogSheetModel {
 
     // MARK: - Commit
 
-    /// Writes the entry. The caller closes the sheet: after saving it never stays open
+    /// Writes the entry — a new one, or the one being edited, in place. The caller
+    /// closes the sheet: after saving it never stays open
     /// to log again, because sessions are not modelled (SPEC §6.7).
     func save() {
         guard canSave, let reps, let weight else { return }
-        context.insert(Entry(reps: reps, weight: weight, date: .now, exercise: exercise))
+        if let editing {
+            // In place, and the date stays where it was (SPEC §6.6). An edit that drops
+            // the entry out of the history sheet it was opened from is that sheet's
+            // filter behaving, not something to compensate for here.
+            editing.reps = reps
+            editing.weight = weight
+        } else {
+            context.insert(Entry(reps: reps, weight: weight, date: .now, exercise: exercise))
+        }
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
         onSave()
