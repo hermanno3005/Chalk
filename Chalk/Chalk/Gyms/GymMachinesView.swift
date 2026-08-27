@@ -1,10 +1,15 @@
 import SwiftUI
 
 /// One gym's machines — the tap-through from `Manage gyms…` (SPEC §7.4), and the only
-/// place `Move to another gym…` lives (SPEC §7.5).
+/// place `Move to another gym…` and `Merge into…` live (SPEC §7.5).
 struct GymMachinesView: View {
     let gym: Gym
     let gyms: GymsModel
+
+    /// The merge a tap has proposed, waiting on its confirmation — the pair itself
+    /// rather than the two machines separately, because the direction is the thing
+    /// people get wrong and the question is phrased from it.
+    @State private var merging: MachineMerge?
 
     var body: some View {
         List {
@@ -18,6 +23,27 @@ struct GymMachinesView: View {
         }
         .navigationTitle(gym.name)
         .navigationBarTitleDisplayMode(.inline)
+        // **The app's one destructive confirmation** (SPEC §7.5). It is here because the
+        // merge is the only action irreversible *in principle*: once the entries are
+        // re-pointed, nothing records that they were ever separate. Phrased as the
+        // outcome, carrying the counts, and there is no undo behind it.
+        //
+        // `presenting:` hands the pair to the button rather than leaving it to read
+        // `merging` back, which SwiftUI has already cleared by then.
+        .confirmationDialog(
+            Text(merging?.question ?? ""),
+            isPresented: Binding(
+                get: { merging != nil },
+                set: { if !$0 { merging = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: merging
+        ) { merge in
+            Button("Merge", role: .destructive) { gyms.merge(merge.loser, into: merge.winner) }
+            Button("Cancel", role: .cancel) {}
+        } message: { merge in
+            Text(merge.detail)
+        }
     }
 
     private var machines: [Machine] {
@@ -27,21 +53,34 @@ struct GymMachinesView: View {
     /// A machine, under the exercise it is one of — which is the way you read this list
     /// when something has gone wrong, because a split curve is two rows under one name.
     ///
-    /// The verbs sit in a menu on the row. **When there is nowhere to move to, the menu
-    /// is absent rather than disabled** — the rule §7.5 writes for `Merge into…`, which
-    /// holds for the same reason here: a dead verb on a rare admin screen is a puzzle.
+    /// The verbs sit in a menu on the row, and **each is absent rather than disabled
+    /// where it has nowhere to go** — the rule §7.5 writes for `Merge into…`, which holds
+    /// for the same reason for `Move to another gym…`: a dead verb on a rare admin screen
+    /// is a puzzle. With neither, the row is a plain label and there is no menu at all.
     @ViewBuilder
     private func row(_ machine: Machine) -> some View {
-        let targets = gyms.moveTargets(excluding: gym)
-        if targets.isEmpty {
-            // The one gym you own has nowhere to move a machine to, so the row is a
-            // plain label — not a greyed-out button, which reads as something broken.
+        let moveTargets = gyms.moveTargets(excluding: gym)
+        let mergeTargets = gyms.mergeTargets(for: machine)
+        if moveTargets.isEmpty && mergeTargets.isEmpty {
             label(machine)
         } else {
             Menu {
-                Menu("Move to another gym…", systemImage: "arrow.right") {
-                    ForEach(targets, id: \.id) { target in
-                        Button(target.name) { gyms.move(machine, to: target) }
+                if !moveTargets.isEmpty {
+                    Menu("Move to another gym…", systemImage: "arrow.right") {
+                        ForEach(moveTargets, id: \.id) { target in
+                            Button(target.name) { gyms.move(machine, to: target) }
+                        }
+                    }
+                }
+                // Only ever this machine's same-gym, same-exercise siblings: merging
+                // across gyms is incoherent by construction.
+                if !mergeTargets.isEmpty {
+                    Menu("Merge into…", systemImage: "arrow.triangle.merge") {
+                        ForEach(mergeTargets, id: \.id) { target in
+                            Button(target.name) {
+                                merging = MachineMerge(loser: machine, winner: target)
+                            }
+                        }
                     }
                 }
             } label: {

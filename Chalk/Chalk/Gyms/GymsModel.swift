@@ -145,6 +145,47 @@ final class GymsModel {
         save()
     }
 
+    /// The machines `Merge into…` offers for one machine — its same-gym, same-exercise
+    /// siblings (SPEC §7.5). Empty means the verb is absent from the row.
+    func mergeTargets(for machine: Machine) -> [Machine] {
+        MachineMerge.targets(for: machine)
+    }
+
+    /// `Merge into…` — re-points **every** entry from `loser` onto a sibling and then
+    /// **hard-deletes** the loser (SPEC §7.5). All-or-nothing, and **no undo**: once the
+    /// entries have moved, nothing records that they were ever separate.
+    ///
+    /// > **The one genuinely dangerous line in the app.** Deletion cascades from
+    /// > `Machine` to its entries (SPEC §3). So the order below is load-bearing: the
+    /// > reassignment is **flushed to the store before the delete**, and the delete is
+    /// > refused outright unless the loser is by then holding nothing. Invert that, or
+    /// > delete on a context where the reassignment has not landed, and the cascade eats
+    /// > exactly the history the merge existed to save.
+    ///
+    /// Nothing is recomputed afterwards: no rep-max is stored, so the winner's curve is
+    /// simply correct on the next read (ADR-0002).
+    ///
+    /// **A winner that is not a same-gym, same-exercise sibling is refused** — the guard
+    /// is here rather than only in the row that draws the menu, because this is the one
+    /// call in the app that takes history out of the store for good.
+    func merge(_ loser: Machine, into winner: Machine) {
+        guard MachineMerge.targets(for: loser).contains(where: { $0 === winner }) else {
+            return
+        }
+
+        for entry in loser.entries ?? [] {
+            entry.machine = winner
+        }
+        try? context.save()
+
+        // The re-pointing has to have landed before the cascade is armed. If it somehow
+        // has not, the loser stays — a duplicate row is a nuisance, a lost curve is not.
+        guard (loser.entries ?? []).isEmpty else { return }
+
+        context.delete(loser)
+        save()
+    }
+
     /// The existing gym a typed name looks like, archived ones included (SPEC §7.4).
     func nearMatch(for name: String) -> Gym? {
         GymNameMatch.nearMatch(for: name, among: allGyms)
