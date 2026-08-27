@@ -13,8 +13,9 @@ import SwiftData
 /// cell shows the higher-rep lifts that floored it, and a sub-best entry is visible,
 /// confirming the log landed.
 ///
-/// **Free-weight only for now** — the scope is every entry the exercise has. Scoping to
-/// one machine's entries lands here as a different array, not a different rule (§5.3).
+/// **It lists the cell's entries in the scope the screen is in** (SPEC §5.6): every entry
+/// the exercise has for a free-weight one, one machine's for a gym-bound one. Scoping is
+/// a different array, not a different rule (§5.3).
 @Observable
 final class HistorySheetModel: Identifiable {
 
@@ -27,6 +28,9 @@ final class HistorySheetModel: Identifiable {
         let day: String
         /// Whether this is the entry currently setting `best[N]`.
         let isBest: Bool
+        /// The machine the entry was logged on, for a gym-bound exercise (SPEC §5.6).
+        /// `nil` for a free-weight one, which has no machine to name.
+        let machine: String?
 
         /// The entry the row stands for, which edit and delete act on. Held rather than
         /// looked up again: the row is the thing your thumb is on. **Not for reading
@@ -38,6 +42,11 @@ final class HistorySheetModel: Identifiable {
     let id = UUID()
 
     @ObservationIgnored private let exercise: Exercise
+
+    /// The machine the sheet is scoped to — the detail screen's own, and `nil` for a
+    /// free-weight exercise. The sheet mirrors the cell it was opened from, so it reads
+    /// exactly what that cell derived from.
+    @ObservationIgnored private let machine: Machine?
 
     /// The `N` in `reps >= N`: the cell the sheet was opened from.
     @ObservationIgnored private let reps: Int
@@ -51,11 +60,13 @@ final class HistorySheetModel: Identifiable {
 
     init(
         exercise: Exercise,
+        machine: Machine? = nil,
         atLeast reps: Int,
         context: ModelContext,
         onChange: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
+        self.machine = machine
         self.reps = reps
         self.context = context
         self.onChange = onChange
@@ -78,7 +89,12 @@ final class HistorySheetModel: Identifiable {
     /// rather than the detail screen: an edit is saved with the history list in view and
     /// the detail screen two layers down, where a flash would go unseen.
     func editSheet(for row: Row, onSave: @escaping () -> Void = {}) -> LogSheetModel {
-        LogSheetModel(exercise: exercise, editing: row.entry, context: context) { [weak self] in
+        LogSheetModel(
+            exercise: exercise,
+            machine: row.entry.machine,
+            editing: row.entry,
+            context: context
+        ) { [weak self] in
             self?.refresh()
             self?.onChange()
             onSave()
@@ -102,7 +118,10 @@ final class HistorySheetModel: Identifiable {
     func refresh() {
         // The same `reps >= N` scope the curve derives that cell from, read off the
         // derivation rather than filtered again here (SPEC §5.6).
-        let scope = RepMaxCurve.entries(atLeast: reps, in: exercise.entries ?? [])
+        let scope = RepMaxCurve.entries(
+            atLeast: reps,
+            in: MachineScope.entries(of: exercise, on: machine)
+        )
         // The entry holding `best[N]`: where two share the weight, the older one set it,
         // and matching it later does not take the record off it.
         let best = scope.map(\.weight).max()
@@ -117,6 +136,7 @@ final class HistorySheetModel: Identifiable {
                 lift: lift.lift,
                 day: lift.day(),
                 isBest: entry === setter,
+                machine: entry.machine?.caption,
                 entry: entry
             )
         }

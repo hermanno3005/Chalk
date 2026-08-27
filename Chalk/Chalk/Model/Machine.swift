@@ -17,6 +17,33 @@ final class Machine {
     @Relationship(deleteRule: .cascade, inverse: \Entry.machine)
     var entries: [Entry]? = []
 
+    /// What this machine is called on screen: its label, or the make when it has no
+    /// label of its own, or `Unlabelled` when it has neither.
+    ///
+    /// A machine is often just *the leg press by the window* with nothing written on it,
+    /// and the default machine at a gym is exactly the one that stays unnamed — so the
+    /// fallback is a real word rather than a blank row (SPEC §7.5).
+    var name: String {
+        [label, manufacturer]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty } ?? Self.unlabelled
+    }
+
+    /// The one line the app says a machine in, everywhere it says one: `label · gym`
+    /// (SPEC §5.3, §6.4).
+    ///
+    /// A gym-less machine renders as its name with no suffix — that state is never
+    /// intentionally produced, but it can arrive from a gym deletion and it still
+    /// derives normally (SPEC §3, invariant 3).
+    var caption: String {
+        guard let gymName = gym?.name.trimmingCharacters(in: .whitespacesAndNewlines),
+              !gymName.isEmpty
+        else { return name }
+        return "\(name) · \(gymName)"
+    }
+
+    static let unlabelled = "Unlabelled"
+
     init(
         id: UUID = UUID(),
         manufacturer: String? = nil,

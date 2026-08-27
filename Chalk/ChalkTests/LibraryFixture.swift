@@ -34,6 +34,33 @@ final class LibraryFixture {
         return exercise
     }
 
+    /// A gym on this store. Gyms are held explicitly, never derived from the machines
+    /// that happen to exist (SPEC §3).
+    @discardableResult
+    func gym(_ name: String, isArchived: Bool = false) -> Gym {
+        let gym = Gym(name: name, isArchived: isArchived)
+        context.insert(gym)
+        return gym
+    }
+
+    /// A machine for one exercise at one gym — a gym-bound exercise's unit of scope.
+    @discardableResult
+    func machine(
+        for exercise: Exercise,
+        at gym: Gym?,
+        manufacturer: String? = nil,
+        label: String? = nil
+    ) -> Machine {
+        let machine = Machine(
+            manufacturer: manufacturer,
+            label: label,
+            exercise: exercise,
+            gym: gym
+        )
+        context.insert(machine)
+        return machine
+    }
+
     @discardableResult
     func group(_ name: String, sortIndex: Int) -> ExerciseGroup {
         let group = ExerciseGroup(name: name, sortIndex: sortIndex)
@@ -47,6 +74,18 @@ final class LibraryFixture {
 
     func log(_ exercise: Exercise, reps: Int, weight: Double, on date: Date = .now) {
         context.insert(Entry(reps: reps, weight: weight, date: date, exercise: exercise))
+    }
+
+    /// An entry on one machine. `entry.machine?.exercise == entry.exercise` is the
+    /// invariant every write holds (SPEC §3), so the exercise comes off the machine.
+    func log(_ machine: Machine, reps: Int, weight: Double, on date: Date = .now) {
+        context.insert(Entry(
+            reps: reps,
+            weight: weight,
+            date: date,
+            exercise: machine.exercise,
+            machine: machine
+        ))
     }
 
     func save() throws {
@@ -66,16 +105,34 @@ final class LibraryFixture {
         LibraryModel(context: context, defaults: defaults)
     }
 
+    /// The gyms model over this store's context, holding the current gym in this
+    /// fixture's own defaults suite rather than the running app's.
+    func gymsModel() -> GymsModel {
+        GymsModel(context: context, defaults: defaults)
+    }
+
     /// A detail model over this store's context. `refreshing` stands in for the library
     /// left behind the screen, which a delete has to put back in step.
-    func detailModel(for exercise: Exercise, refreshing library: LibraryModel? = nil) -> ExerciseDetailModel {
-        ExerciseDetailModel(exercise: exercise, context: context) { library?.refresh() }
+    func detailModel(
+        for exercise: Exercise,
+        gyms: GymsModel? = nil,
+        refreshing library: LibraryModel? = nil
+    ) -> ExerciseDetailModel {
+        ExerciseDetailModel(
+            exercise: exercise,
+            context: context,
+            gyms: gyms ?? gymsModel()
+        ) { library?.refresh() }
     }
 
     /// A log sheet over this store's context. `onSave` stands in for the detail screen
     /// behind the sheet, which a write has to put back in step.
-    func logSheetModel(for exercise: Exercise, onSave: @escaping () -> Void = {}) -> LogSheetModel {
-        LogSheetModel(exercise: exercise, context: context, onSave: onSave)
+    func logSheetModel(
+        for exercise: Exercise,
+        on machine: Machine? = nil,
+        onSave: @escaping () -> Void = {}
+    ) -> LogSheetModel {
+        LogSheetModel(exercise: exercise, machine: machine, context: context, onSave: onSave)
     }
 
     /// A history sheet over this store's context, at one rep count. `onChange` stands
@@ -83,10 +140,17 @@ final class LibraryFixture {
     /// or a delete has to put back in step.
     func historySheetModel(
         for exercise: Exercise,
+        on machine: Machine? = nil,
         atLeast reps: Int,
         onChange: @escaping () -> Void = {}
     ) -> HistorySheetModel {
-        HistorySheetModel(exercise: exercise, atLeast: reps, context: context, onChange: onChange)
+        HistorySheetModel(
+            exercise: exercise,
+            machine: machine,
+            atLeast: reps,
+            context: context,
+            onChange: onChange
+        )
     }
 
     /// The same file read through a second container, so what a test asserts is what

@@ -1,9 +1,10 @@
 import SwiftData
 import SwiftUI
 
-/// The exercise detail screen (SPEC §5.1). Free-weight only: the machine qualifier is
-/// #27, and its absence here is deliberate — the screen has two shapes, and a
-/// free-weight exercise shows no qualifier at all, not a disabled one (§5.3).
+/// The exercise detail screen (SPEC §5.1). **It has two shapes**: a gym-bound exercise
+/// carries the machine qualifier in its nav bar and derives from one machine's entries,
+/// and a free-weight one shows **no qualifier at all** — not a disabled one, not a
+/// placeholder (§5.3).
 ///
 /// Top to bottom: the scrub readout, the 150 pt curve, empty space, the Log bar. **The
 /// empty space ships empty**: it keeps the Log bar high and thumb-reachable, and is not
@@ -53,6 +54,9 @@ struct ExerciseDetailView: View {
         // The back button is the `NavigationStack`'s own — nothing here hides it, and
         // nothing here draws a second one.
         .toolbar {
+            if model.isGymBound {
+                ToolbarItem(placement: .topBarTrailing) { qualifier }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Rename", systemImage: "pencil") {
@@ -93,6 +97,30 @@ struct ExerciseDetailView: View {
         }
     }
 
+    /// The machine qualifier — **gym-bound only** (SPEC §5.3). Switching re-scopes the
+    /// screen and re-derives the whole curve, because a gym-bound exercise's rep-maxes
+    /// come from one machine's entries and nothing else.
+    ///
+    /// It is the app's one machine picker, the same rows the log sheet's caption opens
+    /// (§6.4). Creating a machine is not offered here: this menu resolves between
+    /// machines that exist, and the hole it cannot close belongs where you are standing
+    /// at the rack (#28).
+    private var qualifier: some View {
+        Menu {
+            MachinePicker(
+                menu: model.machineMenu,
+                selected: model.machine,
+                onSelect: model.select
+            )
+        } label: {
+            // The machine in scope, said out loud: the number below it means nothing
+            // without it. An exercise with no machine yet says so rather than staying
+            // blank — the qualifier reads as unset until the first log makes one.
+            Label(model.machine?.name ?? "No machine", systemImage: "square.stack.3d.up")
+        }
+        .disabled(model.machines.isEmpty)
+    }
+
     /// The brief confirmation the screen flashes after a save, while the curve behind
     /// it has already moved (SPEC §6.7). It says the entry landed and then gets out of
     /// the way — there is nothing to undo here and nothing to tap.
@@ -122,17 +150,27 @@ struct ExerciseDetailView: View {
 
     /// Zero entries: short text where the chart would be, and the Log bar beneath it
     /// (SPEC §5.4). No axes, no flat line at zero, no ghost — a chart frame with no data
-    /// implies numbers that do not exist. The machine hint belongs to gym-bound
-    /// exercises and lands with the qualifier (#29).
+    /// implies numbers that do not exist. The machine hint — your numbers on a sibling
+    /// machine — is #29.
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
                 .font(.title3.weight(.medium))
-            Text("Log a lift and your curve starts here.")
+            Text(emptyDetail)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .padding(.top, 8)
+    }
+
+    /// A gym-bound exercise with no machine yet has nothing to log **onto** — its
+    /// numbers are kept per machine and it has none — so the line says that rather than
+    /// inviting a tap on a bar that cannot open. The row that makes the first machine
+    /// belongs to the log sheet's own picker (§6.4, #28).
+    private var emptyDetail: String {
+        model.canLog
+            ? "Log a lift and your curve starts here."
+            : "Its numbers are kept per machine, and it has none yet."
     }
 
     /// Full width, pinned at the bottom. Opens the log sheet (SPEC §6.1), which for a
@@ -148,6 +186,10 @@ struct ExerciseDetailView: View {
                 .padding(.vertical, 14)
         }
         .buttonStyle(.borderedProminent)
+        // **A gym-bound exercise must resolve a machine** (SPEC §3, invariant 4), and
+        // with no machine at all there is nothing for this caller to hand the sheet. The
+        // row that makes one mid-log is the sheet's own (§6.4, #28).
+        .disabled(!model.canLog)
         .padding(.horizontal)
         .padding(.bottom, 8)
     }
