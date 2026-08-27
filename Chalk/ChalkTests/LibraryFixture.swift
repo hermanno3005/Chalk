@@ -111,6 +111,13 @@ final class LibraryFixture {
         GymsModel(context: context, defaults: defaults)
     }
 
+    /// The groups model over this store's context. It seeds nothing — the suggestion is
+    /// `LibraryModel`'s to plant (SPEC §7.2) — so a test here arranges the groups it
+    /// wants and sees no others.
+    func groupsModel() -> GroupsModel {
+        GroupsModel(context: context)
+    }
+
     /// A detail model over this store's context. `refreshing` stands in for the library
     /// left behind the screen, which a delete has to put back in step.
     func detailModel(
