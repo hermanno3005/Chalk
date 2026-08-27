@@ -278,7 +278,7 @@ handled by drawing no chart (§5.4).
 
 From [#7](https://github.com/hermanno3005/Chalk/issues/7), completed by
 [#16](https://github.com/hermanno3005/Chalk/issues/16). Prototype:
-`prototype/exercise-detail`.
+[`docs/prototypes/exercise-detail/`](docs/prototypes/exercise-detail/README.md).
 
 **The curve is primary. A rep-max table does not appear on this screen at all.**
 
@@ -409,7 +409,8 @@ Two behaviours that must **not** be special-cased:
 From [#6](https://github.com/hermanno3005/Chalk/issues/6),
 [#13](https://github.com/hermanno3005/Chalk/issues/13),
 [#15](https://github.com/hermanno3005/Chalk/issues/15). Prototype:
-`prototype/log-entry-modal` (variant A).
+[`docs/prototypes/log-entry-modal/`](docs/prototypes/log-entry-modal/README.md)
+(variant A).
 
 A sheet over the calling screen, **two stages**: reps, then weight. One giant number on screen at
 a time. The size and the staging are the point — a single unmissable digit and two thumb-sized
@@ -553,7 +554,7 @@ rather than from your most recent one, presented as an edit. **No new sheet is d
 From [#8](https://github.com/hermanno3005/Chalk/issues/8) (variant C1), with gym administration
 from [#14](https://github.com/hermanno3005/Chalk/issues/14) and
 [#18](https://github.com/hermanno3005/Chalk/issues/18). Prototype:
-`prototype/exercise-library`.
+[`docs/prototypes/exercise-library/`](docs/prototypes/exercise-library/README.md).
 
 The root of the `NavigationStack`. **A sectioned tile grid under a resume card, with search
 pinned in thumb reach.**
