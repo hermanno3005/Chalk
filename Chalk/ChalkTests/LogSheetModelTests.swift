@@ -419,6 +419,26 @@ struct LogSheetModelTests {
         #expect(model.verdict == .hint("No history here — \(kg(55)) kg × 5 on By the window"))
     }
 
+    @Test("Correcting the only entry on a machine leaves nothing here to speak for it")
+    func editingTheOnlyEntryHereFallsBackToTheHint() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let here = fixture.machine(for: exercise, at: gym, label: "By the window")
+        let sibling = fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
+        fixture.log(here, reps: 5, weight: 40, on: .days(ago: 1))
+        fixture.log(sibling, reps: 5, weight: 55, on: .days(ago: 2))
+        let correcting = try #require(here.entries?.first)
+
+        let model = fixture.logSheetModel(for: exercise, on: here, editing: correcting)
+        model.advance()
+
+        // An entry is not part of its own verdict (SPEC §6.5), and the hint reads the
+        // same scope the verdict does — so the machine behind this sheet has nothing
+        // else on it to compare against.
+        #expect(model.verdict == .hint("No history here — \(kg(55)) kg × 5 on Hammer Strength"))
+    }
+
     @Test("A free-weight sheet never hints")
     func aFreeWeightSheetNeverHints() throws {
         let fixture = try LibraryFixture()

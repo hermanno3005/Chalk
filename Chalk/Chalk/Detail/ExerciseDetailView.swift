@@ -165,7 +165,7 @@ struct ExerciseDetailView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             if let hint = model.hint {
-                Text("No entries here — \(hint.text)")
+                Text(hint.emptyStateLine)
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
                     .padding(.top, 2)

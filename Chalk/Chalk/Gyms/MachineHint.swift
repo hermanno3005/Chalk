@@ -26,11 +26,21 @@ struct MachineHint: Equatable {
     /// to walk.
     let machineName: String
 
-    /// `55 kg × 5 on Hammer Strength` — the clause both surfaces draw, under whichever
-    /// lead-in the surface uses (SPEC §5.4, §6.5).
+    /// `55 kg × 5 on Hammer Strength` — the clause both surfaces draw, and the whole of
+    /// what the lookup found.
     var text: String {
         "\(weight.kilogramsText) kg × \(Self.reps) on \(machineName)"
     }
+
+    /// The line under the empty state's text, on the detail screen (SPEC §5.4).
+    var emptyStateLine: String { "No entries here — \(text)" }
+
+    /// The verdict line's fifth state, in the log sheet (SPEC §6.5).
+    ///
+    /// The two lead-ins are the spec's own words, kept here beside the clause they wrap
+    /// so the app's copy for one idea lives in one place rather than either surface's
+    /// view code.
+    var verdictLine: String { "No history here — \(text)" }
 
     /// The hint for one gym-bound screen, or `nil` where there is nothing honest to say.
     ///
@@ -47,19 +57,37 @@ struct MachineHint: Equatable {
     /// `machine` is the scope the screen is in, and `nil` is a real one: the first log at
     /// a gym holding no machine for this exercise (SPEC §6.4), where every machine you
     /// own is a sibling and the numbers you have are all somewhere else.
+    ///
+    /// **An archived gym's machine is quotable like any other.** Archived is a matter of
+    /// display, and no rep-max is affected by it — the numbers you lifted there are still
+    /// yours, and nothing in the spec ranks siblings beyond the date.
     static func lookUp(_ exercise: Exercise, scopedTo machine: Machine?) -> MachineHint? {
+        lookUp(
+            exercise,
+            scopedTo: machine,
+            historyHere: MachineScope.entries(of: exercise, on: machine)
+        )
+    }
+
+    /// The same lookup over a scope the caller already holds — the log sheet's, which is
+    /// this machine's entries **minus the one being corrected** (SPEC §6.6). One rule for
+    /// "nothing has been lifted here", read off the array the screen is deriving against
+    /// rather than off a second fetch that could disagree with it.
+    static func lookUp(
+        _ exercise: Exercise,
+        scopedTo machine: Machine?,
+        historyHere entries: [Entry]
+    ) -> MachineHint? {
         guard exercise.isGymBound else { return nil }
         // A machine with a lift on it speaks for itself.
-        guard !MachineScope.entries(of: exercise, on: machine).contains(where: \.isALift) else {
-            return nil
-        }
+        guard !entries.contains(where: \.isALift) else { return nil }
 
         let siblings = (exercise.machines ?? []).filter { $0 !== machine }
         // Most recently logged first — the app's one recency rule, over machines
         // (SPEC §5.3) — so the sibling is `max(by:)` over `Entry.date` and ties settle
-        // by name rather than by whatever order the store handed them back in.
+        // by name rather than by whatever order the store handed them back in. A sibling
+        // nobody has logged on has no `best[5]` either, so it falls out below.
         guard let sibling = MachineScope.byRecency(siblings).first,
-              sibling.lastLogged != nil,
               let best = RepMaxCurve.best(atLeast: reps, in: sibling.entries ?? [])
         else { return nil }
 
