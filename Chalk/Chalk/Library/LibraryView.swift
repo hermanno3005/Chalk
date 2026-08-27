@@ -29,6 +29,11 @@ struct LibraryView: View {
     /// `Manage gyms…`, the one gym admin surface (SPEC §7.4) — a sheet from the same
     /// menu *Edit groups…* opens from, and the only door to it.
     @State private var managingGyms = false
+    /// Whether the search field is first responder — **the state that makes the keyboard
+    /// dismissible at all** (#56). It lives here rather than in `LibrarySearchField`
+    /// because every exit from the keyboard is a gesture on the library around the field,
+    /// not a control on the field itself.
+    @FocusState private var searchFocused: Bool
     /// The section a drag is currently over, for its highlight.
     ///
     /// **View state, deliberately not the model's** — SPEC §7.2's third hazard. This
@@ -39,7 +44,7 @@ struct LibraryView: View {
 
     var body: some View {
         NavigationStack(path: $opened) {
-            content
+            keyboardDismissingContent
                 .navigationDestination(for: Exercise.self) { exercise in
                     ExerciseDetailView(model: model.detail(for: exercise))
                 }
@@ -67,17 +72,20 @@ struct LibraryView: View {
                     }
                 }
                 .safeAreaInset(edge: .bottom) {
-                    LibrarySearchField(query: Binding(
-                        get: { model.query },
-                        set: { typed in
-                            // Typing is finding, not filing. Results are a plain list
-                            // rather than tiles, so there are no pickers on them and a
-                            // `Done` over them would be pointing at nothing — leaving
-                            // the mode is the honest thing for a search to do.
-                            if !typed.isEmpty { arranging = false }
-                            model.search(typed)
-                        }
-                    ))
+                    LibrarySearchField(
+                        query: Binding(
+                            get: { model.query },
+                            set: { typed in
+                                // Typing is finding, not filing. Results are a plain list
+                                // rather than tiles, so there are no pickers on them and a
+                                // `Done` over them would be pointing at nothing — leaving
+                                // the mode is the honest thing for a search to do.
+                                if !typed.isEmpty { arranging = false }
+                                model.search(typed)
+                            }
+                        ),
+                        isFocused: $searchFocused
+                    )
                 }
                 .sheet(item: $loggingAgain) { request in
                     // Exactly as the detail screen opens it (SPEC §6.4): a free-weight
@@ -139,6 +147,21 @@ struct LibraryView: View {
         } label: {
             Label("More", systemImage: "ellipsis.circle")
         }
+    }
+
+    /// The library, over **the surface a tap puts the keyboard away on** (#56).
+    ///
+    /// A `simultaneousGesture` rather than `onTapGesture`, so it takes taps from nothing:
+    /// the tiles, the result rows, the Arrange-mode pickers and the resume card all still
+    /// see the same tap, and a `TapGesture` fails the moment a finger moves, so a tile is
+    /// still a drag source. `contentShape` is what makes the empty regions tappable —
+    /// without it the two states with nothing drawn in them, a first-launch library and a
+    /// query that matched nothing, would have no exit at all, and they are precisely the
+    /// states no scroll can reach.
+    private var keyboardDismissingContent: some View {
+        content
+            .contentShape(Rectangle())
+            .simultaneousGesture(TapGesture().onEnded { searchFocused = false })
     }
 
     @ViewBuilder

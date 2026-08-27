@@ -4,18 +4,26 @@ import SwiftUI
 ///
 /// It filters instantly, and past the grid it is the only way to reach an exercise —
 /// there is no browsable list — so it is also the fastest door to creating one.
+///
+/// **Focus is the caller's, not the field's** (#56) — see `LibraryView.searchFocused`.
 struct LibrarySearchField: View {
     @Binding var query: String
+    /// Whether the field is first responder.
+    @FocusState.Binding var isFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
             TextField("Search or add an exercise", text: $query)
+                .focused($isFocused)
+                // An exit in its own right: submit resigns focus.
                 .submitLabel(.search)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
             if !query.isEmpty {
+                // Clears the text and leaves you typing — what a ✕ in a search field
+                // means everywhere else, so it touches focus deliberately not at all.
                 Button {
                     query = ""
                 } label: {
@@ -36,5 +44,6 @@ struct LibrarySearchField: View {
 }
 
 #Preview {
-    LibrarySearchField(query: .constant(""))
+    @Previewable @FocusState var isFocused: Bool
+    LibrarySearchField(query: .constant(""), isFocused: $isFocused)
 }
