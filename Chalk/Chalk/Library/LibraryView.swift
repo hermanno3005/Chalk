@@ -4,8 +4,7 @@ import SwiftUI
 /// The exercise library — the app's home screen and the root of the `NavigationStack`
 /// (SPEC §7.1). A sectioned tile grid with search pinned in thumb reach.
 ///
-/// The resume card and the tiles' `8 × 52.5 kg · today` subtitles need entries and land
-/// with #25; Arrange mode and Edit groups with #30.
+/// Arrange mode and Edit groups land with #30.
 struct LibraryView: View {
     let model: LibraryModel
 
@@ -14,6 +13,11 @@ struct LibraryView: View {
     /// `NavigationLink`-per-tile: a tile is a plain view so Arrange mode (#30) can drag
     /// it, and a link would claim the press exactly as a `Button` does (SPEC §7.2).
     @State private var opened: [Exercise] = []
+    /// The exercise *Log again* has the log sheet open over, captured at the tap. Held
+    /// rather than re-read from `model.resume` at presentation: the card moves the
+    /// instant anything is logged, and a sheet in flight must not change the exercise
+    /// under a half-typed weight.
+    @State private var loggingAgain: LoggingRequest?
 
     var body: some View {
         NavigationStack(path: $opened) {
@@ -35,6 +39,11 @@ struct LibraryView: View {
                         get: { model.query },
                         set: { model.search($0) }
                     ))
+                }
+                .sheet(item: $loggingAgain) { request in
+                    // Exactly as the detail screen opens it (SPEC §6.4): a free-weight
+                    // exercise needs nothing else from its caller.
+                    LogSheet(model: model.logSheet(for: request.exercise))
                 }
                 .sheet(item: $creating) { request in
                     CreateExerciseSheet(seedName: request.name) { name, kind in
@@ -63,12 +72,21 @@ struct LibraryView: View {
     private func grid(_ sections: [LibrarySection]) -> some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
+                // The single likeliest thing you want, above everything (SPEC §7.1).
+                // Absent altogether when nothing has been logged.
+                if let resume = model.resume {
+                    ResumeCard(
+                        resume: resume,
+                        onOpen: { opened.append(resume.exercise) },
+                        onLogAgain: { loggingAgain = LoggingRequest(exercise: resume.exercise) }
+                    )
+                }
                 ForEach(sections) { section in
                     VStack(alignment: .leading, spacing: 8) {
                         header(section)
                         LazyVGrid(columns: Self.tileColumns, spacing: 10) {
-                            ForEach(section.exercises) { exercise in
-                                ExerciseTile(exercise: exercise) { opened.append(exercise) }
+                            ForEach(section.tiles) { tile in
+                                ExerciseTile(tile: tile) { opened.append(tile.exercise) }
                             }
                         }
                     }
@@ -85,7 +103,7 @@ struct LibraryView: View {
             Text(section.title)
                 .font(.footnote.weight(.semibold))
             Spacer()
-            Text("\(section.exercises.count)")
+            Text("\(section.tiles.count)")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -102,13 +120,13 @@ struct LibraryView: View {
 
     /// Results as a plain list, with **Create it** as the last row when the typed name
     /// matched nothing — find and create are the same gesture (SPEC §7.1).
-    private func results(_ matches: [Exercise], createSuggestion: String?) -> some View {
+    private func results(_ matches: [LibraryTile], createSuggestion: String?) -> some View {
         List {
-            ForEach(matches) { exercise in
+            ForEach(matches) { tile in
                 Button {
-                    opened.append(exercise)
+                    opened.append(tile.exercise)
                 } label: {
-                    Text(exercise.name)
+                    Text(tile.name)
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
@@ -126,6 +144,13 @@ struct LibraryView: View {
         }
         .listStyle(.plain)
     }
+}
+
+/// A log sheet in flight, carrying the exercise it was opened over — the resume card's
+/// at the moment *Log again* was tapped, whatever the card says by the time it closes.
+private struct LoggingRequest: Identifiable {
+    let id = UUID()
+    let exercise: Exercise
 }
 
 /// A create sheet in flight, carrying the name the search field already holds. An
@@ -165,8 +190,19 @@ private enum LibraryPreview {
         let context = ModelContext(container)
         SuggestedGroups.seedIfNeeded(in: context, defaults: defaults)
         let groups = (try? context.fetch(FetchDescriptor<ExerciseGroup>())) ?? []
-        for (name, group) in exercises {
-            context.insert(Exercise(name: name, group: groups.first { $0.name == group }))
+        for (index, (name, group)) in exercises.enumerated() {
+            let exercise = Exercise(name: name, group: groups.first { $0.name == group })
+            context.insert(exercise)
+            // Every exercise but the last carries an entry, so the preview shows the
+            // resume card, the subtitles and a tile with none of either.
+            if index < exercises.count - 1 {
+                context.insert(Entry(
+                    reps: 8,
+                    weight: 52.5,
+                    date: .now.addingTimeInterval(-86_400 * Double(index)),
+                    exercise: exercise
+                ))
+            }
         }
         return AnyView(
             LibraryView(model: LibraryModel(context: context, defaults: defaults))
