@@ -7,7 +7,7 @@ import SwiftData
 ///
 /// **Free-weight only for now** — the scope is every entry the exercise has. The machine
 /// qualifier re-scopes it to one machine's entries and re-derives the whole curve (§5.3,
-/// #26); `RepMaxCurve` already takes its scope from the caller, so that lands here as a
+/// #27); `RepMaxCurve` already takes its scope from the caller, so that lands here as a
 /// different array, not a different derivation.
 @Observable
 final class ExerciseDetailModel {
@@ -116,10 +116,36 @@ final class ExerciseDetailModel {
     /// one that must not leave a wrong number behind the back button.
     func logSheet(onSave: @escaping () -> Void) -> LogSheetModel {
         LogSheetModel(exercise: exercise, context: context) { [weak self] in
-            self?.refresh()
-            self?.onLibraryChange()
+            self?.backInStep()
             onSave()
         }
+    }
+
+    /// The history sheet over the cell the readout is showing (SPEC §5.6), wired to put
+    /// this screen and the library behind it back in step when it edits or deletes.
+    /// **The scrub decides which cell**: the sheet is opened from the number in view, so
+    /// it takes the rep count rather than reading it back off a screen that has moved on.
+    ///
+    /// **Nil on an unproven cell.** The sheet is only ever reachable from a cell that
+    /// exists (SPEC §9), so a rep count nothing has reached has no history to explain —
+    /// and an empty list of the entries behind a number that is not there would be a
+    /// screen state the app does not have.
+    func historySheet() -> HistorySheetModel? {
+        guard readout?.weight != nil else { return nil }
+        return HistorySheetModel(
+            exercise: exercise,
+            atLeast: selectedReps,
+            context: context
+        ) { [weak self] in
+            self?.backInStep()
+        }
+    }
+
+    /// What every write from a sheet over this screen has to put right: the curve here,
+    /// and the resume card, tile subtitle and recency order in the library behind it.
+    private func backInStep() {
+        refresh()
+        onLibraryChange()
     }
 
     /// Re-reads the exercise and re-derives the whole curve. Called at init, and again

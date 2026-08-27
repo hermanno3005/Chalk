@@ -4,8 +4,12 @@ import SwiftUI
 /// screen at a time**. The size and the staging are the point — a single unmissable
 /// digit and two thumb-sized targets is what survives sweaty hands.
 ///
+/// **The same sheet is the edit sheet** (SPEC §6.6): opened from a history row it seeds
+/// from that entry and writes back in place, differing only in the date it states and
+/// will not let you change.
+///
 /// Free-weight only. The machine caption (§6.4) is a line above the number and a fifth
-/// verdict state below it, and lands with the qualifier (#26).
+/// verdict state below it, and lands with machine resolution (#28, #29).
 struct LogSheet: View {
     /// Held in `@State` for the life of the presentation, as the detail screen holds
     /// its own model: the sheet's content is rebuilt as the screen behind it changes,
@@ -71,6 +75,13 @@ struct LogSheet: View {
                 .transition(.opacity.combined(with: .move(edge: .leading)))
             }
             Spacer(minLength: 0)
+            // An edit says which lift it is correcting. The date is not editable
+            // (SPEC §6.6), so it is stated rather than offered.
+            if let dateLabel = model.dateLabel {
+                Text(dateLabel)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(height: 44)
     }

@@ -414,9 +414,3 @@ struct LogSheetModelTests {
 private func kg(_ weight: Double) -> String {
     weight.kilogramsText
 }
-
-extension Date {
-    fileprivate static func days(ago days: Int) -> Date {
-        .now.addingTimeInterval(-Double(days) * 86_400)
-    }
-}

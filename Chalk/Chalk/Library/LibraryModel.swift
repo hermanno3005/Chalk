@@ -91,7 +91,7 @@ final class LibraryModel {
     ///
     /// For a free-weight exercise this is the whole of it, exactly as the detail screen
     /// opens the sheet. The machine a gym-bound exercise's *Log again* passes comes with
-    /// the qualifier (§6.4, #26).
+    /// machine resolution (§6.4, #28).
     func logSheet(for exercise: Exercise, onSave: @escaping () -> Void = {}) -> LogSheetModel {
         LogSheetModel(exercise: exercise, context: context) { [weak self] in
             self?.refresh()

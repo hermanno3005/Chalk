@@ -3,9 +3,10 @@ import SwiftUI
 /// The number at the top of the detail screen: the best weight at the selected rep
 /// count, and what stands behind it (SPEC §5.1).
 ///
-/// The `›` is honest about where this is going — tapping it opens the `reps >= N`
-/// history sheet (§5.6), the only place an entry can be edited or deleted. **Dead until
-/// that ticket lands.**
+/// The `›` is honest about where this is going: tapping the readout opens the
+/// `reps >= N` history sheet (§5.6), the only place an entry can be edited or deleted.
+/// The tap target is the whole readout, not the chevron — the number is what your thumb
+/// is aiming at.
 struct ScrubReadout: View {
     let readout: ExerciseDetailModel.Readout
 
@@ -24,8 +25,13 @@ struct ScrubReadout: View {
 
             HStack(spacing: 4) {
                 Text("best for \(readout.reps) reps · \(entriesBehind)")
-                Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.semibold))
+                // The chevron is a promise of somewhere to go, so an unproven cell —
+                // which has no entries behind it and no history sheet — does not make
+                // one (SPEC §5.6).
+                if readout.weight != nil {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                }
             }
             .font(.subheadline)
             .foregroundStyle(.secondary)
@@ -33,6 +39,7 @@ struct ScrubReadout: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(weight), best for \(readout.reps) reps, \(entriesBehind)")
+        .accessibilityHint(readout.weight == nil ? "" : "Shows these entries")
     }
 
     private var weight: String {

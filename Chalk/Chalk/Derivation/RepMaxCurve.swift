@@ -95,11 +95,17 @@ struct RepMaxCurve {
     /// single cell, not a curve, and deriving a whole curve to read one of them would
     /// be the wrong shape.
     static func best(atLeast reps: Int, in entries: [Entry]) -> Double? {
-        entries
-            .lazy
-            .filter { $0.isALift && $0.reps >= reps }
-            .map(\.weight)
-            .max()
+        Self.entries(atLeast: reps, in: entries).map(\.weight).max()
+    }
+
+    /// **The entries that can determine `best[n]`** — the `reps >= n` scope itself,
+    /// unordered, lifts only.
+    ///
+    /// The history sheet lists exactly these (SPEC §5.6), which is what makes it
+    /// sufficient. It reads the rule here rather than restating the filter, so the sheet
+    /// cannot drift from the number it was opened to explain.
+    static func entries(atLeast reps: Int, in entries: [Entry]) -> [Entry] {
+        entries.filter { $0.isALift && $0.reps >= reps }
     }
 
     /// The Epley multiplier: an estimated 1RM is `w × (1 + reps/30)`, and projecting

@@ -38,12 +38,18 @@ struct LastEntry: Equatable {
     /// the text is derived at draw time and a screen left open past midnight still says
     /// today's word for a lift that is now yesterday's.
     func text(asOf now: Date = .now) -> String {
-        "\(lift) · \(RelativeDay.text(for: date, asOf: now))"
+        "\(lift) · \(day(asOf: now))"
     }
 
-    /// The numbers alone, without the date.
-    private var lift: String {
+    /// The numbers alone, without the date. The history sheet sets them apart from the
+    /// day (SPEC §5.6) rather than running the two together as one line.
+    var lift: String {
         "\(reps) × \(weight.kilogramsText) kg"
+    }
+
+    /// The day alone, in the same words.
+    func day(asOf now: Date = .now) -> String {
+        RelativeDay.text(for: date, asOf: now)
     }
 }
 
