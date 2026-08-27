@@ -149,7 +149,8 @@ struct LibraryView: View {
         }
     }
 
-    /// The library, over **the surface a tap puts the keyboard away on** (#56).
+    /// The library, over **the two surfaces that put the keyboard away**: a tap (#56) and
+    /// a scroll (#57).
     ///
     /// A `simultaneousGesture` rather than `onTapGesture`, so it takes taps from nothing:
     /// the tiles, the result rows, the Arrange-mode pickers and the resume card all still
@@ -157,9 +158,17 @@ struct LibraryView: View {
     /// still a drag source. `contentShape` is what makes the empty regions tappable —
     /// without it the two states with nothing drawn in them, a first-launch library and a
     /// query that matched nothing, would have no exit at all, and they are precisely the
-    /// states no scroll can reach.
+    /// states no scroll can reach, which is why the tap is the exit that has to work.
+    ///
+    /// `.interactively` is a change of manner rather than of fact: a scroll already
+    /// dismissed the keyboard by default, but it vanished the instant the drag began.
+    /// Now it tracks the finger and is left wherever the finger lets go, which is how
+    /// the rest of the platform behaves. Set here rather than on each scroll view
+    /// because it travels through the environment, so the grid and the results list
+    /// both take it from one place — the same place their other keyboard exit lives.
     private var keyboardDismissingContent: some View {
         content
+            .scrollDismissesKeyboard(.interactively)
             .contentShape(Rectangle())
             .simultaneousGesture(TapGesture().onEnded { searchFocused = false })
     }
