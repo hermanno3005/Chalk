@@ -86,6 +86,14 @@ the length of a long scroll is the path that cannot be relied on, and this one a
 works.
 _Avoid_: Edit mode, organise mode, jiggle mode
 
+**Searching**:
+The state the library screen is in while the field holds a query and the grid is
+replaced by its matches. Not a mode: it carries no visible Done, because it ends by
+itself — when the field is cleared, or when you open something, which is every route
+off the screen. A query is therefore never something you come back to: the next one
+starts from nothing.
+_Avoid_: Search mode, filtering, find mode
+
 **Last entry**:
 What you last did for an exercise, written `8 × 52.5 kg · today` — the most recent entry
 that is a lift, read for display and never stored. The tile subtitles and the resume card

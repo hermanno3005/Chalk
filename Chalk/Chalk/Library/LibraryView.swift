@@ -48,6 +48,19 @@ struct LibraryView: View {
                 .navigationDestination(for: Exercise.self) { exercise in
                     ExerciseDetailView(model: model.detail(for: exercise))
                 }
+                // **Every route off this screen at once** — a result row, a grid tile
+                // and the resume card all push onto this path, so ending the search
+                // here covers the three of them rather than three call sites (#58).
+                // On the way *out*, not the way back: the library stays alive under a
+                // pushed screen, so its field keeps first responder — and the keyboard
+                // rides along to a screen with no field under it — unless something
+                // resigns it as the push begins. Dropping it here also means a swipe
+                // back reveals the grid rather than a stale results list.
+                .onChange(of: opened) { previous, current in
+                    guard current.count > previous.count else { return }
+                    searchFocused = false
+                    model.endSearch()
+                }
                 .navigationTitle("Chalk")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
