@@ -288,7 +288,7 @@ From [#7](https://github.com/hermanno3005/Chalk/issues/7), completed by
 Top to bottom:
 
 1. **The scrub readout.** One large number — the best weight at the selected rep count — with
-   `best for N reps · M records ›` beneath it. `M` is the count of entries with `reps >= N` in
+   `best for N reps · M entries ›` beneath it. `M` is the count of entries with `reps >= N` in
    scope. The number animates on change (`.contentTransition(.numericText())`).
 2. **The strength curve**, **150 pt tall**. Full-bleed was tried and rejected as making the screen
    read as a chart rather than as an exercise.
@@ -373,7 +373,7 @@ it as a distinct lookup, not part of `RepMaxCurve` over the machine in view.
 - **Delete exercise** — cascades to its entries and machines (§3). Confirm destructively, phrased
   as the outcome with the count: *"Delete Bench Press and its 84 entries?"* No undo.
 
-There is deliberately **no "edit records" item**: the curve is how you find a bad entry
+There is deliberately **no "edit entries" item**: the curve is how you find a bad entry
 ([#11](https://github.com/hermanno3005/Chalk/issues/11)), and no all-entries log screen exists.
 
 ### 5.6 History — the `reps >= n` sheet
@@ -460,8 +460,8 @@ arithmetic, which is the common case.
   `20 kg` default anywhere.
 - With the seed usually already correct, the common log is **two taps: Next, Save.** The known
   cost is accepted: after a deload or a one-off heavy single the seed misleads and you pay the
-  correction. Seeding from the *current best* is rejected — it quietly encourages logging a PR
-  you did not hit.
+  correction. Seeding from the *current best* is rejected — it quietly encourages logging a
+  rep-max you did not hit.
 
 ### 6.4 The machine caption — gym-bound only
 
