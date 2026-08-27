@@ -46,7 +46,6 @@ struct LibraryView: View {
                         Button("New exercise", systemImage: "plus") {
                             creating = CreateRequest(name: "")
                         }
-                        .disabled(arranging)
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         // **Done replaces the overflow** rather than joining it: Arrange
@@ -66,7 +65,14 @@ struct LibraryView: View {
                 .safeAreaInset(edge: .bottom) {
                     LibrarySearchField(query: Binding(
                         get: { model.query },
-                        set: { model.search($0) }
+                        set: { typed in
+                            // Typing is finding, not filing. Results are a plain list
+                            // rather than tiles, so there are no pickers on them and a
+                            // `Done` over them would be pointing at nothing — leaving
+                            // the mode is the honest thing for a search to do.
+                            if !typed.isEmpty { arranging = false }
+                            model.search(typed)
+                        }
                     ))
                 }
                 .sheet(item: $loggingAgain) { request in
@@ -132,8 +138,10 @@ struct LibraryView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 20) {
                 // The single likeliest thing you want, above everything (SPEC §7.1).
-                // Absent altogether when nothing has been logged.
-                if let resume = model.resume {
+                // Absent altogether when nothing has been logged — and while arranging,
+                // because it is the one thing on this screen that is not a tile you can
+                // file, and it holds the biggest target on it.
+                if let resume = model.resume, !arranging {
                     ResumeCard(
                         resume: resume,
                         onOpen: { opened.append(resume.exercise) },
@@ -168,7 +176,7 @@ struct LibraryView: View {
                         arranging: arranging,
                         groups: model.groups.groups,
                         onOpen: { opened.append(tile.exercise) },
-                        onAssign: { model.assign(tile.exercise, to: $0) }
+                        onAssign: { model.assign(tile.exercise, to: model.groups.group(id: $0)) }
                     )
                 }
             }
@@ -179,11 +187,11 @@ struct LibraryView: View {
                 .fill(Color.accentColor.opacity(isTarget ? 0.12 : 0))
         )
         .dropDestination(for: DraggedExercise.self) { dropped, _ in
-            let group = section.id.flatMap { id in model.groups.groups.first { $0.id == id } }
-            // Every id that resolves is filed; a payload from outside the app resolves to
+            let group = model.groups.group(id: section.id)
+            // An id the library no longer holds — a tile deleted on the way down — files
             // nothing, and the drop says so rather than swallowing it.
-            return dropped.compactMap(\.id).reduce(false) { filed, id in
-                model.assign(exerciseWithID: id, to: group) || filed
+            return dropped.reduce(false) { filed, dragged in
+                model.assign(exerciseWithID: dragged.id, to: group) || filed
             }
         } isTargeted: { over in
             // Cleared only by the section that owns it: `isTargeted` fires `false` for

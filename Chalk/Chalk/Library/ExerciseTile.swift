@@ -19,7 +19,9 @@ struct ExerciseTile: View {
     /// the grid leaves those out, and the picker is the only way back into one.
     var groups: [ExerciseGroup] = []
     let onOpen: () -> Void
-    var onAssign: (ExerciseGroup?) -> Void = { _ in }
+    /// The group picked, by id — `nil` for Ungrouped. An id rather than a group, because
+    /// that is what the tile already holds and resolving one is the model's job.
+    var onAssign: (UUID?) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -69,7 +71,7 @@ struct ExerciseTile: View {
         Menu {
             Picker("Group", selection: Binding(
                 get: { tile.groupID },
-                set: { id in onAssign(groups.first { $0.id == id }) }
+                set: { onAssign($0) }
             )) {
                 Text(LibraryLayout.ungroupedTitle).tag(UUID?.none)
                 ForEach(groups, id: \.id) { group in

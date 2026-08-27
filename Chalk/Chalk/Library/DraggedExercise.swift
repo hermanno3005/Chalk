@@ -13,15 +13,21 @@ import Foundation
 /// then resolves to no exercise and is refused, one line at the drop. The benefit is that
 /// there is no custom `UTType` to declare in an Info.plist and keep in step.
 struct DraggedExercise: Codable, Transferable {
-
-    /// `nil` for a payload that was not one of ours — text from another app. A drop that
-    /// finds one of these files nothing rather than guessing.
-    let id: UUID?
+    let id: UUID
 
     static var transferRepresentation: some TransferRepresentation {
         ProxyRepresentation(
-            exporting: { (dragged: DraggedExercise) in dragged.id?.uuidString ?? "" },
-            importing: { (text: String) in DraggedExercise(id: UUID(uuidString: text)) }
+            exporting: { (dragged: DraggedExercise) in dragged.id.uuidString },
+            importing: { (text: String) in
+                // Text from another app is not a payload of ours, and throwing here is
+                // how it never reaches the drop at all.
+                guard let id = UUID(uuidString: text) else { throw NotOurPayload() }
+                return DraggedExercise(id: id)
+            }
         )
     }
+
+    /// Never surfaced: it refuses an import, and a refused import is a drag that simply
+    /// does not land. There is nothing to tell anyone about.
+    private struct NotOurPayload: Error {}
 }

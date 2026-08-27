@@ -61,15 +61,17 @@ struct EditGroupsSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
+            // `presenting:` hands the group to the action rather than leaving it to read
+            // `renaming` back: SwiftUI clears `isPresented` on dismissal *before* running
+            // the button, so a rename that reached for the state would find it already
+            // nil and quietly do nothing.
             .alert("Rename group", isPresented: Binding(
                 get: { renaming != nil },
                 set: { if !$0 { renaming = nil } }
-            )) {
+            ), presenting: renaming) { group in
                 TextField("Name", text: $renamed)
                 Button("Cancel", role: .cancel) {}
-                Button("Rename") {
-                    if let renaming { groups.rename(renaming, to: renamed) }
-                }
+                Button("Rename") { groups.rename(group, to: renamed) }
             }
         }
     }

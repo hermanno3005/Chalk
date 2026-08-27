@@ -34,6 +34,17 @@ final class GroupsModel {
         refresh()
     }
 
+    /// The group with this id, or `nil` for **Ungrouped** — which is the honest answer
+    /// for a `nil` id and for one this store no longer holds alike, because both mean
+    /// "no group of yours".
+    ///
+    /// The one place an id becomes a group: a drop carries one, and so does the tile
+    /// picker's selection, and neither should be resolving it for itself.
+    func group(id: UUID?) -> ExerciseGroup? {
+        guard let id else { return nil }
+        return groups.first { $0.id == id }
+    }
+
     /// Creates a group at the end of the order and returns it.
     ///
     /// Returns `nil` for a name that is blank once trimmed. Nothing else can fail: two
@@ -103,6 +114,8 @@ final class GroupsModel {
     /// stays in the context either way and the next save takes it with it.
     private func save() {
         try? context.save()
+        // Not redundant with the refresh `onChange` triggers downstream: this model has
+        // to be right on its own, and `onChange` is `{}` until an owner wires one.
         refresh()
         onChange()
     }
