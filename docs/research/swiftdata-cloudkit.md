@@ -2,6 +2,11 @@
 
 **Date:** 2026-08-13
 **Scope:** SwiftData/CloudKit modelling constraints, project setup, free-vs-paid provisioning, versioned migration, and operational pitfalls, researched against Apple primary sources.
+**Status:** a snapshot as of that date, kept as the evidence behind
+[ADR-0001](../adr/0001-local-swiftdata-with-cloudkit-shaped-schema.md). It is not binding and it
+pre-dates `CONTEXT.md`'s glossary and `SPEC.md`'s schema, so its sketches use placeholder model
+names (`ExerciseRecord`, `WorkoutSet`) rather than Chalk's entities, and §6.2 suggests more than
+the ADR adopted. **Where this document and ADR-0001 differ, the ADR governs.**
 
 ## Bottom line
 

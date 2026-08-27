@@ -797,7 +797,6 @@ to fail.
 Each step leaves the app runnable on the phone.
 
 1. **Schema and container** (§3) — five entities, `ChalkSchemaV1`, local-only configuration.
-   Delete `Placeholder.swift`.
 2. **`RepMaxCurve`** (§4) with unit tests: backfill, the `reps > 12` flooring rule, the ghost.
    No `ModelContainer` in these tests.
 3. **Library screen** (§7.1–7.3) — tiles, sections, search, create sheet, empty state. Groups
