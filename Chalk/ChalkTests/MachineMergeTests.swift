@@ -6,10 +6,8 @@ import Testing
 
 /// `Merge into…` — the repair for a split machine (SPEC §7.5, #32).
 ///
-/// The line every test here is measured against: **deletion cascades from `Machine` to
-/// its entries**, so the merge must re-point every entry and flush the context *before*
-/// it deletes the loser. Invert that and the cascade eats exactly the history the merge
-/// existed to save.
+/// The line every test here is measured against is the hazard `GymsModel.merge(_:into:)`
+/// documents: the delete cascade must never reach an entry the merge existed to save.
 @Suite("Merge into…")
 struct MachineMergeTests {
 
@@ -64,7 +62,6 @@ struct MachineMergeTests {
         fixture.log(machine, reps: 5, weight: 100)
 
         #expect(MachineMerge.targets(for: machine).isEmpty)
-        #expect(fixture.gymsModel().mergeTargets(for: machine).isEmpty)
     }
 
     // MARK: - The confirmation
@@ -75,15 +72,15 @@ struct MachineMergeTests {
         let legPress = fixture.exercise("Leg Press", kind: .gymBound)
         let gym = fixture.gym("Fitness X")
         let loser = fixture.machine(for: legPress, at: gym)
-        let winner = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
         for day in 1...8 {
             fixture.log(loser, reps: 5, weight: 100, on: .days(ago: day))
         }
         for day in 1...3 {
-            fixture.log(winner, reps: 5, weight: 105, on: .days(ago: day))
+            fixture.log(sibling, reps: 5, weight: 105, on: .days(ago: day))
         }
 
-        let merge = MachineMerge(loser: loser, winner: winner)
+        let merge = MachineMerge(loser: loser, sibling: sibling)
 
         #expect(merge.movingCount == 8)
         #expect(merge.resultingCount == 11)
@@ -97,10 +94,10 @@ struct MachineMergeTests {
         let legPress = fixture.exercise("Leg Press", kind: .gymBound)
         let gym = fixture.gym("Fitness X")
         let loser = fixture.machine(for: legPress, at: gym, label: "Green")
-        let winner = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
         fixture.log(loser, reps: 5, weight: 100)
 
-        let merge = MachineMerge(loser: loser, winner: winner)
+        let merge = MachineMerge(loser: loser, sibling: sibling)
 
         #expect(merge.question == "Move 1 entry to Hammer Strength and delete Green?")
         #expect(merge.detail == "Hammer Strength holds 1 entry afterwards. This cannot be undone.")
@@ -112,10 +109,10 @@ struct MachineMergeTests {
         let legPress = fixture.exercise("Leg Press", kind: .gymBound)
         let gym = fixture.gym("Fitness X")
         let loser = fixture.machine(for: legPress, at: gym, label: "Green")
-        let winner = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
-        fixture.log(winner, reps: 5, weight: 105)
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        fixture.log(sibling, reps: 5, weight: 105)
 
-        let merge = MachineMerge(loser: loser, winner: winner)
+        let merge = MachineMerge(loser: loser, sibling: sibling)
 
         #expect(merge.question == "Delete Green and keep Hammer Strength?")
         #expect(merge.detail == "Green holds no entries. Hammer Strength keeps its 1 entry. This cannot be undone.")
@@ -123,24 +120,24 @@ struct MachineMergeTests {
 
     // MARK: - The write
 
-    @Test("Every entry survives the merge and lands on the winner")
+    @Test("Every entry survives the merge and lands on the sibling")
     func everyEntrySurvivesTheMerge() throws {
         let fixture = try LibraryFixture()
         let legPress = fixture.exercise("Leg Press", kind: .gymBound)
         let gym = fixture.gym("Fitness X")
         let loser = fixture.machine(for: legPress, at: gym)
-        let winner = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
         for day in 1...8 {
             fixture.log(loser, reps: 5, weight: 100, on: .days(ago: day))
         }
-        fixture.log(winner, reps: 5, weight: 95, on: .days(ago: 0))
+        fixture.log(sibling, reps: 5, weight: 95, on: .days(ago: 0))
         let model = fixture.gymsModel()
 
-        model.merge(loser, into: winner)
+        model.merge(loser, into: sibling)
 
         // The reassignment is flushed before the delete, so the cascade from `Machine`
         // to its entries finds nothing left to eat.
-        #expect(winner.entries?.count == 9)
+        #expect(sibling.entries?.count == 9)
         let reopened = try fixture.afterRelaunch()
         let entries = try reopened.fetch(FetchDescriptor<Entry>())
         #expect(entries.count == 9)
@@ -153,10 +150,10 @@ struct MachineMergeTests {
         let legPress = fixture.exercise("Leg Press", kind: .gymBound)
         let gym = fixture.gym("Fitness X")
         let loser = fixture.machine(for: legPress, at: gym)
-        let winner = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
         fixture.log(loser, reps: 5, weight: 100)
 
-        fixture.gymsModel().merge(loser, into: winner)
+        fixture.gymsModel().merge(loser, into: sibling)
 
         #expect(gym.machines?.map(\.name) == ["Hammer Strength"])
         let reopened = try fixture.afterRelaunch()
@@ -164,25 +161,25 @@ struct MachineMergeTests {
         #expect(machines.map(\.name) == ["Hammer Strength"])
     }
 
-    @Test("The winner's curve is correct on the next read, with nothing to recompute")
+    @Test("The sibling's curve is correct on the next read, with nothing to recompute")
     func theCurveIsSimplyCorrectAfterwards() throws {
         let fixture = try LibraryFixture()
         let legPress = fixture.exercise("Leg Press", kind: .gymBound)
         let gym = fixture.gym("Fitness X")
         let loser = fixture.machine(for: legPress, at: gym)
-        let winner = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
         // The split curve: the heavy history sits on the machine you stopped using.
         fixture.log(loser, reps: 5, weight: 120, on: .days(ago: 30))
-        fixture.log(winner, reps: 5, weight: 90, on: .days(ago: 1))
+        fixture.log(sibling, reps: 5, weight: 90, on: .days(ago: 1))
         let gyms = fixture.gymsModel()
         gyms.select(gym)
 
-        gyms.merge(loser, into: winner)
+        gyms.merge(loser, into: sibling)
 
-        #expect(RepMaxCurve.best(atLeast: 5, in: try #require(winner.entries)) == 120)
+        #expect(RepMaxCurve.best(atLeast: 5, in: try #require(sibling.entries)) == 120)
         // And the screen that reads it needs no recomputation step (ADR-0002).
         let detail = fixture.detailModel(for: legPress, gyms: gyms)
-        #expect(detail.machine === winner)
+        #expect(detail.machine === sibling)
         #expect(detail.readout?.weight == 120)
     }
 
@@ -192,17 +189,17 @@ struct MachineMergeTests {
         let legPress = fixture.exercise("Leg Press", kind: .gymBound)
         let gym = fixture.gym("Fitness X")
         let loser = fixture.machine(for: legPress, at: gym)
-        let winner = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
         fixture.log(loser, reps: 5, weight: 100)
         fixture.context.insert(Entry(reps: 0, weight: 0, exercise: legPress, machine: loser))
 
-        fixture.gymsModel().merge(loser, into: winner)
+        fixture.gymsModel().merge(loser, into: sibling)
 
-        #expect(winner.entries?.count == 2)
+        #expect(sibling.entries?.count == 2)
         #expect(try fixture.afterRelaunch().fetchCount(FetchDescriptor<Entry>()) == 2)
     }
 
-    @Test("A machine at another gym is refused as a winner, and nothing is deleted")
+    @Test("A machine at another gym is refused as a sibling, and nothing is deleted")
     func mergingAcrossGymsIsRefused() throws {
         let fixture = try LibraryFixture()
         let legPress = fixture.exercise("Leg Press", kind: .gymBound)

@@ -15,8 +15,8 @@ struct MachineMerge {
     /// The machine the entries leave, and which is hard-deleted afterwards.
     let loser: Machine
 
-    /// The machine they land on.
-    let winner: Machine
+    /// The machine they land on — the sibling that survives.
+    let sibling: Machine
 
     /// The machines `Merge into…` offers for `machine`: **same gym, same exercise
     /// siblings only**, most recently logged first. Merging across gyms is incoherent by
@@ -41,8 +41,8 @@ struct MachineMerge {
     /// sheet's per-entry machine edit (SPEC §6.6).
     var movingCount: Int { (loser.entries ?? []).count }
 
-    /// What the winner holds once they land.
-    var resultingCount: Int { (winner.entries ?? []).count + movingCount }
+    /// What the sibling holds once they land.
+    var resultingCount: Int { (sibling.entries ?? []).count + movingCount }
 
     /// The confirmation's question — **phrased as the outcome and carrying the count**:
     /// *"Move 8 entries to Hammer Strength and delete Unlabelled?"*
@@ -53,18 +53,18 @@ struct MachineMerge {
     /// machines are named in the order the entries travel.
     var question: String {
         guard movingCount > 0 else {
-            return "Delete \(loser.name) and keep \(winner.name)?"
+            return "Delete \(loser.name) and keep \(sibling.name)?"
         }
-        return "Move \(entries(movingCount)) to \(winner.name) and delete \(loser.name)?"
+        return "Move \(entries(movingCount)) to \(sibling.name) and delete \(loser.name)?"
     }
 
     /// The line under the question: where the numbers end up, and that nothing brings
     /// them back.
     var detail: String {
         guard movingCount > 0 else {
-            return "\(loser.name) holds no entries. \(winner.name) keeps its \(entries(resultingCount)). This cannot be undone."
+            return "\(loser.name) holds no entries. \(sibling.name) keeps its \(entries(resultingCount)). This cannot be undone."
         }
-        return "\(winner.name) holds \(entries(resultingCount)) afterwards. This cannot be undone."
+        return "\(sibling.name) holds \(entries(resultingCount)) afterwards. This cannot be undone."
     }
 
     private func entries(_ count: Int) -> String {

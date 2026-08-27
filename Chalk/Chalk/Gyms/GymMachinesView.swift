@@ -39,7 +39,7 @@ struct GymMachinesView: View {
             titleVisibility: .visible,
             presenting: merging
         ) { merge in
-            Button("Merge", role: .destructive) { gyms.merge(merge.loser, into: merge.winner) }
+            Button("Merge", role: .destructive) { gyms.merge(merge.loser, into: merge.sibling) }
             Button("Cancel", role: .cancel) {}
         } message: { merge in
             Text(merge.detail)
@@ -48,6 +48,12 @@ struct GymMachinesView: View {
 
     private var machines: [Machine] {
         MachineScope.byRecency(gym.machines ?? [])
+    }
+
+    /// Where a machine can move to — the same for every row on this screen, because it
+    /// is a property of the gyms you own and not of the machine.
+    private var moveTargets: [Gym] {
+        gyms.moveTargets(excluding: gym)
     }
 
     /// A machine, under the exercise it is one of — which is the way you read this list
@@ -59,8 +65,7 @@ struct GymMachinesView: View {
     /// is a puzzle. With neither, the row is a plain label and there is no menu at all.
     @ViewBuilder
     private func row(_ machine: Machine) -> some View {
-        let moveTargets = gyms.moveTargets(excluding: gym)
-        let mergeTargets = gyms.mergeTargets(for: machine)
+        let mergeTargets = MachineMerge.targets(for: machine)
         if moveTargets.isEmpty && mergeTargets.isEmpty {
             label(machine)
         } else {
@@ -78,7 +83,7 @@ struct GymMachinesView: View {
                     Menu("Merge into…", systemImage: "arrow.triangle.merge") {
                         ForEach(mergeTargets, id: \.id) { target in
                             Button(target.name) {
-                                merging = MachineMerge(loser: machine, winner: target)
+                                merging = MachineMerge(loser: machine, sibling: target)
                             }
                         }
                     }
