@@ -49,6 +49,17 @@ final class Machine {
 
     static let unlabelled = "Unlabelled"
 
+    /// The optional one-field answer to `Name this machine`, normalised: **a blank name
+    /// is no name at all**, and renders as `Unlabelled` rather than as an empty row.
+    ///
+    /// The rule lives here rather than at each door that asks — the log sheet's
+    /// `New machine here` (SPEC §6.4) and `Change kind`'s machine prompt (§8) — so the
+    /// two cannot drift.
+    static func label(from name: String?) -> String? {
+        let label = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (label?.isEmpty == false) ? label : nil
+    }
+
     init(
         id: UUID = UUID(),
         manufacturer: String? = nil,

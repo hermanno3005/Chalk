@@ -68,8 +68,9 @@ final class ExerciseDetailModel {
     @ObservationIgnored private let context: ModelContext
     /// Where the current gym lives. **Consulted upstream of the screen and nowhere
     /// else**: it decides which machine this screen opens scoped to, and the log sheet
-    /// never asks it (SPEC §6.4).
-    @ObservationIgnored private let gyms: GymsModel
+    /// never asks it (SPEC §6.4). Readable so the two doors this screen opens onto a gym
+    /// — the log sheet and `Change kind`'s machine prompt — are handed the same one.
+    @ObservationIgnored let gyms: GymsModel
     @ObservationIgnored private let onLibraryChange: () -> Void
 
     /// The rep count the screen opens on (SPEC §5.2) — held even by an exercise with no
@@ -157,6 +158,111 @@ final class ExerciseDetailModel {
     func delete() {
         context.delete(exercise)
         save()
+        onLibraryChange()
+    }
+
+    /// `Change kind` over this exercise — the words the confirmation and the machine
+    /// prompt say (SPEC §8).
+    var kindChange: KindChange { KindChange(exercise: exercise) }
+
+    /// **Free-weight → gym-bound**, with the one machine the existing entries belong to
+    /// (SPEC §8). The machine is created at `gym` — a free-weight exercise has none to
+    /// pick from, which is why the prompt asks for a gym and a name rather than drawing
+    /// the machine picker over an empty list.
+    ///
+    /// **Every existing entry gets that machine**, wholesale: the whole point of the
+    /// prompt is that there is no orphan and no "unknown machine" bucket to tidy later
+    /// (SPEC §3, invariant 4).
+    ///
+    /// `name` is the same optional one-field answer `New machine here` asks for, `nil`
+    /// where you skipped it.
+    func makeGymBound(at gym: Gym, named name: String?) {
+        guard !exercise.isGymBound else { return }
+
+        let machine = Machine(
+            label: Machine.label(from: name),
+            exercise: exercise,
+            gym: gym
+        )
+        context.insert(machine)
+        for entry in exercise.entries ?? [] {
+            entry.machine = machine
+        }
+        exercise.kind = ExerciseKind.gymBound.rawValue
+        save()
+
+        // The screen opens on the machine the entries just landed on rather than on
+        // whatever the opening cascade would pick — it is the only one there is.
+        self.machine = machine
+        refresh()
+        onLibraryChange()
+    }
+
+    /// **Free-weight → gym-bound with nothing logged**, where there is no entry to place
+    /// and so no machine to ask about (SPEC §8). It lands in the empty state the app
+    /// already has: the qualifier reads as unset until the first log creates one (§5.3).
+    func makeGymBound() {
+        guard !exercise.isGymBound, (exercise.entries ?? []).isEmpty else { return }
+
+        exercise.kind = ExerciseKind.gymBound.rawValue
+        save()
+        refresh()
+        onLibraryChange()
+    }
+
+    /// **Gym-bound → free-weight** (SPEC §8): pool everything. Entries keep their
+    /// exercise and **nullify their machine link**; the now-meaningless `Machine` rows
+    /// are deleted.
+    ///
+    /// > **The same cascade hazard as the merge.** Deletion runs from `Machine` to its
+    /// > entries (SPEC §3), so the order below is load-bearing: every entry is detached
+    /// > and **flushed to the store before any machine row goes**. This is the second
+    /// > write in the app whose save error is not swallowed — everywhere else the change
+    /// > simply waits in the context for the next save, but here the next statement
+    /// > destroys history.
+    ///
+    /// **A machine still holding an entry after that flush is left standing.** In a store
+    /// this app wrote there is none — every entry it holds is one of the exercise's, and
+    /// they were all just detached — so the guard only fires over a row that arrived some
+    /// other way, holding an entry with no exercise of its own (SPEC §3, invariant 2).
+    /// What it leaves behind is a machine the free-weight screen never draws; what
+    /// dropping it would leave behind is an entry that no longer exists. **A stranded row
+    /// is a nuisance; a lost curve is not.**
+    ///
+    /// Nothing is recomputed: no rep-max is stored, so the pooled curve is simply correct
+    /// on the next read (ADR-0002).
+    func makeFreeWeight() {
+        guard exercise.isGymBound else { return }
+
+        let machines = exercise.machines ?? []
+        // The exercise's own entries, and no others: an entry with no exercise is
+        // treated as non-existent — never repaired, never surfaced, never counted
+        // (SPEC §3, invariant 2) — so this does not reach through the machines to go
+        // looking for one.
+        for entry in exercise.entries ?? [] {
+            entry.machine = nil
+        }
+        exercise.kind = ExerciseKind.freeWeight.rawValue
+        do {
+            try context.save()
+        } catch {
+            // Nothing reached the store, so the entries are still their machines' and
+            // deleting one would cascade over them. The flip is abandoned whole rather
+            // than left half-applied in the context, where a later save would commit
+            // the kind without the detaching and leave a free-weight exercise holding
+            // machines. `rollback()` discards everything unsaved on this context, which
+            // here is this flip: every other write in the app saves as it goes.
+            context.rollback()
+            refresh()
+            return
+        }
+
+        for machine in machines where (machine.entries ?? []).isEmpty {
+            context.delete(machine)
+        }
+        save()
+
+        refresh()
         onLibraryChange()
     }
 
