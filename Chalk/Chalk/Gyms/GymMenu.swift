@@ -11,6 +11,11 @@ import SwiftUI
 struct GymMenu: View {
     let gyms: GymsModel
     let onNewGym: () -> Void
+    /// `Manage gyms…` — the one admin surface (SPEC §7.4), which is why this menu is
+    /// drawn in the library's overflow and nowhere else. **Log-time menus stay pure
+    /// pickers**: nothing destructive belongs one slip away from the log path, so the
+    /// log sheet reaches for `MachinePicker` rather than for this.
+    let onManageGyms: () -> Void
 
     var body: some View {
         Menu {
@@ -27,6 +32,7 @@ struct GymMenu: View {
             }
             Section {
                 Button("New gym…", systemImage: "plus") { onNewGym() }
+                Button("Manage gyms…", systemImage: "building.2.crop.circle") { onManageGyms() }
             }
         } label: {
             // The label says where you are, because that is the answer you came for —
