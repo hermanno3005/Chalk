@@ -150,8 +150,13 @@ struct ExerciseDetailView: View {
 
     /// Zero entries: short text where the chart would be, and the Log bar beneath it
     /// (SPEC §5.4). No axes, no flat line at zero, no ghost — a chart frame with no data
-    /// implies numbers that do not exist. The machine hint — your numbers on a sibling
-    /// machine — is #29.
+    /// implies numbers that do not exist.
+    ///
+    /// **The empty state carries the machine hint**: one dimmed line quoting your numbers
+    /// on the sibling machine, and **text rather than a dimmed curve** — a shape on the
+    /// chart that is not yours is exactly what the never-mistakable-for-a-record rule
+    /// forbids. A free-weight exercise, and a gym-bound one with no usable sibling, get
+    /// bare text.
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
@@ -159,6 +164,12 @@ struct ExerciseDetailView: View {
             Text(emptyDetail)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            if let hint = model.hint {
+                Text("No entries here — \(hint.text)")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 2)
+            }
         }
         .padding(.top, 8)
     }

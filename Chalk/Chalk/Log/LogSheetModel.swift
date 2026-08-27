@@ -8,7 +8,7 @@ import SwiftData
 /// **The sheet never resolves a machine — its caller does** (§6.4): it is handed one, it
 /// writes the entry onto it, and every number it shows is derived from that machine's
 /// entries alone. The caption above the number says which one and is how you correct it,
-/// so resolution costs **zero taps** and there is no third stage. Its hint verdict is #29.
+/// so resolution costs **zero taps** and there is no third stage.
 ///
 /// **The current gym is never consulted to resolve a machine here** (§6.4) — that job is
 /// upstream, deciding what the detail screen opens scoped to. The sheet only ever *moves*
@@ -28,6 +28,30 @@ final class LogSheetModel: Identifiable {
 
     enum Stage {
         case reps, weight
+    }
+
+    /// The line under the number, in its two kinds (SPEC §6.5). Both are one string and
+    /// they differ only in what stands behind them — which is exactly what the sheet
+    /// draws differently.
+    enum Verdict: Equatable {
+        /// One of the four states derived from **this** machine's entries: your own
+        /// numbers, judged against the weight on screen.
+        case measured(String)
+        /// The fifth state: the **machine hint**, your numbers on a sibling machine.
+        /// Drawn visibly softer than a real verdict, because it is not one — nothing
+        /// here was lifted on the machine in front of you.
+        case hint(String)
+
+        var text: String {
+            switch self {
+            case .measured(let text), .hint(let text): return text
+            }
+        }
+
+        var isHint: Bool {
+            if case .hint = self { return true }
+            return false
+        }
     }
 
     /// Steppers for nudges, keypad for jumps — the same pair on both stages (SPEC §6.2).
@@ -92,6 +116,11 @@ final class LogSheetModel: Identifiable {
     /// picture behind the sheet, and the sheet closes on the write that would change it.
     @ObservationIgnored private var entries: [Entry] = []
 
+    /// Your numbers on the sibling machine, where the one in scope has none of its own
+    /// (SPEC §6.5) — read alongside the entries, and re-read when the caption corrects
+    /// the machine. **A lookup, never a seed**: it fills no number on this sheet.
+    @ObservationIgnored private var hint: MachineHint?
+
     /// The grid weight steps onto, in kilograms. **Global and hard-coded** — not
     /// per-exercise, not per-machine, not a setting, and not a schema field (SPEC §6.2).
     private static let weightGrid = 2.5
@@ -142,6 +171,7 @@ final class LogSheetModel: Identifiable {
     private func rescopeEntries() {
         entries = MachineScope.entries(of: exercise, on: machine)
             .filter { $0 !== editing }
+        hint = MachineHint.lookUp(exercise, scopedTo: machine)
     }
 
     /// Every entry for the exercise, whichever machine it was logged on — what the
@@ -206,21 +236,28 @@ final class LogSheetModel: Identifiable {
     /// silent: the line is meaningless until both numbers exist, and showing the target
     /// there would turn the sheet into a lookup surface — the detail screen's job.
     ///
-    /// The fifth state, the machine hint, arrives with the caption (#29).
-    var verdict: String? {
+    /// **The fifth state is the hint** (SPEC §6.5): where nothing here reaches that rep
+    /// count *and* a sibling machine has usable history, the line quotes the sibling
+    /// rather than saying `First entry at 5 reps` — which is true, and tells you nothing
+    /// at precisely the moment you most need a number. It keeps its own fixed rep count,
+    /// because it is a lookup and not a judgement of the weight on screen.
+    var verdict: Verdict? {
         guard stage == .weight, let reps else { return nil }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
-            return "First entry at \(reps) reps"
+            if let hint {
+                return .hint("No history here — \(hint.text)")
+            }
+            return .measured("First entry at \(reps) reps")
         }
         // A blank weight compares as the nothing it is, which reads as "below".
         let weight = weight ?? 0
         if weight > best {
-            return "Beats your \(reps)-rep best by \((weight - best).kilogramsText) kg"
+            return .measured("Beats your \(reps)-rep best by \((weight - best).kilogramsText) kg")
         }
         if weight == best {
-            return "Matches your \(reps)-rep best"
+            return .measured("Matches your \(reps)-rep best")
         }
-        return "Your \(reps)-rep best is \(best.kilogramsText) kg"
+        return .measured("Your \(reps)-rep best is \(best.kilogramsText) kg")
     }
 
     var canAdvance: Bool { (reps ?? 0) >= 1 }

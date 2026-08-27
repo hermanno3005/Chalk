@@ -213,7 +213,7 @@ struct HistorySheetModelTests {
 
         // The 100 kg entry is the one being corrected, so the best it has to beat is
         // the 70 kg behind it — comparing an entry with itself says nothing.
-        #expect(edit.verdict == "Beats your 5-rep best by \(kg(30)) kg")
+        #expect(edit.verdict == .measured("Beats your 5-rep best by \(kg(30)) kg"))
     }
 
     // MARK: - Deleting
