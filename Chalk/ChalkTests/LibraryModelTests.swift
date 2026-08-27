@@ -43,7 +43,7 @@ struct LibraryModelTests {
             return
         }
         #expect(sections.map(\.title) == ["Ungrouped"])
-        #expect(sections[0].exercises.map(\.name) == ["Bench Press"])
+        #expect(sections[0].tiles.map(\.name) == ["Bench Press"])
 
         let relaunched = try fixture.afterRelaunch().fetch(FetchDescriptor<Exercise>())
         #expect(relaunched.map(\.name) == ["Bench Press"])
@@ -138,6 +138,83 @@ struct LibraryModelTests {
         #expect(model.content.drawn == "searching [] create \"Squat\"")
     }
 
+    // MARK: - The resume card
+
+    @Test("A store with no entries shows no resume card")
+    func aStoreWithNoEntriesHasNoResumeCard() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        model.create(name: "Squat", kind: .freeWeight)
+
+        #expect(model.resume == nil)
+    }
+
+    @Test("The resume card and the tile subtitle move on the log that made them")
+    func loggingMovesTheResumeCardAndTheSubtitle() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let squat = try #require(model.create(name: "Squat", kind: .freeWeight))
+        try #require(model.create(name: "Bench Press", kind: .freeWeight))
+        #expect(model.content.drawn == "grid Ungrouped[Bench Press, Squat]")
+
+        let sheet = model.logSheet(for: squat)
+        sheet.advance()
+        sheet.type(.digit(6))
+        sheet.type(.digit(0))
+        sheet.save()
+
+        let resume = try #require(model.resume)
+        #expect(resume.exercise === squat)
+        #expect(resume.lastEntry.text() == "5 × 60 kg · today")
+        // The tile that was logged has both the subtitle and the front of its section.
+        guard case .grid(let sections) = model.content else {
+            Issue.record("Expected the grid, got \(model.content.drawn)")
+            return
+        }
+        #expect(sections[0].tiles.map(\.name) == ["Squat", "Bench Press"])
+        #expect(sections[0].tiles[0].lastEntry?.text() == "5 × 60 kg · today")
+        #expect(sections[0].tiles[1].lastEntry == nil)
+    }
+
+    @Test("An entry logged from the detail screen moves the library behind it")
+    func loggingFromTheDetailScreenMovesTheLibrary() throws {
+        let fixture = try LibraryFixture()
+        let model = fixture.libraryModel()
+        let squat = try #require(model.create(name: "Squat", kind: .freeWeight))
+        try #require(model.create(name: "Bench Press", kind: .freeWeight))
+
+        // Held for the length of the test as the pushed screen holds it in `@State`:
+        // the sheet keeps only a weak reference back to it.
+        let detail = model.detail(for: squat)
+        let sheet = detail.logSheet {}
+        sheet.advance()
+        sheet.type(.digit(6))
+        sheet.type(.digit(0))
+        sheet.save()
+
+        // The commoner logging path of the two: the card, the subtitle and the order
+        // behind the back button all have to have moved with it.
+        #expect(detail.entryCount == 1)
+        #expect(model.resume?.exercise === squat)
+        #expect(model.resume?.lastEntry.text() == "5 × 60 kg · today")
+        #expect(model.content.drawn == "grid Ungrouped[Squat, Bench Press]")
+    }
+
+    @Test("Log again seeds the sheet from the entry the card shows")
+    func logAgainSeedsFromTheCardsEntry() throws {
+        let fixture = try LibraryFixture()
+        let squat = fixture.exercise("Squat")
+        fixture.log(squat, reps: 8, weight: 52.5, on: .now)
+        try fixture.save()
+        let model = fixture.libraryModel()
+
+        let resume = try #require(model.resume)
+        let sheet = model.logSheet(for: resume.exercise)
+
+        #expect(sheet.reps == 8)
+        #expect(sheet.weight == 52.5)
+    }
+
     // MARK: - Caching
 
     @Test("The grid is cached: reading content twice does not re-derive it")
@@ -151,7 +228,7 @@ struct LibraryModelTests {
             return
         }
         #expect(first[0].id == second[0].id)
-        #expect(first[0].exercises[0] === second[0].exercises[0])
+        #expect(first[0].tiles[0].exercise === second[0].tiles[0].exercise)
     }
 
     @Test("A group assignment made outside the model shows after a refresh")
@@ -181,7 +258,7 @@ extension LibraryModel.Content {
         case .empty:
             "empty"
         case .grid(let sections):
-            (["grid"] + sections.map { "\($0.title)[\($0.exercises.map(\.name).joined(separator: ", "))]" })
+            (["grid"] + sections.map { "\($0.title)[\($0.tiles.map(\.name).joined(separator: ", "))]" })
                 .joined(separator: " ")
         case .searching(let matches, let createSuggestion):
             (["searching", "[\(matches.map(\.name).joined(separator: ", "))]"]

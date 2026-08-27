@@ -60,6 +60,19 @@ structure, not navigation, which is why it never has to beat search.
 _Avoid_: Category, muscle group, tag
 _Note_: the Swift type is `ExerciseGroup`, to leave SwiftUI's `Group` view alone.
 
+**Last entry**:
+What you last did for an exercise, written `8 × 52.5 kg · today` — the most recent entry
+that is a lift, read for display and never stored. The tile subtitles and the resume card
+say it in the same words.
+_Avoid_: Latest, most recent set, history line
+
+**Resume card**:
+The last thing you logged anywhere in the library, at the top of the home screen: the
+exercise, its last entry, and a one-tap way back into the log sheet. Derived from the
+entries like everything else, so it has nothing to maintain and is simply absent when
+nothing has been logged.
+_Avoid_: Recent card, quick log, continue
+
 ### Where you lift
 
 **Gym**:

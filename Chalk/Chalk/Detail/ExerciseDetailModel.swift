@@ -109,9 +109,15 @@ final class ExerciseDetailModel {
     /// The log sheet over this exercise, wired to put the curve back in step when it
     /// writes (SPEC §6.7). The context stays private: the sheet is handed one rather
     /// than reaching for the environment's, so it writes where this screen reads.
+    ///
+    /// **And the library behind it**: an entry logged here is the newest in the store, so
+    /// the resume card, the tile subtitle and the recency order are all stale from the
+    /// moment it lands (#25). This is the commoner logging path of the two, so it is the
+    /// one that must not leave a wrong number behind the back button.
     func logSheet(onSave: @escaping () -> Void) -> LogSheetModel {
         LogSheetModel(exercise: exercise, context: context) { [weak self] in
             self?.refresh()
+            self?.onLibraryChange()
             onSave()
         }
     }

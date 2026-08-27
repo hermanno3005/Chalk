@@ -75,7 +75,7 @@ final class LogSheetModel {
         // Seeded from your most recent entry, so the common log is two taps (SPEC §6.3).
         // For a free-weight exercise the weight seed is the same entry as the rep seed;
         // scoping to one machine's entries is what splits them (#26).
-        let latest = entries.filter(\.isALift).max { $0.date < $1.date }
+        let latest = LastEntry.latest(in: entries)
         reps = latest?.reps ?? Self.defaultReps
         weight = latest?.weight
     }
