@@ -55,4 +55,4 @@ recovery is a one-off import written at that moment against a store still in han
 a feature specified today.
 
 Full research, including primary sources and an explicit list of unverified claims:
-`docs/research/swiftdata-cloudkit.md` on branch `research/swiftdata-cloudkit`.
+[`docs/research/swiftdata-cloudkit.md`](../research/swiftdata-cloudkit.md).
