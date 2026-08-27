@@ -2,9 +2,10 @@ import SwiftData
 import SwiftUI
 
 /// The exercise library — the app's home screen and the root of the `NavigationStack`
-/// (SPEC §7.1). A sectioned tile grid with search pinned in thumb reach, and the two
-/// ways an exercise is filed into a group (SPEC §7.2): **dragging a tile into a section**,
-/// and **Arrange mode**, which puts a picker on every tile.
+/// (SPEC §7.1). A sectioned tile grid with search pinned in thumb reach. An exercise is
+/// filed into a group when it is created (SPEC §7.3), and **re-filed** here two ways
+/// (§7.2): **dragging a tile into a section**, and **Arrange mode**, which puts a picker
+/// on every tile.
 struct LibraryView: View {
     let model: LibraryModel
 

@@ -78,9 +78,10 @@ _Avoid_: None, unfiled, uncategorised
 **Arrange mode**:
 The state the library screen is in while you are filing exercises rather than using them:
 every tile carries a group picker and a tap no longer opens anything. Entered from the
-overflow and left by a visible Done that replaces it. The periodic re-shelving pass —
-where you look over the whole library at once, months apart — rather than how an exercise
-first reaches a group, which happens when it is created. It exists because dragging a tile
+overflow and left by a visible Done that replaces it. It is the periodic re-shelving pass
+— where you look over the whole library at once, months apart — rather than how an
+exercise first reaches a group, which happens when it is created. It exists because
+dragging a tile
 the length of a long scroll is the path that cannot be relied on, and this one always
 works.
 _Avoid_: Edit mode, organise mode, jiggle mode

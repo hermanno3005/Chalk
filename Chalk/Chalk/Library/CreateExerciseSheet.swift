@@ -83,7 +83,7 @@ struct CreateExerciseSheet: View {
                         // land. Deliberately not `None`, which is what the `Gym` row
                         // below says and means — a machine with no gym does not exist
                         // yet, where Ungrouped is a real, named, visible place.
-                        Text("Ungrouped").tag(UUID?.none)
+                        Text(LibraryLayout.ungroupedTitle).tag(UUID?.none)
                     }
                 }
 
@@ -161,9 +161,10 @@ struct CreateExerciseSheet: View {
         gyms.gyms.first { $0.id == gymID }
     }
 
-    /// The picked group, resolved the same way and for the same reason: a group deleted
-    /// while the sheet was open resolves to **Ungrouped** rather than to a stale row,
-    /// which is the honest answer — it is no longer a shelf of yours.
+    /// The picked group, resolved for the same reason the gym above it is: a group
+    /// deleted while the sheet was open resolves to **Ungrouped** rather than to a stale
+    /// row, which is the honest answer — it is no longer a shelf of yours. Through
+    /// `GroupsModel`, which owns the one place an id becomes a group.
     private var group: ExerciseGroup? {
         groups.group(id: groupID)
     }
