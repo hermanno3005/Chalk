@@ -5,9 +5,11 @@ import SwiftData
 /// The two-stage log sheet's state: reps, then weight, one giant number at a time
 /// (SPEC §6.1–6.3, §6.5, §6.7).
 ///
-/// **Free-weight only for now** — the machine caption is #28 and its hint verdict #29.
-/// The sheet never resolves a machine anyway (§6.4): its caller hands it one, so that
-/// lands here as an extra line and a fifth verdict state, not a third stage.
+/// **The sheet never resolves a machine — its caller does** (§6.4): it is handed one, it
+/// writes the entry onto it, and every number it shows is derived from that machine's
+/// entries alone. The tappable caption that lets you correct it is #28, and its hint
+/// verdict #29; both land as a line on a sheet that already knows its machine, not as a
+/// third stage.
 ///
 /// **One sheet, two presentations** (SPEC §6.6): handed an entry, it seeds from that
 /// entry rather than your most recent one and writes back in place. Reps and weight are
@@ -38,6 +40,12 @@ final class LogSheetModel: Identifiable {
     }
 
     let exercise: Exercise
+
+    /// The machine the entry is written onto — **the caller's answer, never this
+    /// sheet's** (SPEC §6.4). `nil` for a free-weight exercise, which has no machine to
+    /// carry; **never nil for a gym-bound one**, where an entry with no machine is not
+    /// producible by any UI path (SPEC §3, invariant 4) and `canSave` refuses one.
+    let machine: Machine?
 
     /// The entry being corrected, or nil for a new one. **The only difference between
     /// the two presentations** — everything below this line is the same sheet.
@@ -78,18 +86,24 @@ final class LogSheetModel: Identifiable {
 
     init(
         exercise: Exercise,
+        machine: Machine? = nil,
         editing: Entry? = nil,
         context: ModelContext,
         onSave: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
+        self.machine = machine
         self.editing = editing
         self.context = context
         self.onSave = onSave
         // The entry being edited is not part of its own verdict: the line says how this
         // lift stands against the rest of your history, and an entry compared with
         // itself says nothing (SPEC §6.5).
-        self.entries = (exercise.entries ?? []).filter { $0 !== editing }
+        // The scope the screen behind the sheet is in (SPEC §5.3): one machine's
+        // entries for a gym-bound exercise, so neither the seed nor the verdict can
+        // quote a weight proven somewhere else.
+        self.entries = MachineScope.entries(of: exercise, on: machine)
+            .filter { $0 !== editing }
 
         if let editing {
             // Seeded from *that* entry — the numbers you tapped, ready to be corrected.
@@ -166,7 +180,11 @@ final class LogSheetModel: Identifiable {
 
     /// `reps >= 1` and `weight > 0` (SPEC §6.7). No upper bound and no outlier
     /// confirmation — a typo is corrected, not prevented.
-    var canSave: Bool { canAdvance && (weight ?? 0) > 0 }
+    /// **A gym-bound exercise must resolve a machine** (SPEC §3, invariant 4): with no
+    /// machine there is nothing to write the entry onto, and an unscoped entry pollutes
+    /// the derivation forever. The sheet is never opened in that state — the row that
+    /// creates a machine mid-log is #28 — and this is the guard that keeps it so.
+    var canSave: Bool { canAdvance && (weight ?? 0) > 0 && (machine != nil || !exercise.isGymBound) }
 
     // MARK: - Staging
 
@@ -278,8 +296,24 @@ final class LogSheetModel: Identifiable {
             // filter behaving, not something to compensate for here.
             editing.reps = reps
             editing.weight = weight
+            // `entry.machine?.exercise == entry.exercise`, maintained at write time on
+            // log and on edit alike (SPEC §3, invariant 1).
+            editing.machine = machine
         } else {
-            context.insert(Entry(reps: reps, weight: weight, date: .now, exercise: exercise))
+            context.insert(Entry(
+                reps: reps,
+                weight: weight,
+                date: .now,
+                exercise: exercise,
+                machine: machine
+            ))
+            // **Logging at an archived gym un-archives it** (SPEC §7.4). There is
+            // deliberately no `restore` verb: the one moment you need a gym back is the
+            // moment you are standing in it. An *edit* does not do this — correcting a
+            // three-week-old entry from your couch is not a visit.
+            if let gym = machine?.gym, gym.isArchived {
+                gym.isArchived = false
+            }
         }
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()

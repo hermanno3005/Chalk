@@ -89,6 +89,24 @@ struct HistorySheet: View {
         let row: HistorySheetModel.Row
 
         var body: some View {
+            VStack(alignment: .leading, spacing: 2) {
+                numbers
+                // The machine, where the exercise is gym-bound (SPEC §5.6). The list is
+                // already scoped to one, so this is the scope said out loud rather than
+                // a way to tell the rows apart — and it is what an edit that moves an
+                // entry to another machine (#28) changes under you.
+                if let machine = row.machine {
+                    Text(machine)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint("Edits this entry")
+        }
+
+        private var numbers: some View {
             HStack(spacing: 8) {
                 Text(row.lift)
                     .font(.body.weight(row.isBest ? .semibold : .regular))
@@ -106,13 +124,17 @@ struct HistorySheet: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(
-                row.isBest
-                    ? "\(row.lift), \(row.day), sets this best"
-                    : "\(row.lift), \(row.day)"
-            )
-            .accessibilityHint("Edits this entry")
+        }
+
+        private var accessibilityLabel: String {
+            [
+                row.lift,
+                row.day,
+                row.machine,
+                row.isBest ? "sets this best" : nil,
+            ]
+            .compactMap { $0 }
+            .joined(separator: ", ")
         }
     }
 }

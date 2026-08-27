@@ -5,10 +5,10 @@ import SwiftData
 /// The exercise detail screen's state: the curve in view, where the scrub sits, and the
 /// two mutations the overflow menu owns (SPEC §5.1–5.2, §5.4–5.5).
 ///
-/// **Free-weight only for now** — the scope is every entry the exercise has. The machine
-/// qualifier re-scopes it to one machine's entries and re-derives the whole curve (§5.3,
-/// #27); `RepMaxCurve` already takes its scope from the caller, so that lands here as a
-/// different array, not a different derivation.
+/// **The screen has two shapes** (SPEC §5.3). A free-weight exercise derives from every
+/// entry it has; a gym-bound one derives from **one machine's entries only**, chosen by
+/// the qualifier. `RepMaxCurve` takes its scope from the caller, so switching machines is
+/// a different array rather than a different derivation.
 @Observable
 final class ExerciseDetailModel {
 
@@ -29,6 +29,22 @@ final class ExerciseDetailModel {
 
     private(set) var curve = RepMaxCurve(entries: [])
 
+    /// Whether this exercise's load transfers between gyms. **The qualifier exists only
+    /// where it does not** — a free-weight exercise shows no qualifier at all, not a
+    /// disabled one and not a placeholder (SPEC §5.3).
+    private(set) var isGymBound = false
+
+    /// The machine the screen is scoped to, and every machine it could be scoped to —
+    /// both empty for a free-weight exercise. `machine` is `nil` for a gym-bound exercise
+    /// with no machines yet, which is the empty state until the first log creates one.
+    private(set) var machine: Machine?
+    private(set) var machines: [Machine] = []
+
+    /// The qualifier's rows: every machine for this exercise, flat, sectioned by gym
+    /// (SPEC §5.3). Built on refresh rather than behind `var body`, as the library's
+    /// ordering is (§7.2, hazard 3).
+    private(set) var machineMenu = MachineMenu(machines: [])
+
     /// The exercise's name and how many entries it holds, **read once and kept here**
     /// rather than off the model object. The screen stays on-stack for a frame or two
     /// after a delete, and a deleted `Exercise` is no longer a thing to ask.
@@ -41,6 +57,10 @@ final class ExerciseDetailModel {
     private(set) var selectedReps = ExerciseDetailModel.defaultReps
 
     @ObservationIgnored private let context: ModelContext
+    /// Where the current gym lives. **Consulted upstream of the screen and nowhere
+    /// else**: it decides which machine this screen opens scoped to, and the log sheet
+    /// never asks it (SPEC §6.4).
+    @ObservationIgnored private let gyms: GymsModel
     @ObservationIgnored private let onLibraryChange: () -> Void
 
     /// The rep count the screen opens on (SPEC §5.2) — held even by an exercise with no
@@ -48,9 +68,15 @@ final class ExerciseDetailModel {
     /// does have a number.
     private static let defaultReps = 5
 
-    init(exercise: Exercise, context: ModelContext, onLibraryChange: @escaping () -> Void = {}) {
+    init(
+        exercise: Exercise,
+        context: ModelContext,
+        gyms: GymsModel,
+        onLibraryChange: @escaping () -> Void = {}
+    ) {
         self.exercise = exercise
         self.context = context
+        self.gyms = gyms
         self.onLibraryChange = onLibraryChange
         refresh()
     }
@@ -59,6 +85,12 @@ final class ExerciseDetailModel {
     /// short text and the Log bar instead — no axes, no flat line, no ghost, because a
     /// chart frame with no data implies numbers that do not exist (SPEC §5.4).
     var hasCurve: Bool { !curve.best.isEmpty }
+
+    /// Whether the Log bar can open the sheet. **A gym-bound exercise must resolve a
+    /// machine** (SPEC §3, invariant 4), and until one exists there is nothing for the
+    /// caller to hand the sheet — the `New machine here` row that closes this last hole
+    /// belongs to the sheet's own picker (§6.4, #28).
+    var canLog: Bool { !isGymBound || machine != nil }
 
     var readout: Readout? {
         guard hasCurve else { return nil }
@@ -75,6 +107,17 @@ final class ExerciseDetailModel {
         guard entryCount > 0 else { return "Delete \(name)?" }
         let entries = entryCount == 1 ? "1 entry" : "\(entryCount) entries"
         return "Delete \(name) and its \(entries)?"
+    }
+
+    /// Re-scopes the screen to another machine and **re-derives the whole curve**
+    /// (SPEC §5.3). Nothing is cached, so this is a re-read and not an invalidation.
+    ///
+    /// The scrub stays where it is: you are comparing the same rep count across two
+    /// machines, which is the whole reason to switch.
+    func select(_ machine: Machine) {
+        guard isGymBound, machine.exercise?.id == exercise.id else { return }
+        self.machine = machine
+        refresh()
     }
 
     /// Moves the scrub. `nil` — which is what `chartXSelection` writes back on lift — is
@@ -114,8 +157,10 @@ final class ExerciseDetailModel {
     /// the resume card, the tile subtitle and the recency order are all stale from the
     /// moment it lands (#25). This is the commoner logging path of the two, so it is the
     /// one that must not leave a wrong number behind the back button.
+    /// **The sheet never resolves a machine — this caller does** (SPEC §6.4), and what
+    /// it hands over is the qualifier's own machine, so resolution costs zero taps.
     func logSheet(onSave: @escaping () -> Void) -> LogSheetModel {
-        LogSheetModel(exercise: exercise, context: context) { [weak self] in
+        LogSheetModel(exercise: exercise, machine: machine, context: context) { [weak self] in
             self?.backInStep()
             onSave()
         }
@@ -134,6 +179,7 @@ final class ExerciseDetailModel {
         guard readout?.weight != nil else { return nil }
         return HistorySheetModel(
             exercise: exercise,
+            machine: machine,
             atLeast: selectedReps,
             context: context
         ) { [weak self] in
@@ -150,10 +196,30 @@ final class ExerciseDetailModel {
 
     /// Re-reads the exercise and re-derives the whole curve. Called at init, and again
     /// by the log sheet when it writes an entry (#24).
+    ///
+    /// **The opening cascade only runs while the screen is scoped to nothing** — at
+    /// init, and again if the scoped machine goes. It picks where the screen *starts*
+    /// (§5.3); re-running it on every write would drag the screen off the machine the
+    /// qualifier switched to, exactly as re-reading `chartXSelection` would drag the
+    /// scrub back off the rep count your finger left it on.
     func refresh() {
         name = exercise.name
         entryCount = exercise.entries?.count ?? 0
-        curve = RepMaxCurve(entries: exercise.entries ?? [])
+        isGymBound = exercise.isGymBound
+
+        if isGymBound {
+            machines = MachineScope.byRecency(exercise.machines ?? [])
+            if machine == nil || !machines.contains(where: { $0 === machine }) {
+                machine = MachineScope.opening(machines: machines, currentGym: gyms.currentGym)
+            }
+            machineMenu = MachineMenu(machines: machines, currentGym: gyms.currentGym)
+        } else {
+            machines = []
+            machine = nil
+            machineMenu = MachineMenu(machines: [])
+        }
+
+        curve = RepMaxCurve(entries: MachineScope.entries(of: exercise, on: machine))
     }
 
     private func save() {

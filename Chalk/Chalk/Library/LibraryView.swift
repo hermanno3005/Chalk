@@ -18,6 +18,9 @@ struct LibraryView: View {
     /// instant anything is logged, and a sheet in flight must not change the exercise
     /// under a half-typed weight.
     @State private var loggingAgain: LoggingRequest?
+    /// The `New gym…` sheet, opened from the overflow's Gym menu — one of the three
+    /// doors gyms are created behind (SPEC §7.4).
+    @State private var creatingGym = false
 
     var body: some View {
         NavigationStack(path: $opened) {
@@ -33,6 +36,16 @@ struct LibraryView: View {
                             creating = CreateRequest(name: "")
                         }
                     }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            // The current-gym picker. *Manage gyms…* joins it at the
+                            // foot of this menu, a direct sibling of *Edit groups*
+                            // (§7.4, #31).
+                            GymMenu(gyms: model.gyms) { creatingGym = true }
+                        } label: {
+                            Label("More", systemImage: "ellipsis.circle")
+                        }
+                    }
                 }
                 .safeAreaInset(edge: .bottom) {
                     LibrarySearchField(query: Binding(
@@ -46,11 +59,16 @@ struct LibraryView: View {
                     LogSheet(model: model.logSheet(for: request.exercise))
                 }
                 .sheet(item: $creating) { request in
-                    CreateExerciseSheet(seedName: request.name) { name, kind in
+                    CreateExerciseSheet(seedName: request.name, gyms: model.gyms) { name, kind, gym, manufacturer in
                         // Creating leaves you on the grid with the new tile on it — the
                         // detail screen is a tap away and has nothing on it yet.
-                        model.create(name: name, kind: kind)
+                        model.create(name: name, kind: kind, gym: gym, manufacturer: manufacturer)
                     }
+                }
+                .sheet(isPresented: $creatingGym) {
+                    // Created here and selected here: you opened this door standing in
+                    // the gym, so that is where you now are.
+                    NewGymSheet(gyms: model.gyms) { model.gyms.select($0) }
                 }
         }
     }
