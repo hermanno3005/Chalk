@@ -54,6 +54,10 @@ final class HistorySheetModel: Identifiable {
     private(set) var rows: [Row] = []
 
     @ObservationIgnored private let context: ModelContext
+    /// The gyms, carried through to the log sheet an edited row opens: its caption's
+    /// picker is sectioned by gym, and **an edit never moves the current gym** (SPEC
+    /// §6.4). Nothing on this sheet reads them.
+    @ObservationIgnored private let gyms: GymsModel
     /// The screens behind the sheet — the detail curve and the library — which every
     /// write here has to put back in step.
     @ObservationIgnored private let onChange: () -> Void
@@ -63,12 +67,14 @@ final class HistorySheetModel: Identifiable {
         machine: Machine? = nil,
         atLeast reps: Int,
         context: ModelContext,
+        gyms: GymsModel,
         onChange: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
         self.machine = machine
         self.reps = reps
         self.context = context
+        self.gyms = gyms
         self.onChange = onChange
         refresh()
     }
@@ -88,12 +94,17 @@ final class HistorySheetModel: Identifiable {
     /// `onSave` is the brief confirmation §6.7 asks for, and it belongs to this sheet
     /// rather than the detail screen: an edit is saved with the history list in view and
     /// the detail screen two layers down, where a flash would go unseen.
+    ///
+    /// **The machine comes off the row's own entry** (SPEC §6.4) — the entry being
+    /// edited, not the scope this list is in, so correcting a mislabelled one starts
+    /// from what it actually says.
     func editSheet(for row: Row, onSave: @escaping () -> Void = {}) -> LogSheetModel {
         LogSheetModel(
             exercise: exercise,
             machine: row.entry.machine,
             editing: row.entry,
-            context: context
+            context: context,
+            gyms: gyms
         ) { [weak self] in
             self?.refresh()
             self?.onChange()

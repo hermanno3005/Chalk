@@ -24,7 +24,7 @@ struct GymBoundScopingTests {
         #expect(model.machine == nil)
         #expect(model.machines.isEmpty)
         #expect(model.machineMenu.isEmpty)
-        #expect(model.canLog)
+        #expect(model.needsFirstMachine == false)
     }
 
     @Test("A gym-bound curve counts only the scoped machine's entries")
@@ -94,8 +94,8 @@ struct GymBoundScopingTests {
         #expect(model.machine === atOther)
     }
 
-    @Test("An exercise with no machines is in its empty state and cannot log")
-    func aGymBoundExerciseWithNoMachinesCannotLog() throws {
+    @Test("An exercise with no machines is in its empty state, and logging makes one")
+    func aGymBoundExerciseWithNoMachinesLogsItsFirst() throws {
         let fixture = try LibraryFixture()
         let exercise = fixture.exercise("Leg Press", kind: .gymBound)
 
@@ -104,9 +104,12 @@ struct GymBoundScopingTests {
         #expect(model.isGymBound)
         #expect(model.machine == nil)
         #expect(model.hasCurve == false)
-        // `Entry.machine == nil` on a gym-bound exercise must not be producible by any
-        // UI path (SPEC §3, invariant 4).
-        #expect(model.canLog == false)
+        #expect(model.needsFirstMachine)
+        // The Log bar still opens: `New machine here` inside the sheet's own picker is
+        // the one hole no caller can close (SPEC §6.4). What holds is the invariant —
+        // `Entry.machine == nil` on a gym-bound exercise is not producible (§3), and the
+        // sheet refuses to save without one.
+        #expect(model.logSheet {}.canSave == false)
     }
 
     @Test("The first machine created for an exercise resolves on the next read")
@@ -115,13 +118,13 @@ struct GymBoundScopingTests {
         let exercise = fixture.exercise("Leg Press", kind: .gymBound)
         let gym = fixture.gym("Fitness X")
         let model = fixture.detailModel(for: exercise)
-        #expect(model.canLog == false)
+        #expect(model.needsFirstMachine)
 
         let machine = fixture.machine(for: exercise, at: gym, label: "Green")
         model.refresh()
 
         #expect(model.machine === machine)
-        #expect(model.canLog)
+        #expect(model.needsFirstMachine == false)
     }
 
     // MARK: - What the sheets are handed

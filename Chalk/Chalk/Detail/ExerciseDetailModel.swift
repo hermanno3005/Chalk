@@ -86,11 +86,13 @@ final class ExerciseDetailModel {
     /// chart frame with no data implies numbers that do not exist (SPEC §5.4).
     var hasCurve: Bool { !curve.best.isEmpty }
 
-    /// Whether the Log bar can open the sheet. **A gym-bound exercise must resolve a
-    /// machine** (SPEC §3, invariant 4), and until one exists there is nothing for the
-    /// caller to hand the sheet — the `New machine here` row that closes this last hole
-    /// belongs to the sheet's own picker (§6.4, #28).
-    var canLog: Bool { !isGymBound || machine != nil }
+    /// Whether this is a gym-bound exercise that has never been logged anywhere, so
+    /// there is no machine for this caller to hand the sheet.
+    ///
+    /// **It does not stop you logging.** The sheet opens with its caption reading unset
+    /// and `New machine here` in the picker underneath — the one hole no caller can
+    /// close (SPEC §6.4) — and refuses to save until a machine resolves (§3, invariant 4).
+    var needsFirstMachine: Bool { isGymBound && machine == nil }
 
     var readout: Readout? {
         guard hasCurve else { return nil }
@@ -160,7 +162,12 @@ final class ExerciseDetailModel {
     /// **The sheet never resolves a machine — this caller does** (SPEC §6.4), and what
     /// it hands over is the qualifier's own machine, so resolution costs zero taps.
     func logSheet(onSave: @escaping () -> Void) -> LogSheetModel {
-        LogSheetModel(exercise: exercise, machine: machine, context: context) { [weak self] in
+        LogSheetModel(
+            exercise: exercise,
+            machine: machine,
+            context: context,
+            gyms: gyms
+        ) { [weak self] in
             self?.backInStep()
             onSave()
         }
@@ -181,7 +188,8 @@ final class ExerciseDetailModel {
             exercise: exercise,
             machine: machine,
             atLeast: selectedReps,
-            context: context
+            context: context,
+            gyms: gyms
         ) { [weak self] in
             self?.backInStep()
         }

@@ -11,7 +11,7 @@ import SwiftData
 /// app has rather than an error it repairs.
 ///
 /// One model shared by every door that touches a gym — the library's Gym menu, the
-/// create-exercise sheet, and the log sheet's picker (#28) — so `New gym…` warns on a
+/// create-exercise sheet, and the log sheet's picker — so `New gym…` warns on a
 /// near name in all of them without three copies of the rule.
 @Observable
 final class GymsModel {

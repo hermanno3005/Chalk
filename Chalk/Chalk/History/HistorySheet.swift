@@ -93,8 +93,9 @@ struct HistorySheet: View {
                 numbers
                 // The machine, where the exercise is gym-bound (SPEC §5.6). The list is
                 // already scoped to one, so this is the scope said out loud rather than
-                // a way to tell the rows apart — and it is what an edit that moves an
-                // entry to another machine (#28) changes under you.
+                // a way to tell the rows apart. It is also what an edit that moves an
+                // entry to another machine changes under you: that move is silent, so
+                // the row leaving this list is the only word said about it (SPEC §6.4).
                 if let machine = row.machine {
                     Text(machine)
                         .font(.caption)

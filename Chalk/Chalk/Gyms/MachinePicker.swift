@@ -8,7 +8,7 @@ import SwiftUI
 /// rows sit under a nav-bar button and under a caption line without either being a
 /// special case.
 ///
-/// The two rows only the log sheet needs are optional and absent by default (#28). The
+/// The two rows only the log sheet needs are optional and absent by default. The
 /// nav-bar menu resolves a machine that already exists; **creating one belongs where the
 /// hole is** — the first gym-bound log at a gym with no machine for that exercise.
 struct MachinePicker: View {

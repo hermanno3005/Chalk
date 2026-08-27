@@ -104,7 +104,7 @@ struct ExerciseDetailView: View {
     /// It is the app's one machine picker, the same rows the log sheet's caption opens
     /// (§6.4). Creating a machine is not offered here: this menu resolves between
     /// machines that exist, and the hole it cannot close belongs where you are standing
-    /// at the rack (#28).
+    /// at the rack — inside the sheet.
     private var qualifier: some View {
         Menu {
             MachinePicker(
@@ -163,19 +163,21 @@ struct ExerciseDetailView: View {
         .padding(.top, 8)
     }
 
-    /// A gym-bound exercise with no machine yet has nothing to log **onto** — its
-    /// numbers are kept per machine and it has none — so the line says that rather than
-    /// inviting a tap on a bar that cannot open. The row that makes the first machine
-    /// belongs to the log sheet's own picker (§6.4, #28).
+    /// A gym-bound exercise with no machine yet keeps its numbers per machine and has
+    /// none, so the line says so — and the Log bar still opens, because the row that
+    /// makes the first machine lives in the sheet's own picker (SPEC §6.4).
     private var emptyDetail: String {
-        model.canLog
-            ? "Log a lift and your curve starts here."
-            : "Its numbers are kept per machine, and it has none yet."
+        model.needsFirstMachine
+            ? "Its numbers are kept per machine. Log a lift and name the one you are at."
+            : "Log a lift and your curve starts here."
     }
 
-    /// Full width, pinned at the bottom. Opens the log sheet (SPEC §6.1), which for a
-    /// free-weight exercise is all the caller has to supply — resolving a machine is
-    /// the gym-bound caller's job (§6.4, #28).
+    /// Full width, pinned at the bottom. Opens the log sheet (SPEC §6.1), handing it the
+    /// qualifier's own machine — **the sheet never resolves one itself** (§6.4).
+    ///
+    /// **Never disabled**, gym-bound exercise with no machine included: that is the one
+    /// case this caller cannot answer, and the sheet's own picker is where it is answered
+    /// rather than a bar that will not open.
     private var logBar: some View {
         Button {
             logging = true
@@ -186,10 +188,6 @@ struct ExerciseDetailView: View {
                 .padding(.vertical, 14)
         }
         .buttonStyle(.borderedProminent)
-        // **A gym-bound exercise must resolve a machine** (SPEC §3, invariant 4), and
-        // with no machine at all there is nothing for this caller to hand the sheet. The
-        // row that makes one mid-log is the sheet's own (§6.4, #28).
-        .disabled(!model.canLog)
         .padding(.horizontal)
         .padding(.bottom, 8)
     }
