@@ -181,14 +181,15 @@ struct LogSheet: View {
     /// **Weight stage only** (SPEC §6.5). The space is reserved on both stages: a line
     /// that comes and goes shifts the number above it.
     ///
-    /// **The hint is drawn softer than a real verdict** — secondary against the verdict's
-    /// own colour, so a number lifted on another machine never reads as one of yours
-    /// here. Zero new layout: it is a fifth state of the line that already reserves this
-    /// space.
+    /// **The hint is drawn softer than a real verdict** — dimmer than the four states
+    /// derived from this machine, so a number lifted on another one never reads as a
+    /// verdict about yours here. The same dimming the detail screen's hint carries, and
+    /// zero new layout: it is a fifth state of the line that already reserves this space.
     private var verdict: some View {
-        Text(model.verdict?.text ?? " ")
+        let isHint = model.verdict?.isHint == true
+        return Text(model.verdict?.text ?? " ")
             .font(.subheadline)
-            .foregroundStyle(model.verdict?.isHint == true ? Color.secondary : .primary)
+            .foregroundStyle(isHint ? HierarchicalShapeStyle.tertiary : .secondary)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 22)
             .animation(.snappy(duration: 0.2), value: model.verdict)

@@ -171,7 +171,10 @@ final class LogSheetModel: Identifiable {
     private func rescopeEntries() {
         entries = MachineScope.entries(of: exercise, on: machine)
             .filter { $0 !== editing }
-        hint = MachineHint.lookUp(exercise, scopedTo: machine)
+        // Off the same array the verdict derives against, so "nothing lifted here" means
+        // one thing on this sheet: an edit whose only entry on this machine is the one
+        // being corrected is a machine with nothing else to say.
+        hint = MachineHint.lookUp(exercise, scopedTo: machine, historyHere: entries)
     }
 
     /// Every entry for the exercise, whichever machine it was logged on — what the
@@ -245,7 +248,7 @@ final class LogSheetModel: Identifiable {
         guard stage == .weight, let reps else { return nil }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
             if let hint {
-                return .hint("No history here — \(hint.text)")
+                return .hint(hint.verdictLine)
             }
             return .measured("First entry at \(reps) reps")
         }
