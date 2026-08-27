@@ -12,7 +12,7 @@ import SwiftUI
 /// (§6.4): one quiet tappable line reading `Hammer Strength · Fitness X`. It is never
 /// hidden "unless something is odd" — a strip that comes and goes shifts the layout and
 /// stops being trusted — and a free-weight sheet carries no machine row at all. The
-/// fifth verdict state, the machine hint, is #29.
+/// fifth verdict state is the machine hint (§6.5).
 struct LogSheet: View {
     /// Held in `@State` for the life of the presentation, as the detail screen holds
     /// its own model: the sheet's content is rebuilt as the screen behind it changes,
@@ -180,10 +180,15 @@ struct LogSheet: View {
 
     /// **Weight stage only** (SPEC §6.5). The space is reserved on both stages: a line
     /// that comes and goes shifts the number above it.
+    ///
+    /// **The hint is drawn softer than a real verdict** — secondary against the verdict's
+    /// own colour, so a number lifted on another machine never reads as one of yours
+    /// here. Zero new layout: it is a fifth state of the line that already reserves this
+    /// space.
     private var verdict: some View {
-        Text(model.verdict ?? " ")
+        Text(model.verdict?.text ?? " ")
             .font(.subheadline)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(model.verdict?.isHint == true ? Color.secondary : .primary)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 22)
             .animation(.snappy(duration: 0.2), value: model.verdict)

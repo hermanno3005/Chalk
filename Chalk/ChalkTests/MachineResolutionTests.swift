@@ -146,7 +146,7 @@ struct MachineResolutionTests {
         #expect(model.machine === there)
         #expect(model.reps == 5)
         #expect(model.weight == 140)
-        #expect(model.verdict == "Matches your 5-rep best")
+        #expect(model.verdict == .measured("Matches your 5-rep best"))
     }
 
     @Test("Picking an unproven machine on the weight stage blanks it with the keypad up")

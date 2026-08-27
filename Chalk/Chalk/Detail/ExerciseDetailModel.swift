@@ -29,6 +29,15 @@ final class ExerciseDetailModel {
 
     private(set) var curve = RepMaxCurve(entries: [])
 
+    /// Your numbers on a sibling machine, where the one in scope has none of its own —
+    /// the line the empty state carries (SPEC §5.4). `nil` for a free-weight exercise,
+    /// for a machine with history, and wherever the sibling has no `best[5]` to quote.
+    ///
+    /// **The only thing on this screen that reads another machine's entries**, and a
+    /// distinct lookup rather than part of `RepMaxCurve` over the machine in view: it is
+    /// text, never a shape on the chart.
+    private(set) var hint: MachineHint?
+
     /// Whether this exercise's load transfers between gyms. **The qualifier exists only
     /// where it does not** — a free-weight exercise shows no qualifier at all, not a
     /// disabled one and not a placeholder (SPEC §5.3).
@@ -228,6 +237,7 @@ final class ExerciseDetailModel {
         }
 
         curve = RepMaxCurve(entries: MachineScope.entries(of: exercise, on: machine))
+        hint = MachineHint.lookUp(exercise, scopedTo: machine)
     }
 
     private func save() {

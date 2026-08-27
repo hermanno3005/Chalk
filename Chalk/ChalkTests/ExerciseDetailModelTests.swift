@@ -104,6 +104,69 @@ struct ExerciseDetailModelTests {
         #expect(model.curve.ghost.isEmpty)
     }
 
+    @Test("The empty state carries the hint, and the curve is still empty")
+    func theEmptyStateCarriesTheHint() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let here = fixture.machine(for: exercise, at: gym, label: "By the window")
+        let sibling = fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
+        fixture.log(sibling, reps: 5, weight: 55, on: .days(ago: 2))
+
+        let model = fixture.detailModel(for: exercise)
+        model.select(here)
+
+        #expect(model.hint?.text == "\(55.0.kilogramsText) kg × 5 on Hammer Strength")
+        // Text, never a dimmed curve: nothing the sibling lifted reaches the chart
+        // (SPEC §5.4).
+        #expect(model.hasCurve == false)
+        #expect(model.curve.best.isEmpty)
+        #expect(model.curve.ghost.isEmpty)
+    }
+
+    @Test("A machine with a curve of its own carries no hint")
+    func aScopedMachineWithHistoryCarriesNoHint() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let here = fixture.machine(for: exercise, at: gym, label: "By the window")
+        let sibling = fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
+        fixture.log(here, reps: 5, weight: 40, on: .days(ago: 1))
+        fixture.log(sibling, reps: 5, weight: 55, on: .days(ago: 2))
+
+        let model = fixture.detailModel(for: exercise)
+        model.select(here)
+
+        #expect(model.hint == nil)
+    }
+
+    @Test("A free-weight exercise with nothing logged gets bare text")
+    func aFreeWeightEmptyStateIsBareText() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+
+        #expect(fixture.detailModel(for: exercise).hint == nil)
+    }
+
+    @Test("The hint follows the qualifier from machine to machine")
+    func theHintFollowsTheQualifier() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let logged = fixture.machine(for: exercise, at: gym, label: "By the window")
+        let fresh = fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
+        fixture.log(logged, reps: 5, weight: 55, on: .days(ago: 2))
+
+        let model = fixture.detailModel(for: exercise)
+        // Opens on the machine with the history, which speaks for itself.
+        #expect(model.machine === logged)
+        #expect(model.hint == nil)
+
+        model.select(fresh)
+
+        #expect(model.hint?.text == "\(55.0.kilogramsText) kg × 5 on By the window")
+    }
+
     // MARK: - The overflow menu
 
     @Test("Renaming keeps the exercise's identity and survives relaunch")
