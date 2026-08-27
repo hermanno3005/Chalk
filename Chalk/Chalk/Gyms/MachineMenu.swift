@@ -17,9 +17,10 @@ struct MachineMenu {
         let title: String
         let machines: [Machine]
         /// The single section that closes the menu, holding every archived gym's
-        /// machines. **Picking one logs the entry and un-archives its gym** — there is
-        /// no `restore` verb, because the moment you need a gym back is the moment you
-        /// are standing in it (SPEC §7.4).
+        /// machines. **Logging on one of these un-archives its gym** — the side effect
+        /// lives where the entry is written (`LogSheetModel.save()`), because there is
+        /// no `restore` verb: the moment you need a gym back is the moment you are
+        /// standing in it (SPEC §7.4).
         let isArchived: Bool
     }
 

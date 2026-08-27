@@ -59,10 +59,10 @@ struct LibraryView: View {
                     LogSheet(model: model.logSheet(for: request.exercise))
                 }
                 .sheet(item: $creating) { request in
-                    CreateExerciseSheet(seedName: request.name, gyms: model.gyms) { name, kind, gym, make in
+                    CreateExerciseSheet(seedName: request.name, gyms: model.gyms) { name, kind, gym, manufacturer in
                         // Creating leaves you on the grid with the new tile on it — the
                         // detail screen is a tap away and has nothing on it yet.
-                        model.create(name: name, kind: kind, gym: gym, make: make)
+                        model.create(name: name, kind: kind, gym: gym, manufacturer: manufacturer)
                     }
                 }
                 .sheet(isPresented: $creatingGym) {

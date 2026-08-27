@@ -184,9 +184,7 @@ final class LogSheetModel: Identifiable {
     /// machine there is nothing to write the entry onto, and an unscoped entry pollutes
     /// the derivation forever. The sheet is never opened in that state — the row that
     /// creates a machine mid-log is #28 — and this is the guard that keeps it so.
-    var canSave: Bool { canAdvance && (weight ?? 0) > 0 && (machine != nil || !isGymBound) }
-
-    private var isGymBound: Bool { exercise.kind == ExerciseKind.gymBound.rawValue }
+    var canSave: Bool { canAdvance && (weight ?? 0) > 0 && (machine != nil || !exercise.isGymBound) }
 
     // MARK: - Staging
 
@@ -309,6 +307,13 @@ final class LogSheetModel: Identifiable {
                 exercise: exercise,
                 machine: machine
             ))
+            // **Logging at an archived gym un-archives it** (SPEC §7.4). There is
+            // deliberately no `restore` verb: the one moment you need a gym back is the
+            // moment you are standing in it. An *edit* does not do this — correcting a
+            // three-week-old entry from your couch is not a visit.
+            if let gym = machine?.gym, gym.isArchived {
+                gym.isArchived = false
+            }
         }
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()

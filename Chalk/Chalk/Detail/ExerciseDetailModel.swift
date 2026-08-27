@@ -205,7 +205,7 @@ final class ExerciseDetailModel {
     func refresh() {
         name = exercise.name
         entryCount = exercise.entries?.count ?? 0
-        isGymBound = exercise.kind == ExerciseKind.gymBound.rawValue
+        isGymBound = exercise.isGymBound
 
         if isGymBound {
             machines = MachineScope.byRecency(exercise.machines ?? [])

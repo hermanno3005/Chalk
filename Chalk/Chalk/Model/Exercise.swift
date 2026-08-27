@@ -17,6 +17,14 @@ final class Exercise {
     @Relationship(deleteRule: .cascade, inverse: \Machine.exercise)
     var machines: [Machine]? = []
 
+    /// Whether this exercise's load transfers between gyms — the one question the whole
+    /// second shape hangs off (SPEC §5.3, §6.4, §7.3).
+    ///
+    /// The kind is stored as its `rawValue` to keep the schema CloudKit-shaped
+    /// (ADR-0001), so the comparison lives here once rather than at every screen that
+    /// asks.
+    var isGymBound: Bool { kind == ExerciseKind.gymBound.rawValue }
+
     init(
         id: UUID = UUID(),
         name: String = "",

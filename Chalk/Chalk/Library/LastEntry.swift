@@ -31,7 +31,14 @@ struct LastEntry: Equatable {
     /// on the numbers the card is showing by construction rather than by agreement
     /// between two copies of the same `max`.
     static func latest(in entries: [Entry]) -> LastEntry? {
-        entries.filter(\.isALift).max { $0.date < $1.date }.flatMap(LastEntry.init)
+        latestEntry(in: entries).flatMap(LastEntry.init)
+    }
+
+    /// The entry itself, for the one caller that needs more off it than the words — the
+    /// resume card's *Log again*, which hands the log sheet the machine that lift was
+    /// logged on (SPEC §6.4). Same rule, one definition.
+    static func latestEntry(in entries: [Entry]) -> Entry? {
+        entries.filter(\.isALift).max { $0.date < $1.date }
     }
 
     /// The whole line. `asOf` is the day it is read on — passed rather than captured, so

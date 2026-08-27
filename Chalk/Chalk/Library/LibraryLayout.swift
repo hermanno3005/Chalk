@@ -108,28 +108,20 @@ struct LibraryLayout {
         return sections
     }
 
-    /// Most recently logged first, never-logged after them, ties by name (SPEC §7.1).
+    /// Most recently logged first, never-logged after them, ties by name (SPEC §7.1) —
+    /// `Recency`'s rule, over tiles.
     ///
-    /// Each exercise's last entry is read **once**, before the sort, rather than inside
-    /// the comparator: the comparator runs O(n log n) times and every call would fault
-    /// the whole entries relationship back in.
+    /// Each exercise's last entry is read into its tile **before** the sort rather than
+    /// inside the comparator, which runs O(n log n) times and would fault the whole
+    /// entries relationship back in on every call.
     ///
     /// Recency is the last *lift*, the same value the subtitle draws: a zeroed row is not
     /// something you did (SPEC §3), so it neither writes a subtitle nor floats a tile.
     private static func byRecency(_ exercises: [Exercise]) -> [LibraryTile] {
-        exercises
-            .map { LibraryTile(exercise: $0, lastEntry: LastEntry.latest(in: $0.entries ?? [])) }
-            .sorted { left, right in
-                switch (left.lastEntry?.date, right.lastEntry?.date) {
-                case let (leftDate?, rightDate?) where leftDate != rightDate:
-                    leftDate > rightDate
-                case (nil, _?):
-                    false
-                case (_?, nil):
-                    true
-                default:
-                    left.name.localizedStandardCompare(right.name) == .orderedAscending
-                }
-            }
+        Recency.order(
+            exercises.map { LibraryTile(exercise: $0, lastEntry: LastEntry.latest(in: $0.entries ?? [])) },
+            lastUsed: { $0.lastEntry?.date },
+            name: \.name
+        )
     }
 }

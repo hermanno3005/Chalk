@@ -232,7 +232,7 @@ struct GymBoundScopingTests {
             name: "Leg Press",
             kind: .gymBound,
             gym: gym,
-            make: "  Hammer Strength  "
+            manufacturer: "  Hammer Strength  "
         ))
 
         let machine = try #require(exercise.machines?.first)
@@ -261,7 +261,7 @@ struct GymBoundScopingTests {
             name: "Squat",
             kind: .freeWeight,
             gym: gym,
-            make: "Eleiko"
+            manufacturer: "Eleiko"
         ))
 
         #expect(exercise.machines?.isEmpty == true)
@@ -283,5 +283,62 @@ struct GymBoundScopingTests {
 
         #expect(machine.entries?.count == 2)
         #expect(machine.entries?.allSatisfy { $0.weight == 55 } == true)
+    }
+}
+
+/// Archive is a **display** concept: the derivation never sees `isArchived` (SPEC §7.4).
+/// The one write it takes is the visit itself — logging at an archived gym un-archives it,
+/// which is why there is no `restore` verb anywhere in the app.
+@Suite("Archived gyms")
+struct ArchivedGymTests {
+
+    @Test("Logging at an archived gym un-archives it")
+    func loggingUnarchivesTheGym() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Holiday Gym", isArchived: true)
+        let machine = fixture.machine(for: exercise, at: gym, label: "Green")
+
+        let sheet = fixture.logSheetModel(for: exercise, on: machine)
+        sheet.advance()
+        sheet.type(.digit(6))
+        sheet.type(.digit(0))
+        sheet.save()
+
+        #expect(gym.isArchived == false)
+    }
+
+    @Test("Correcting an old entry there is not a visit")
+    func editingDoesNotUnarchiveTheGym() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Holiday Gym", isArchived: true)
+        let machine = fixture.machine(for: exercise, at: gym, label: "Green")
+        fixture.log(machine, reps: 5, weight: 100, on: .days(ago: 20))
+
+        let history = fixture.historySheetModel(for: exercise, on: machine, atLeast: 5)
+        let edit = history.editSheet(for: try #require(history.rows.first))
+        edit.advance()
+        edit.tapNumber()
+        edit.type(.digit(9))
+        edit.type(.digit(5))
+        edit.save()
+
+        #expect(machine.entries?.first?.weight == 95)
+        #expect(gym.isArchived)
+    }
+
+    @Test("An archived gym's entries still derive")
+    func archivedGymsStillDerive() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Holiday Gym", isArchived: true)
+        let machine = fixture.machine(for: exercise, at: gym, label: "Green")
+        fixture.log(machine, reps: 5, weight: 100)
+
+        let model = fixture.detailModel(for: exercise)
+
+        #expect(model.machine === machine)
+        #expect(model.readout?.weight == 100)
     }
 }

@@ -42,6 +42,11 @@ final class Machine {
         return "\(name) · \(gymName)"
     }
 
+    /// When you last lifted on this machine, `nil` for one you have never logged on.
+    var lastLogged: Date? {
+        (entries ?? []).filter(\.isALift).map(\.date).max()
+    }
+
     static let unlabelled = "Unlabelled"
 
     init(

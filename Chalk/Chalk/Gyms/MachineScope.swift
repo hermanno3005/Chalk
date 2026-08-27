@@ -38,36 +38,14 @@ enum MachineScope {
     /// from the exercise's entries — pooling separate machines' numbers is exactly the
     /// pollution the model forbids (SPEC §3, invariant 4).
     static func entries(of exercise: Exercise, on machine: Machine?) -> [Entry] {
-        guard exercise.kind == ExerciseKind.gymBound.rawValue else {
-            return exercise.entries ?? []
-        }
+        guard exercise.isGymBound else { return exercise.entries ?? [] }
         return machine?.entries ?? []
     }
 
-    /// When you last lifted on a machine. `nil` for one you have never logged on.
-    static func lastLogged(on machine: Machine) -> Date? {
-        (machine.entries ?? []).filter(\.isALift).map(\.date).max()
-    }
-
-    /// Most recently logged first, never-logged after them, ties by name — the same
-    /// shape the library orders tiles by, over machines instead of exercises.
+    /// Most recently logged first, never-logged after them, ties by name — the same rule
+    /// the library orders tiles by, over machines instead of exercises.
     static func byRecency(_ machines: [Machine]) -> [Machine] {
-        machines
-            .map { (machine: $0, lastLogged: lastLogged(on: $0)) }
-            .sorted { left, right in
-                switch (left.lastLogged, right.lastLogged) {
-                case let (leftDate?, rightDate?) where leftDate != rightDate:
-                    return leftDate > rightDate
-                case (nil, _?):
-                    return false
-                case (_?, nil):
-                    return true
-                default:
-                    return left.machine.name
-                        .localizedStandardCompare(right.machine.name) == .orderedAscending
-                }
-            }
-            .map(\.machine)
+        Recency.order(machines, lastUsed: \.lastLogged, name: \.name)
     }
 
     private static func mostRecentlyLogged(_ machines: [Machine]) -> Machine? {

@@ -56,8 +56,9 @@ final class LibraryModel {
     /// Creates a free-weight or gym-bound exercise in **Ungrouped** — no group is asked
     /// for at create time, and no increment (SPEC §7.3) — and returns to the grid.
     ///
-    /// `gym` and `make` are the **gym-bound branch's** answers and are ignored for a
-    /// free-weight exercise, which has no machine to make. Given a gym, the first machine
+    /// `gym` and `manufacturer` are the **gym-bound branch's** answers — the sheet calls
+    /// the second one *make*, which is what is written on the stack — and both are
+    /// ignored for a free-weight exercise, which has no machine to make. Given a gym, the first machine
     /// is created here so the exercise opens scoped to something you can log on; without
     /// one the exercise is simply machine-less until the first log makes one (§6.4).
     ///
@@ -69,7 +70,7 @@ final class LibraryModel {
         name: String,
         kind: ExerciseKind,
         gym: Gym? = nil,
-        make: String? = nil
+        manufacturer: String? = nil
     ) -> Exercise? {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return nil }
@@ -78,9 +79,9 @@ final class LibraryModel {
         context.insert(exercise)
 
         if kind == .gymBound, let gym {
-            let make = make?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let manufacturer = manufacturer?.trimmingCharacters(in: .whitespacesAndNewlines)
             context.insert(Machine(
-                manufacturer: (make?.isEmpty == false) ? make : nil,
+                manufacturer: (manufacturer?.isEmpty == false) ? manufacturer : nil,
                 exercise: exercise,
                 gym: gym
             ))
@@ -128,13 +129,11 @@ final class LibraryModel {
         }
     }
 
-    /// The machine of the exercise's most recent lift — the one the resume card is
-    /// showing, read the same way `LastEntry` reads the words on it.
+    /// The machine of the exercise's most recent lift — **the entry the resume card is
+    /// showing**, found through the same definition of "what you last did" the card's
+    /// words come from.
     private func resumedMachine(for exercise: Exercise) -> Machine? {
-        (exercise.entries ?? [])
-            .filter(\.isALift)
-            .max { $0.date < $1.date }?
-            .machine
+        LastEntry.latestEntry(in: exercise.entries ?? [])?.machine
     }
 
     /// Re-reads the store and rebuilds the cached ordering. Called after every mutation

@@ -28,7 +28,9 @@ struct CreateExerciseSheet: View {
     /// creating a gym causes. Seeded with the current gym — creating an exercise is
     /// something you do standing in front of the thing.
     @State private var gymID: UUID?
-    @State private var make = ""
+    /// What is written on the stack — the sheet's *make* field, and the machine's
+    /// `manufacturer` once it exists.
+    @State private var manufacturer = ""
     @State private var creatingGym = false
     @FocusState private var nameFocused: Bool
 
@@ -81,7 +83,7 @@ struct CreateExerciseSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {
-                        onCreate(trimmedName, kind, kind == .gymBound ? gym : nil, make)
+                        onCreate(trimmedName, kind, kind == .gymBound ? gym : nil, manufacturer)
                         dismiss()
                     }
                     .disabled(trimmedName.isEmpty)
@@ -113,7 +115,7 @@ struct CreateExerciseSheet: View {
                 }
             }
             Button("New gym…", systemImage: "plus") { creatingGym = true }
-            TextField("Make — optional", text: $make)
+            TextField("Make — optional", text: $manufacturer)
                 .textInputAutocapitalization(.words)
         } footer: {
             Text(gym == nil
