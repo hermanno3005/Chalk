@@ -5,7 +5,8 @@ a ticket on [Map: Goals — a number to head toward](https://github.com/hermanno
 
 > **Round one verdict: B — the goal is a line under the scrub readout — and a reached
 > goal greys out rather than celebrating.** Round two, below, varies only what that line
-> carries and makes the Log bar live. **Round two verdict: open.**
+> carries and makes the Log bar live. **Round two verdict: the donut.** Round three,
+> below, varies only where that donut sits. **Round three verdict: open.**
 
 Four structurally different answers, mounted on the real exercise detail screen — real
 scrub readout, real 150 pt curve, real ghost, real Log bar — so each is judged against
@@ -16,7 +17,7 @@ what it is actually competing with for space.
 Check out the `prototype-goals` branch, open `Chalk/Chalk.xcodeproj` and run. The app is
 rooted at `GoalsPrototypeRoot`, not `LibraryView`. The black pill at the bottom carries:
 
-- **‹ ›** — cycle the round-two variant.
+- **‹ ›** — cycle the donut's placement.
 - **dataset pill** — `6 entries` → `0 entries` → `1 entry`.
 - **goal pill** — `far` (140 × 5) → `close` (102.5 × 5) → `reached` (95 × 5) → `no goal`.
 - **origin pill** — `from set` / `from 0`, what a proportional glyph counts from.
@@ -187,3 +188,55 @@ entry is edited underneath it. **A donut is not free — it drags this with it.*
 ![R1 reached](r1-reached.png) ![R2 reached](r2-reached.png) ![R2 close](r2-close.png)
 
 Grey-out survives everywhere: the donut greys with the words, full and quiet.
+
+---
+
+# Round three — inline, or in the empty space?
+
+The donut won; only **where it sits** is open. Same words, same grey-out, same live Log
+bar, same origin switch.
+
+| | The donut | The words |
+|---|---|---|
+| **P1 — Inline, small** | 18 pt, in front of the line | `Goal 140 × 5 · 40 kg to go`, subhead |
+| **P2 — Row below the curve** | 44 pt, in the empty space | `40 kg to go` in headline, `goal 140 kg × 5` under it |
+| **P3 — Big, number inside** | 120 pt, centred, gap inside the ring | `goal 140 kg × 5` beneath |
+
+![P1](p1-far.png) ![P2](p2-far.png) ![P3](p3-far.png)
+
+## What the screenshots say
+
+- **P1 keeps the screen about the exercise.** The goal is a caption on the number you came
+  for; nothing else on the screen changes weight. At 18 pt the donut is legible as a gauge
+  but reads as punctuation — which is either its virtue or the whole objection to it.
+- **P2 is the middle, and it is a real middle.** The gap gets its own headline and the
+  donut gets enough diameter to read at a glance, without the screen acquiring a second
+  centre of gravity. It also **breaks the alignment nowhere** — everything stays leading.
+- **P3 is striking and it takes the screen over.** `p3-logged` has *two* large numbers on
+  one screen — `115 kg` and `25` — arguing for attention, and the dial is the only centred
+  thing on a screen that is otherwise leading-aligned.
+
+## The zero-entry case decides more than it looks
+
+![P2 zero](p2-zero.png) ![P3 zero](p3-zero.png)
+
+With nothing logged there is no curve, so the "empty space below the curve" is the whole
+screen, and whatever sits there *is* the screen.
+
+- **P2** reads fine: `Nothing logged yet.` still leads, and the goal sits under it as a
+  second thought.
+- **P3 inverts it.** A 120 pt dial reading `140 kg to go` outweighs the app's own prompt to
+  go and log something — on an exercise where you have done nothing at all. The goal
+  shouts loudest exactly where it has least to say.
+
+## The dynamic bit, at each size
+
+![P2 logged](p2-logged.png) ![P3 logged](p3-logged.png)
+
+Six taps of Log: `40 → 25 kg to go`, the ring fills, the curve rises. The bigger the
+donut, the more the fill reads — this is the honest argument for P2 or P3 over P1, and the
+only one.
+
+**The origin question from round two is unchanged and still open.** A bigger dial makes it
+worse, not better: `p3-zero` under `from 0` would show a ring that is already part-full on
+an exercise with nothing logged.

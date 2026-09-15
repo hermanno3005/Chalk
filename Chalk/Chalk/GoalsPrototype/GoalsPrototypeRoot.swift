@@ -2,12 +2,11 @@ import SwiftUI
 
 // PROTOTYPE — the app root while this prototype is checked out.
 //
-// **Round two.** Round one picked B — the goal as a line under the scrub readout — and
-// grey-out for a reached goal. The layout is therefore fixed now; the switcher varies
-// only what that line carries, and the Log bar is live so the gap can be watched
-// closing rather than just seen closed. Round one's four variants are still in the tree
-// (`GoalVariants.swift`) as the primary source of that comparison, no longer reachable
-// from the switcher.
+// **Round three.** Round one picked B — the goal under the scrub readout — and grey-out
+// for a reached goal; round two picked the donut. Only **where the donut sits** is open,
+// so that is all the switcher varies. Earlier rounds' variants are still in the tree
+// (`GoalVariants.swift`, `RoundTwo.swift`) as the primary source of those comparisons,
+// no longer reachable from the switcher.
 struct GoalsPrototypeRoot: View {
     @State private var model = GoalsPrototypeModel()
 
@@ -20,9 +19,9 @@ struct GoalsPrototypeRoot: View {
                     } else {
                         PrototypeEmpty()
                     }
-                    if let goal = model.goal {
+                    if let goal = model.goal, model.placement == .inline {
                         GoalRow(
-                            variant: model.roundTwo,
+                            variant: .donut,
                             goal: goal,
                             gap: model.gap,
                             fraction: model.fraction,
@@ -42,6 +41,31 @@ struct GoalsPrototypeRoot: View {
                     )
                     .animation(.snappy(duration: 0.35), value: model.logged.count)
                 }
+
+                // The space §5.1 keeps deliberately empty, which is what P2 and P3 spend.
+                if let goal = model.goal {
+                    switch model.placement {
+                    case .inline:
+                        EmptyView()
+                    case .row:
+                        GoalRowBelow(
+                            goal: goal,
+                            gap: model.gap,
+                            fraction: model.fraction,
+                            isReached: model.isReached
+                        )
+                        .padding(.top, 4)
+                    case .big:
+                        GoalDialBelow(
+                            goal: goal,
+                            gap: model.gap,
+                            fraction: model.fraction,
+                            isReached: model.isReached
+                        )
+                        .padding(.top, 12)
+                    }
+                }
+
                 Spacer(minLength: 0)
             }
             .padding(.horizontal)
@@ -94,13 +118,13 @@ struct GoalsPrototypeRoot: View {
         VStack(spacing: 8) {
             HStack(spacing: 14) {
                 Button {
-                    model.roundTwo = GoalsPrototypeModel.cycle(model.roundTwo, -1)
+                    model.placement = GoalsPrototypeModel.cycle(model.placement, -1)
                 } label: { Image(systemName: "chevron.left") }
-                Text("\(model.roundTwo.rawValue) — \(model.roundTwo.name)")
+                Text("\(model.placement.rawValue) — \(model.placement.name)")
                     .font(.footnote.weight(.semibold))
                     .frame(width: 190)
                 Button {
-                    model.roundTwo = GoalsPrototypeModel.cycle(model.roundTwo, 1)
+                    model.placement = GoalsPrototypeModel.cycle(model.placement, 1)
                 } label: { Image(systemName: "chevron.right") }
             }
             HStack(spacing: 8) {

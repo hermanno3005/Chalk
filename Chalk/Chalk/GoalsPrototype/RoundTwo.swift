@@ -99,14 +99,15 @@ struct GoalRow: View {
 struct Donut: View {
     let fraction: Double
     let tint: Color
+    var lineWidth: CGFloat = 4
 
     var body: some View {
         ZStack {
             Circle()
-                .stroke(tint.opacity(0.22), lineWidth: 4)
+                .stroke(tint.opacity(0.22), lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: max(0.001, min(1, fraction)))
-                .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .stroke(tint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
         }
     }

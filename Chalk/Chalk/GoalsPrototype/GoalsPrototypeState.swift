@@ -107,6 +107,7 @@ final class GoalsPrototypeModel {
         if args.object(forKey: "ghost") != nil { showGhost = args.bool(forKey: "ghost") }
         if let v = args.string(forKey: "r2"), let m = RoundTwoVariant(rawValue: v) { roundTwo = m }
         if let v = args.string(forKey: "origin"), let m = GoalOrigin(rawValue: v) { origin = m }
+        if let v = args.string(forKey: "place"), let m = DonutPlacement(rawValue: v) { placement = m }
         // Screenshots of the moved state: apply N taps of Log at launch.
         for _ in 0..<args.integer(forKey: "prelog") { logNext() }
     }
@@ -115,6 +116,8 @@ final class GoalsPrototypeModel {
     /// what it carries, plus the origin any proportional glyph has to answer to.
     var roundTwo: RoundTwoVariant = .line
     var origin: GoalOrigin = .whenSet
+    /// Round three: the donut won; only where it sits is open.
+    var placement: DonutPlacement = .inline
 
     /// Lifts made **inside the prototype**, by tapping Log. The gap has to be watched
     /// closing, not just seen closed.
