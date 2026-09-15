@@ -115,8 +115,10 @@ final class GoalsPrototypeModel {
     /// Round two: the line under the readout is settled, so the switcher varies only
     /// what it carries, plus the origin any proportional glyph has to answer to.
     var roundTwo: RoundTwoVariant = .line
+    /// Settled in round three: the ring counts from what the curve read when the goal
+    /// was named, not from zero.
     var origin: GoalOrigin = .whenSet
-    /// Round three: the donut won; only where it sits is open.
+    /// Settled in round three: inline and small. The space below the curve stays empty.
     var placement: DonutPlacement = .inline
 
     /// Lifts made **inside the prototype**, by tapping Log. The gap has to be watched

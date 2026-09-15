@@ -3,10 +3,22 @@
 Throwaway. Answers [How is a goal presented?](https://github.com/hermanno3005/Chalk/issues/64),
 a ticket on [Map: Goals — a number to head toward](https://github.com/hermanno3005/Chalk/issues/62).
 
-> **Round one verdict: B — the goal is a line under the scrub readout — and a reached
-> goal greys out rather than celebrating.** Round two, below, varies only what that line
-> carries and makes the Log bar live. **Round two verdict: the donut.** Round three,
-> below, varies only where that donut sits. **Round three verdict: open.**
+> ## Verdict
+>
+> **A goal is one line under the scrub readout, carrying a small donut.**
+>
+> - **Placement**: the line sits directly under `best for N reps · M records`, in the
+>   subhead's own space. **The space below the curve stays empty** — §5.1 is unchanged.
+> - **The glyph**: an 18 pt donut in front of the words, filling as you close the gap.
+> - **The words**: `Goal 140 × 5 · 40 kg to go`.
+> - **Reached**: the whole line **greys out** — target and glyph together. It does not
+>   vanish and it does not celebrate.
+> - **The ring counts from your best when the goal was set**, not from zero. That costs a
+>   second stored number; see *the origin problem* below.
+> - **The goal never enters the chart**, so the ghost curve is untouched and keeps its job.
+>
+> Reached in three rounds: placement (round one), glyph (round two), size and position
+> (round three).
 
 Four structurally different answers, mounted on the real exercise detail screen — real
 scrub readout, real 150 pt curve, real ghost, real Log bar — so each is judged against
@@ -14,7 +26,7 @@ what it is actually competing with for space.
 
 ## Run it
 
-Check out the `prototype-goals` branch, open `Chalk/Chalk.xcodeproj` and run. The app is
+Check out the `prototype-goals` **tag**, open `Chalk/Chalk.xcodeproj` and run. The app is
 rooted at `GoalsPrototypeRoot`, not `LibraryView`. The black pill at the bottom carries:
 
 - **‹ ›** — cycle the donut's placement.
@@ -136,6 +148,8 @@ that line, plus one thing round one could not show at all: **what happens when y
 | **R3 — Hairline bar** | a 3 pt track taking the row's leftover width |
 | **R4 — The number moves** | no glyph; the gap animates and a `−2.5` chip says what the log took off |
 
+**R2 won.**
+
 ![R1](r1-far.png) ![R2](r2-far.png) ![R3](r3-far.png) ![R4](r4-far.png)
 
 ## The dynamic bit
@@ -194,7 +208,7 @@ Grey-out survives everywhere: the donut greys with the words, full and quiet.
 # Round three — inline, or in the empty space?
 
 The donut won; only **where it sits** is open. Same words, same grey-out, same live Log
-bar, same origin switch.
+bar, same origin switch. **P1 won** — see the verdict at the top.
 
 | | The donut | The words |
 |---|---|---|
@@ -237,6 +251,13 @@ Six taps of Log: `40 → 25 kg to go`, the ring fills, the curve rises. The bigg
 donut, the more the fill reads — this is the honest argument for P2 or P3 over P1, and the
 only one.
 
-**The origin question from round two is unchanged and still open.** A bigger dial makes it
-worse, not better: `p3-zero` under `from 0` would show a ring that is already part-full on
-an exercise with nothing logged.
+**The origin question from round two is settled at `from set`** — the ring counts from
+what the curve read at that rep count when the goal was named. It is the only answer that
+makes the ring mean anything: `from 0` opens ~71% full and barely moves when you log.
+
+The cost is real and belongs to
+[How is a goal stored?](https://github.com/hermanno3005/Chalk/issues/66): **a goal carries
+a second stored number**, and that number needs its own answer when an entry underneath it
+is edited or deleted. It does not weaken
+[ADR-0002](https://github.com/hermanno3005/Chalk/blob/main/docs/adr/0002-rep-maxes-are-derived-never-stored.md)
+— *reached* and *gap* both stay derived — but it is a second thing a goal remembers.
