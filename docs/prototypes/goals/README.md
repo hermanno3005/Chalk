@@ -3,7 +3,9 @@
 Throwaway. Answers [How is a goal presented?](https://github.com/hermanno3005/Chalk/issues/64),
 a ticket on [Map: Goals — a number to head toward](https://github.com/hermanno3005/Chalk/issues/62).
 
-> **Verdict: open.** The screenshots below are the thing to react to; the dev picks.
+> **Round one verdict: B — the goal is a line under the scrub readout — and a reached
+> goal greys out rather than celebrating.** Round two, below, varies only what that line
+> carries and makes the Log bar live. **Round two verdict: open.**
 
 Four structurally different answers, mounted on the real exercise detail screen — real
 scrub readout, real 150 pt curve, real ghost, real Log bar — so each is judged against
@@ -14,15 +16,20 @@ what it is actually competing with for space.
 Check out the `prototype-goals` branch, open `Chalk/Chalk.xcodeproj` and run. The app is
 rooted at `GoalsPrototypeRoot`, not `LibraryView`. The black pill at the bottom carries:
 
-- **‹ ›** — cycle the variant.
+- **‹ ›** — cycle the round-two variant.
 - **dataset pill** — `6 entries` → `0 entries` → `1 entry`.
 - **goal pill** — `far` (140 × 5) → `close` (102.5 × 5) → `reached` (95 × 5) → `no goal`.
-- **reached pill** — `grey out` / `vanish`, the two answers the ticket names.
-- **ghost pill** — the ghost on or off, so the fog on the map can be looked at directly.
+- **origin pill** — `from set` / `from 0`, what a proportional glyph counts from.
+- **ghost pill** — the ghost on or off.
+- **reset pill** — throw away what you logged in the prototype.
+
+**The Log bar is live.** Each tap logs 2.5 kg above where the curve stands, at the goal's
+rep count, so the gap, the glyph and the curve move together and the presentation can be
+judged in motion rather than in stills.
 
 Sample data is in memory only; nothing is stored. The same combinations can be launched
-directly — `-variant A -dataset "0 entries" -goal far -ghost NO` — which is how these
-screenshots were taken.
+directly — `-r2 R2 -dataset "0 entries" -goal far -origin "from set" -prelog 3` — which is
+how these screenshots were taken. Round one's switcher took `-variant A` instead.
 
 ## The four
 
@@ -112,3 +119,71 @@ is a cost that only variant A incurs.**
   scopes, and the qualifier is unchanged.
 - The goal is fixed at 5 reps, the default selection, so the gap and the scrub agree. What
   a goal at 3 reps looks like while you are scrubbing 8 is not shown and is open.
+
+---
+
+# Round two — the line won, now what does it carry?
+
+Round one settled the **placement** (a line under the readout) and the **reached
+appearance** (grey out). Everything below holds those fixed and varies only what sits in
+that line, plus one thing round one could not show at all: **what happens when you log.**
+
+| | What the line carries |
+|---|---|
+| **R1 — Line only** | nothing — round one's winner, as the control |
+| **R2 — Donut** | a 18 pt donut in front of the words |
+| **R3 — Hairline bar** | a 3 pt track taking the row's leftover width |
+| **R4 — The number moves** | no glyph; the gap animates and a `−2.5` chip says what the log took off |
+
+![R1](r1-far.png) ![R2](r2-far.png) ![R3](r3-far.png) ![R4](r4-far.png)
+
+## The dynamic bit
+
+`r2-far` → `r2-logged` is six taps of Log: the gap counts `40 → 25`, the donut fills, the
+readout climbs `100 → 115` and the staircase rises under it, all on one 0.35 s spring.
+
+![R2 before](r2-far.png) ![R2 after six logs](r2-logged.png)
+
+It works, and it exposes something the stills could not: **the gap is the only part of the
+screen that reacts to a log in a way you feel.** The readout already moves, but it moves
+whether or not you are heading anywhere. This is the argument for the feature in one
+gesture.
+
+From an empty screen it is the same story — `r2-zero` says `140 kg to go` against nothing,
+and three logs in it is a real number against a real curve.
+
+![R2 zero](r2-zero.png) ![R2 zero, logged](r2-zerologged.png)
+
+## The origin problem, made switchable
+
+Round one found it in variant C and it follows any glyph: **a donut has to count from
+somewhere.** The two shots below are the same numbers — `100 kg`, `40 kg to go` — under
+the two answers:
+
+![from 0](r2-far-zero.png) ![from set](r2-far.png)
+
+- **`from 0`** — `best / goal`. Costs nothing to store, and it is a lie: you were never at
+  zero, so it opens 71% full and a beginner's donut and a strong lifter's look the same.
+- **`from set`** — `(best − best-when-set) / (goal − best-when-set)`. Honest, and it reads
+  as real progress the moment you log. It costs **a second stored number**: what the curve
+  read at that rep count when you named the goal.
+
+That second number is the real decision here, and it is bigger than a glyph: it is another
+stored value that is not a lift you performed, and it would need its own answer when an
+entry is edited underneath it. **A donut is not free — it drags this with it.**
+
+## What the shots say about each
+
+- **R2 — Donut.** Reads as a gauge, not a chart, and at subhead height it does not outweigh
+  the words. Filling it is the most satisfying of the four. Needs the origin answered.
+- **R3 — Hairline bar.** The trailing track reads as an underline or a divider rather than
+  as progress — it is the weakest of the four, and it also needs the origin answered.
+- **R4 — The number moves.** The only one that costs nothing to store, because it shows a
+  *difference* rather than a *proportion*. The `−2,5` chip as drawn is too loud and does
+  not fade; it should be a brief flash, not a permanent badge.
+- **R1 — Line only.** Still the cheapest, and against R2 the honest question is whether the
+  donut earns a stored number.
+
+![R1 reached](r1-reached.png) ![R2 reached](r2-reached.png) ![R2 close](r2-close.png)
+
+Grey-out survives everywhere: the donut greys with the words, full and quiet.

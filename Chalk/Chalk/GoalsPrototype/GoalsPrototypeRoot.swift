@@ -1,14 +1,47 @@
 import SwiftUI
 
-// PROTOTYPE — the app root while this prototype is checked out. Four variants of the
-// goal on the exercise detail screen, switchable from the floating bottom bar.
+// PROTOTYPE — the app root while this prototype is checked out.
+//
+// **Round two.** Round one picked B — the goal as a line under the scrub readout — and
+// grey-out for a reached goal. The layout is therefore fixed now; the switcher varies
+// only what that line carries, and the Log bar is live so the gap can be watched
+// closing rather than just seen closed. Round one's four variants are still in the tree
+// (`GoalVariants.swift`) as the primary source of that comparison, no longer reachable
+// from the switcher.
 struct GoalsPrototypeRoot: View {
     @State private var model = GoalsPrototypeModel()
 
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 20) {
-                body(for: model.variant)
+                VStack(alignment: .leading, spacing: 6) {
+                    if model.hasCurve {
+                        ScrubReadout(readout: readout)
+                    } else {
+                        PrototypeEmpty()
+                    }
+                    if let goal = model.goal {
+                        GoalRow(
+                            variant: model.roundTwo,
+                            goal: goal,
+                            gap: model.gap,
+                            fraction: model.fraction,
+                            isReached: model.isReached,
+                            lastDelta: model.lastDelta
+                        )
+                    }
+                }
+                if model.hasCurve {
+                    PrototypeCurve(
+                        curve: model.curve,
+                        selectedReps: model.selectedReps,
+                        goal: nil,
+                        isReached: model.isReached,
+                        showGhost: model.showGhost,
+                        onSelect: model.select
+                    )
+                    .animation(.snappy(duration: 0.35), value: model.logged.count)
+                }
                 Spacer(minLength: 0)
             }
             .padding(.horizontal)
@@ -27,25 +60,26 @@ struct GoalsPrototypeRoot: View {
                     }
                 }
             }
-            // The real Log bar, so every variant is judged with the thing it is
-            // competing with for thumb space actually on screen.
             .safeAreaInset(edge: .bottom) { logBar }
         }
         .overlay(alignment: .bottom) { switcher }
     }
 
-    @ViewBuilder
-    private func body(for variant: PrototypeVariant) -> some View {
-        switch variant {
-        case .a: GoalVariantA(model: model)
-        case .b: GoalVariantB(model: model)
-        case .c: GoalVariantC(model: model)
-        case .d: GoalVariantD(model: model)
-        }
+    private var readout: ExerciseDetailModel.Readout {
+        ExerciseDetailModel.Readout(
+            reps: model.selectedReps,
+            weight: model.curve.best[model.selectedReps],
+            entriesBehind: model.curve.entriesBehind[model.selectedReps] ?? 0
+        )
     }
 
+    /// **Live.** Each tap logs 2.5 kg above where the curve stands, at the goal's rep
+    /// count — the ordinary next session — so the gap, the glyph and the curve all move
+    /// together and the presentation can be judged in motion.
     private var logBar: some View {
-        Button {} label: {
+        Button {
+            withAnimation(.snappy(duration: 0.35)) { model.logNext() }
+        } label: {
             Text("Log")
                 .font(.headline)
                 .frame(maxWidth: .infinity)
@@ -53,33 +87,39 @@ struct GoalsPrototypeRoot: View {
         }
         .buttonStyle(.borderedProminent)
         .padding(.horizontal)
-        // Clear of the switcher pill, which is prototype chrome and not part of the
-        // design being judged.
         .padding(.bottom, 74)
     }
 
-    /// Deliberately high-contrast and obviously not part of the design.
     private var switcher: some View {
         VStack(spacing: 8) {
             HStack(spacing: 14) {
-                Button { model.cycleVariant(-1) } label: { Image(systemName: "chevron.left") }
-                Text("\(model.variant.rawValue) — \(model.variant.name)")
+                Button {
+                    model.roundTwo = GoalsPrototypeModel.cycle(model.roundTwo, -1)
+                } label: { Image(systemName: "chevron.left") }
+                Text("\(model.roundTwo.rawValue) — \(model.roundTwo.name)")
                     .font(.footnote.weight(.semibold))
                     .frame(width: 190)
-                Button { model.cycleVariant(1) } label: { Image(systemName: "chevron.right") }
+                Button {
+                    model.roundTwo = GoalsPrototypeModel.cycle(model.roundTwo, 1)
+                } label: { Image(systemName: "chevron.right") }
             }
             HStack(spacing: 8) {
                 pill(model.dataset.rawValue) {
                     model.dataset = GoalsPrototypeModel.cycle(model.dataset, 1)
+                    model.logged = []
+                    model.lastDelta = nil
                 }
                 pill(model.goalState.rawValue) {
                     model.goalState = GoalsPrototypeModel.cycle(model.goalState, 1)
+                    model.lastDelta = nil
                 }
-                pill(model.reachedStyle.rawValue) {
-                    model.reachedStyle = GoalsPrototypeModel.cycle(model.reachedStyle, 1)
+                pill(model.origin.rawValue) {
+                    model.origin = GoalsPrototypeModel.cycle(model.origin, 1)
                 }
-                pill(model.showGhost ? "ghost on" : "ghost off") {
-                    model.showGhost.toggle()
+                pill(model.showGhost ? "ghost on" : "ghost off") { model.showGhost.toggle() }
+                pill("reset") {
+                    model.logged = []
+                    model.lastDelta = nil
                 }
             }
         }

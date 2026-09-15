@@ -105,9 +105,24 @@ final class GoalsPrototypeModel {
         if let v = args.string(forKey: "goal"), let m = PrototypeGoalState(rawValue: v) { goalState = m }
         if let v = args.string(forKey: "reached"), let m = ReachedStyle(rawValue: v) { reachedStyle = m }
         if args.object(forKey: "ghost") != nil { showGhost = args.bool(forKey: "ghost") }
+        if let v = args.string(forKey: "r2"), let m = RoundTwoVariant(rawValue: v) { roundTwo = m }
+        if let v = args.string(forKey: "origin"), let m = GoalOrigin(rawValue: v) { origin = m }
+        // Screenshots of the moved state: apply N taps of Log at launch.
+        for _ in 0..<args.integer(forKey: "prelog") { logNext() }
     }
 
-    var entries: [Entry] { dataset.entries }
+    /// Round two: the line under the readout is settled, so the switcher varies only
+    /// what it carries, plus the origin any proportional glyph has to answer to.
+    var roundTwo: RoundTwoVariant = .line
+    var origin: GoalOrigin = .whenSet
+
+    /// Lifts made **inside the prototype**, by tapping Log. The gap has to be watched
+    /// closing, not just seen closed.
+    var logged: [Entry] = []
+    /// What the last tap took off the gap, for the variant that says so out loud.
+    var lastDelta: Double?
+
+    var entries: [Entry] { dataset.entries + logged }
     var curve: RepMaxCurve { RepMaxCurve(entries: entries) }
     var hasCurve: Bool { !entries.isEmpty }
 
@@ -121,6 +136,33 @@ final class GoalsPrototypeModel {
     var isReached: Bool { goal.map { $0.isReached(curve) } ?? false }
 
     var gap: Double { goal.map { $0.gap(curve) } ?? 0 }
+
+    /// What the curve read at the goal's rep count **before anything was logged here** —
+    /// standing in for the number you would have to store to draw an honest glyph.
+    var bestWhenSet: Double {
+        guard let goal = goalState.goal else { return 0 }
+        return RepMaxCurve(entries: dataset.entries).best[goal.reps] ?? 0
+    }
+
+    /// How full a donut or a bar is, under whichever origin is selected.
+    var fraction: Double {
+        guard let goal = goalState.goal else { return 0 }
+        let best = curve.best[goal.reps] ?? 0
+        let floor = origin == .zero ? 0 : bestWhenSet
+        guard goal.weight > floor else { return 1 }
+        return min(1, max(0, (best - floor) / (goal.weight - floor)))
+    }
+
+    /// Log a lift 2.5 kg above where the curve stands, at the goal's rep count — the
+    /// ordinary next session, and the smallest move the gap can make.
+    func logNext() {
+        let reps = goalState.goal?.reps ?? selectedReps
+        let best = curve.best[reps] ?? 0
+        let weight = best > 0 ? best + 2.5 : 60
+        let before = gap
+        logged.append(Entry(reps: reps, weight: weight))
+        lastDelta = max(0, before - gap)
+    }
 
     func select(_ reps: Int?) {
         if let reps { selectedReps = reps }
