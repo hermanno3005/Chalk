@@ -68,6 +68,26 @@ whole feature exists to show. With nothing logged it is the entire weight; a rea
 has none.
 _Avoid_: Headroom, remainder, deficit, progress
 
+**Setting a goal**:
+The one write a goal has: naming a `(reps, weight)` pair on a scope, which replaces
+whatever goal was there and records what the curve read at that moment. Naming your first
+goal and replacing a reached one are the same act, which is why *change* is a word on a
+menu row rather than an operation.
+_Avoid_: Update, edit, amend, adjust, save
+
+**Clearing a goal**:
+Removing a goal without naming another — the only other way one leaves a scope. It sits at
+the foot of the goal sheet, not in the exercise's overflow, which carries lifetime
+operations only.
+_Avoid_: Delete, remove, cancel, abandon, retire
+
+**Goal sheet**:
+Where a goal is named: the log sheet's two-stage giant number borrowed whole — reps, then
+weight — and nothing else of it. No machine row, because the scope comes from the caller;
+no seeded weight, because a goal is by definition one you have not lifted; and it commits
+with *Set goal*, never *Save*.
+_Avoid_: Goal editor, target sheet, goal modal
+
 ### The library
 
 **Exercise**:
