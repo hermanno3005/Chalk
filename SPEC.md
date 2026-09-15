@@ -831,7 +831,7 @@ Each step leaves the app runnable on the phone.
 
 ---
 
-## 11. Non-goals
+## 11. Out of scope
 
 Carried from the map's Out of scope. These are **decided**, not deferred by accident.
 

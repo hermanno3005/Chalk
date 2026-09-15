@@ -29,6 +29,12 @@ The twelve rep-maxes for one exercise, `best[1]` through `best[12]`, drawn on a 
 axis so shapes are comparable between exercises.
 _Avoid_: Graph, chart, progression
 
+**Scope**:
+What a strength curve is derived over and what a goal is set on: the exercise for a
+free-weight exercise, one machine for a gym-bound one. The boundary is transferability,
+so a number is only ever compared against numbers it is comparable to.
+_Avoid_: Owner, context, level
+
 **Ghost curve**:
 A see-through Epley projection drawn behind the strength curve, showing headroom you
 have not yet demonstrated. Guidance only — never a rep-max, never stored, never
@@ -41,6 +47,26 @@ currently setting the cell flagged. It mirrors the derivation rather than restat
 which is what makes it sufficient. The only entry point to raw history and the only place
 an entry is edited or deleted; there is no all-entries log screen.
 _Avoid_: Log screen, entry list, records list
+
+### What you're heading toward
+
+**Goal**:
+A weight you have named at a rep count and have not lifted yet, held on one scope — at
+most one, replaced rather than added to. The only number Chalk stores that is not a lift
+you performed, and its job is motivation: it never tells you what to load.
+_Avoid_: Target, PR, PB, milestone, aim, projection
+
+**Reached**:
+What a goal is once the curve has passed it — `best[reps] >= weight`. Asked of the entries
+each time it is shown and never stored, so correcting an entry downward un-reaches a goal
+on its own, with nothing to repair.
+_Avoid_: Achieved, hit, completed, retired, `reachedAt`
+
+**Gap**:
+The weight between your curve and your goal, `goal weight − best[reps]` — the number the
+whole feature exists to show. With nothing logged it is the entire weight; a reached goal
+has none.
+_Avoid_: Headroom, remainder, deficit, progress
 
 ### The library
 
