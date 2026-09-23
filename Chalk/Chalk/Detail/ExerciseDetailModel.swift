@@ -223,6 +223,9 @@ final class ExerciseDetailModel {
         for entry in exercise.entries ?? [] {
             entry.machine = machine
         }
+        // The goal rides along, keeping when it was set, and leaves the exercise in the
+        // same save: a gym-bound exercise holds no goal of its own (SPEC §3).
+        GoalScope.machine(machine).takeGoal(from: .exercise(exercise))
         exercise.kind = ExerciseKind.gymBound.rawValue
         save()
 
@@ -233,11 +236,12 @@ final class ExerciseDetailModel {
         onLibraryChange()
     }
 
-    /// **Free-weight → gym-bound with nothing logged**, where there is no entry to place
-    /// and so no machine to ask about (SPEC §8). It lands in the empty state the app
-    /// already has: the qualifier reads as unset until the first log creates one (§5.3).
+    /// **Free-weight → gym-bound with nothing logged and no goal**, where there is
+    /// nothing to place and so no machine to ask about (SPEC §8). It lands in the empty
+    /// state the app already has: the qualifier reads as unset until the first log
+    /// creates one (§5.3).
     func makeGymBound() {
-        guard !exercise.isGymBound, (exercise.entries ?? []).isEmpty else { return }
+        guard !exercise.isGymBound, !kindChange.needsAMachine else { return }
 
         exercise.kind = ExerciseKind.gymBound.rawValue
         save()
@@ -270,6 +274,12 @@ final class ExerciseDetailModel {
         guard exercise.isGymBound else { return }
 
         let machines = exercise.machines ?? []
+        // The most recently set goal survives onto the exercise, keeping its own
+        // `goalSetAt`, **before any machine goes** — the cascade takes every machine's
+        // goal fields with it, which is how the others are cleared (SPEC §8).
+        if let keeping = kindChange.machineKeepingGoal {
+            GoalScope.exercise(exercise).takeGoal(from: .machine(keeping))
+        }
         // The exercise's own entries, and no others: an entry with no exercise is
         // treated as non-existent — never repaired, never surfaced, never counted
         // (SPEC §3, invariant 2) — so this does not reach through the machines to go

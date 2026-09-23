@@ -109,16 +109,17 @@ struct ExerciseDetailView: View {
             Button("Cancel", role: .cancel) {}
             Button("Save") { model.rename(to: draftName) }
         }
-        // The flip that asks for a machine — free-weight → gym-bound with entries to
-        // place. Answering it is the whole decision; there is no second confirmation.
+        // The flip that asks for a machine — free-weight → gym-bound with entries or a
+        // goal to place. Answering it is the whole decision; there is no second
+        // confirmation.
         .sheet(isPresented: $changingKind) {
             ChangeKindSheet(change: model.kindChange, gyms: model.gyms) { gym, name in
                 model.makeGymBound(at: gym, named: name)
             }
         }
         // The flip that asks nothing else: pooling, which names the consequence out
-        // loud, and the flip of an exercise with nothing logged, which has no entry to
-        // place and so nothing to ask about.
+        // loud, and the flip of an exercise with nothing logged and no goal, which has
+        // nothing to place and so nothing to ask about.
         .confirmationDialog(
             model.kindChange.question,
             isPresented: $confirmingKindChange,
