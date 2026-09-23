@@ -56,6 +56,29 @@ enum LibraryDropTarget: Hashable {
 struct LibraryResume {
     let exercise: Exercise
     let lastEntry: LastEntry
+    /// The goal at **the resumed entry's own scope** — that entry's machine for a
+    /// gym-bound exercise, the exercise for a free-weight one — which the card draws as a
+    /// ring with no words. Nil where that scope holds no goal: **a sibling machine's goal
+    /// is never borrowed**, so a log at a holiday gym never shows your home machine's.
+    let goal: Goal?
+
+    init(exercise: Exercise, lastEntry: LastEntry, goal: Goal? = nil) {
+        self.exercise = exercise
+        self.lastEntry = lastEntry
+        self.goal = goal
+    }
+
+    /// The card for `exercise`, or nil when it has no lift to resume.
+    init?(exercise: Exercise) {
+        guard let entry = LastEntry.latestEntry(in: exercise.entries ?? []),
+              let lastEntry = LastEntry(entry)
+        else { return nil }
+        self.init(
+            exercise: exercise,
+            lastEntry: lastEntry,
+            goal: GoalScope(exercise: exercise, machine: entry.machine)?.goal
+        )
+    }
 }
 
 /// Everything the library screen draws, derived in **one** pass over models already
@@ -82,10 +105,9 @@ struct LibraryLayout {
         tiles = Self.byRecency(exercises)
         sections = Self.sections(tiles: tiles, groups: groups)
         // The tiles are in recency order, so the library's most recent entry is the
-        // first tile's — if that tile has one at all.
-        resume = tiles.first.flatMap { tile in
-            tile.lastEntry.map { LibraryResume(exercise: tile.exercise, lastEntry: $0) }
-        }
+        // first tile's — if that tile has one at all. The entry is read again for its
+        // machine, once, rather than carried on every tile: only the card needs a scope.
+        resume = tiles.first.flatMap { LibraryResume(exercise: $0.exercise) }
     }
 
     /// The tiles whose name contains `query`, ignoring case and diacritics, in the same

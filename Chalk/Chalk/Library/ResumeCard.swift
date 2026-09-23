@@ -19,9 +19,12 @@ struct ResumeCard: View {
                     .font(.title3.weight(.semibold))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                Text(resume.lastEntry.text())
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    goalSlot
+                    Text(resume.lastEntry.text())
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -38,6 +41,21 @@ struct ResumeCard: View {
         }
         .padding(16)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    /// The goal's ring, with no words, in a slot **reserved whether or not there is a
+    /// goal**: every card's subtitle is indented the same, so the card never changes shape
+    /// as goals come and go. Empty means no goal — not a hairline, not an empty ring.
+    ///
+    /// Inert: it sits inside the card body, so a tap on it opens the exercise like any
+    /// other tap there, and it is never a target between *Log again* and the card.
+    private var goalSlot: some View {
+        ZStack {
+            if let goal = resume.goal {
+                GoalDonut(progress: goal.progress, isReached: goal.isReached)
+            }
+        }
+        .frame(width: GoalDonut.size, height: GoalDonut.size)
     }
 }
 
