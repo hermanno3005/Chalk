@@ -77,6 +77,17 @@ struct TwoStageNumberTests {
         #expect(number.reps == 1)
     }
 
+    @Test("A blank rep count steps from nothing, landing on one either way")
+    func blankRepsStep() {
+        var up = TwoStageNumber(reps: nil, weight: nil)
+        up.step(+1)
+        #expect(up.reps == 1)
+
+        var down = TwoStageNumber(reps: nil, weight: nil)
+        down.step(-1)
+        #expect(down.reps == 1)
+    }
+
     @Test("On-grid weight steps by 2.5")
     func onGridWeightSteps() {
         var number = TwoStageNumber(reps: 5, weight: 60)

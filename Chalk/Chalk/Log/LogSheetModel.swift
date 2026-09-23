@@ -175,8 +175,8 @@ final class LogSheetModel: Identifiable {
     /// resolve, closed by `New machine here` inside the picker (SPEC §6.4).
     static let noMachineCaption = "No machine"
 
-    // The number's own readings, so the verdict and the save read the sheet rather than
-    // reaching through it.
+    // The number's own readings and verbs, forwarded so the sheet's tests read the same
+    // as before the number was shared (#73). The view binds `number` directly.
     var stage: TwoStageNumber.Stage { number.stage }
     var mode: TwoStageNumber.Mode { number.mode }
     var reps: Int? { number.reps }
