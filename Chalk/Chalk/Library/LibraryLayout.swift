@@ -62,7 +62,7 @@ struct LibraryResume {
     /// is never borrowed**, so a log at a holiday gym never shows your home machine's.
     let goal: Goal?
 
-    init(exercise: Exercise, lastEntry: LastEntry, goal: Goal? = nil) {
+    init(exercise: Exercise, lastEntry: LastEntry, goal: Goal?) {
         self.exercise = exercise
         self.lastEntry = lastEntry
         self.goal = goal

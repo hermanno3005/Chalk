@@ -327,6 +327,26 @@ struct ExerciseDetailModelTests {
         #expect(model.goalMenuLabel == "Set a goal…")
     }
 
+    @Test("Setting and clearing from the sheet puts the resume card's ring back in step")
+    func theSheetRefreshesTheResumeCard() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100)
+        try fixture.save()
+        let library = fixture.libraryModel()
+        let model = fixture.detailModel(for: exercise, refreshing: library)
+        #expect(library.resume?.goal == nil)
+
+        let setting = try #require(model.goalSheet())
+        setting.number.advance()
+        for digit in [1, 2, 0] { setting.number.type(.digit(digit)) }
+        setting.setGoal()
+        #expect(library.resume?.goal?.text == "120 × 5")
+
+        try #require(model.goalSheet()).clearGoal()
+        #expect(library.resume?.goal == nil)
+    }
+
     @Test("A downward edit un-reaches the goal on the next read")
     func aDownwardEditUnreaches() throws {
         let fixture = try LibraryFixture()

@@ -60,13 +60,25 @@ struct ResumeCard: View {
 }
 
 #Preview {
-    ResumeCard(
-        resume: LibraryResume(
-            exercise: Exercise(name: "Bench Press"),
-            lastEntry: LastEntry(reps: 8, weight: 52.5, date: .now)
-        ),
-        onOpen: {},
-        onLogAgain: {}
-    )
+    // No goal, a goal with nothing logged toward it yet (an empty ring), reached.
+    let lastEntry = LastEntry(reps: 8, weight: 52.5, date: .now)
+    let goals: [Goal?] = [
+        nil,
+        Goal(reps: 8, weight: 60, setAt: .now, entries: []),
+        Goal(reps: 8, weight: 0, setAt: .now, entries: []),
+    ]
+    VStack(spacing: 12) {
+        ForEach(goals.indices, id: \.self) { index in
+            ResumeCard(
+                resume: LibraryResume(
+                    exercise: Exercise(name: "Bench Press"),
+                    lastEntry: lastEntry,
+                    goal: goals[index]
+                ),
+                onOpen: {},
+                onLogAgain: {}
+            )
+        }
+    }
     .padding()
 }

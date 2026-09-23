@@ -34,9 +34,9 @@ struct LastEntry: Equatable {
         latestEntry(in: entries).flatMap(LastEntry.init)
     }
 
-    /// The entry itself, for the one caller that needs more off it than the words — the
-    /// resume card's *Log again*, which hands the log sheet the machine that lift was
-    /// logged on (SPEC §6.4). Same rule, one definition.
+    /// The entry itself, for the resume card, which needs more off it than the words:
+    /// the machine that lift was logged on, which *Log again* hands the log sheet
+    /// (SPEC §6.4) and whose goal the card's ring shows. Same rule, one definition.
     static func latestEntry(in entries: [Entry]) -> Entry? {
         entries.filter(\.isALift).max { $0.date < $1.date }
     }
