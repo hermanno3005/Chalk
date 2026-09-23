@@ -244,4 +244,151 @@ struct ExerciseDetailModelTests {
         #expect(try reopened.fetch(FetchDescriptor<Exercise>()).map(\.name) == ["Squat"])
         #expect(try reopened.fetch(FetchDescriptor<Entry>()).map(\.weight) == [100])
     }
+
+    // MARK: - The goal line
+
+    @Test("A goal shows its gap under the readout")
+    func theGoalLineInItsGapState() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 80, on: .days(ago: 10))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140, at: .days(ago: 5))
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 1))
+
+        let line = try #require(fixture.detailModel(for: exercise).goalLine)
+
+        #expect(line.text == "Goal 140 × 5 · 40 kg to go")
+        #expect(!line.isReached)
+        #expect(line.progress == 20.0 / 60.0)
+    }
+
+    @Test("A reached goal stays, greyed, and says so")
+    func theGoalLineInItsReachedState() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140, at: .days(ago: 5))
+        fixture.log(exercise, reps: 6, weight: 142.5, on: .days(ago: 1))
+
+        let line = try #require(fixture.detailModel(for: exercise).goalLine)
+
+        #expect(line.text == "Goal 140 × 5 · reached")
+        #expect(line.isReached)
+        #expect(line.progress == 1)
+    }
+
+    @Test("Without a goal there is no line")
+    func noGoalNoLine() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100)
+
+        #expect(fixture.detailModel(for: exercise).goalLine == nil)
+    }
+
+    @Test("A partly filled goal is no goal on screen")
+    func aPartialGoalShowsNoLine() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        exercise.goalReps = 5
+        exercise.goalWeight = 140
+
+        #expect(fixture.detailModel(for: exercise).goalLine == nil)
+    }
+
+    @Test("The zero-entry screen carries the goal, with the whole weight to go")
+    func theGoalLineOnTheZeroEntryScreen() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+
+        let model = fixture.detailModel(for: exercise)
+
+        #expect(!model.hasCurve)
+        #expect(model.goalLine?.text == "Goal 140 × 5 · 140 kg to go")
+        #expect(model.goalLine?.progress == 0)
+    }
+
+    @Test("Setting and clearing from the sheet puts the line back in step")
+    func theSheetRefreshesTheLine() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100)
+        let model = fixture.detailModel(for: exercise)
+
+        let setting = try #require(model.goalSheet())
+        setting.number.advance()
+        for digit in [1, 2, 0] { setting.number.type(.digit(digit)) }
+        setting.setGoal()
+        #expect(model.goalLine?.text == "Goal 120 × 5 · 20 kg to go")
+        #expect(model.goalMenuLabel == "Change goal…")
+
+        try #require(model.goalSheet()).clearGoal()
+        #expect(model.goalLine == nil)
+        #expect(model.goalMenuLabel == "Set a goal…")
+    }
+
+    @Test("A downward edit un-reaches the goal on the next read")
+    func aDownwardEditUnreaches() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140, at: .days(ago: 5))
+        fixture.log(exercise, reps: 5, weight: 140, on: .days(ago: 1))
+        try fixture.save()
+        let model = fixture.detailModel(for: exercise)
+        #expect(model.goalLine?.isReached == true)
+
+        let history = try #require(model.historySheet())
+        let edit = history.editSheet(for: try #require(history.rows.first))
+        edit.advance()
+        edit.tapNumber()
+        for digit in [1, 3, 0] { edit.type(.digit(digit)) }
+        edit.save()
+
+        #expect(model.goalLine?.text == "Goal 140 × 5 · 10 kg to go")
+        #expect(model.goalLine?.isReached == false)
+    }
+
+    // MARK: - The goal in the overflow
+
+    @Test("The overflow offers to set a goal, then to change it")
+    func theOverflowLabel() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+
+        #expect(fixture.detailModel(for: exercise).goalMenuLabel == "Set a goal…")
+
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+        #expect(fixture.detailModel(for: exercise).goalMenuLabel == "Change goal…")
+    }
+
+    @Test("A gym-bound exercise with no machine offers no goal at all")
+    func noMachineNoGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+
+        let model = fixture.detailModel(for: exercise)
+
+        #expect(model.goalMenuLabel == nil)
+        #expect(model.goalSheet() == nil)
+        #expect(model.goalLine == nil)
+    }
+
+    @Test("Switching machines switches the goal line with it")
+    func theQualifierSwitchesTheGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let home = fixture.machine(for: exercise, at: fixture.gym("Home"), label: "Home")
+        let away = fixture.machine(for: exercise, at: fixture.gym("Away"), label: "Away")
+        fixture.log(home, reps: 8, weight: 150, on: .days(ago: 1))
+        fixture.log(away, reps: 8, weight: 120, on: .days(ago: 2))
+        GoalScope.machine(home).set(reps: 8, weight: 200)
+
+        let model = fixture.detailModel(for: exercise)
+        model.select(home)
+        #expect(model.goalLine?.text == "Goal 200 × 8 · 50 kg to go")
+
+        model.select(away)
+        #expect(model.goalLine == nil)
+        #expect(model.goalMenuLabel == "Set a goal…")
+    }
 }

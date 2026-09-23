@@ -11,11 +11,18 @@ struct SchemaRoundTripTests {
     func roundTripsEveryEntity() throws {
         let store = try TemporaryStore()
         let loggedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let exerciseGoalSetAt = Date(timeIntervalSince1970: 1_700_100_000)
+        let machineGoalSetAt = Date(timeIntervalSince1970: 1_700_200_000)
 
         do {
             let context = ModelContext(store.container)
             let group = ExerciseGroup(name: "Push", sortIndex: 3)
             let exercise = Exercise(name: "Chest Press", kind: .gymBound, group: group)
+            // The invariant keeps a gym-bound exercise's goal fields nil (SPEC §3), but
+            // the schema holds them either way — this is the schema's test, not the app's.
+            exercise.goalReps = 5
+            exercise.goalWeight = 140
+            exercise.goalSetAt = exerciseGoalSetAt
             let gym = Gym(name: "Fitness X")
             let machine = Machine(
                 manufacturer: "Hammer Strength",
@@ -23,6 +30,9 @@ struct SchemaRoundTripTests {
                 exercise: exercise,
                 gym: gym
             )
+            machine.goalReps = 8
+            machine.goalWeight = 72.5
+            machine.goalSetAt = machineGoalSetAt
             let entry = Entry(
                 reps: 5,
                 weight: 57.5,
@@ -39,6 +49,9 @@ struct SchemaRoundTripTests {
         #expect(exercise.name == "Chest Press")
         #expect(exercise.kind == ExerciseKind.gymBound.rawValue)
         #expect(exercise.group?.name == "Push")
+        #expect(exercise.goalReps == 5)
+        #expect(exercise.goalWeight == 140)
+        #expect(exercise.goalSetAt == exerciseGoalSetAt)
 
         let group = try #require(try context.fetch(FetchDescriptor<ExerciseGroup>()).first)
         #expect(group.sortIndex == 3)
@@ -54,6 +67,9 @@ struct SchemaRoundTripTests {
         #expect(machine.label == "Plate-loaded")
         #expect(machine.exercise?.id == exercise.id)
         #expect(machine.gym?.id == gym.id)
+        #expect(machine.goalReps == 8)
+        #expect(machine.goalWeight == 72.5)
+        #expect(machine.goalSetAt == machineGoalSetAt)
 
         let entry = try #require(try context.fetch(FetchDescriptor<Entry>()).first)
         #expect(entry.reps == 5)
@@ -79,9 +95,9 @@ struct SchemaRoundTripTests {
         #expect(try context.fetchCount(FetchDescriptor<ExerciseGroup>()) == 1)
     }
 
-    @Test("The v1 schema names all five entities")
+    @Test("The schema is 2.0.0 and names all five entities")
     func schemaListsFiveEntities() {
-        #expect(ChalkSchemaV1.versionIdentifier == Schema.Version(1, 0, 0))
+        #expect(ChalkSchemaV1.versionIdentifier == Schema.Version(2, 0, 0))
         #expect(ChalkSchemaV1.models.count == 5)
         #expect(ChalkMigrationPlan.schemas.count == 1)
         #expect(ChalkMigrationPlan.stages.isEmpty)
