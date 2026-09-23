@@ -157,6 +157,9 @@ final class GymsModel {
     /// > swallowed — everywhere else the change simply stays in the context and the next
     /// > save takes it with it; here the next statement destroys history.
     ///
+    /// **The goal set most recently survives** onto the sibling, keeping its `goalSetAt`
+    /// (SPEC §7.5) — flushed with the entries, before the delete, for the same reason.
+    ///
     /// Nothing is recomputed afterwards: no rep-max is stored, so the sibling's curve is
     /// simply correct on the next read (ADR-0002).
     ///
@@ -168,6 +171,9 @@ final class GymsModel {
             return
         }
 
+        if MachineMerge(loser: loser, sibling: sibling).losersGoalIsKept {
+            GoalScope.machine(sibling).takeGoal(from: .machine(loser))
+        }
         for entry in loser.entries ?? [] {
             entry.machine = sibling
         }

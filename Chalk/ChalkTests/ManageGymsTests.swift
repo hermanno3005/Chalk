@@ -184,6 +184,27 @@ struct ManageGymsTests {
         #expect(reloaded.entries?.count == 1)
     }
 
+    @Test("The goal rides along untouched — Move never pools two machines")
+    func aMoveLeavesTheGoalAlone() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let wrong = fixture.gym("Fitness X")
+        let right = fixture.gym("Old Barn")
+        let machine = fixture.machine(for: exercise, at: wrong, label: "Green")
+        fixture.log(machine, reps: 5, weight: 100)
+        let setAt = Date.days(ago: 3)
+        GoalScope.machine(machine).set(reps: 5, weight: 140, at: setAt)
+
+        fixture.gymsModel().move(machine, to: right)
+
+        let reopened = try fixture.afterRelaunch()
+        let reloaded = try #require(try reopened.fetch(FetchDescriptor<Machine>()).first)
+        #expect(reloaded.gym?.name == "Old Barn")
+        #expect(reloaded.goalReps == 5)
+        #expect(reloaded.goalWeight == 140)
+        #expect(reloaded.goalSetAt == setAt)
+    }
+
     @Test("Move targets are every other gym, the ones you use first and archived after")
     func moveTargetsAreEveryOtherGym() throws {
         let fixture = try LibraryFixture()

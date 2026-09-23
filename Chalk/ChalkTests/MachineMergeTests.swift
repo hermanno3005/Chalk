@@ -114,8 +114,180 @@ struct MachineMergeTests {
 
         let merge = MachineMerge(loser: loser, sibling: sibling)
 
-        #expect(merge.question == "Delete Green and keep Hammer Strength?")
+        #expect(merge.question == "Delete Green?")
         #expect(merge.detail == "Green holds no entries. Hammer Strength keeps its 1 entry. This cannot be undone.")
+    }
+
+    // MARK: - Goals (#79)
+
+    /// The four rows of SPEC §7.5's table: the text gains the lost-goal clause only
+    /// where both machines hold a goal.
+    @Test(
+        "The confirmation gains the lost-goal clause only when both machines hold a goal",
+        arguments: [
+            (false, false, "Move 8 entries to Hammer Strength and delete Unlabelled?"),
+            (true, false, "Move 8 entries to Hammer Strength and delete Unlabelled?"),
+            (false, true, "Move 8 entries to Hammer Strength and delete Unlabelled?"),
+            (true, true, "Move 8 entries to Hammer Strength and delete Unlabelled? Your goal of 140 × 5 is kept; 1 other goal is cleared."),
+        ]
+    )
+    func theConfirmationNamesALostGoal(loserHasGoal: Bool, siblingHasGoal: Bool, question: String) throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let loser = fixture.machine(for: legPress, at: gym)
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        for day in 1...8 {
+            fixture.log(loser, reps: 5, weight: 100, on: .days(ago: day))
+        }
+        if loserHasGoal {
+            GoalScope.machine(loser).set(reps: 5, weight: 140, at: .days(ago: 2))
+        }
+        if siblingHasGoal {
+            GoalScope.machine(sibling).set(reps: 3, weight: 150, at: .days(ago: 9))
+        }
+
+        #expect(MachineMerge(loser: loser, sibling: sibling).question == question)
+    }
+
+    @Test("The clause names the goal that is kept, even when it is the sibling's")
+    func theClauseNamesTheSiblingsGoalWhenItWins() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let loser = fixture.machine(for: legPress, at: gym)
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        fixture.log(loser, reps: 5, weight: 100)
+        GoalScope.machine(loser).set(reps: 3, weight: 150, at: .days(ago: 9))
+        GoalScope.machine(sibling).set(reps: 5, weight: 140, at: .days(ago: 2))
+
+        #expect(MachineMerge(loser: loser, sibling: sibling).question == "Move 1 entry to Hammer Strength and delete Unlabelled? Your goal of 140 × 5 is kept; 1 other goal is cleared.")
+    }
+
+    @Test("Goals set at the same moment still pick one winner, whichever way round")
+    func aTieDoesNotDependOnDirection() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let unlabelled = fixture.machine(for: legPress, at: gym)
+        let hammer = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let moment = Date.days(ago: 2)
+        GoalScope.machine(unlabelled).set(reps: 5, weight: 140, at: moment)
+        GoalScope.machine(hammer).set(reps: 3, weight: 150, at: moment)
+
+        #expect(MachineGoals([unlabelled, hammer]).keeping === MachineGoals([hammer, unlabelled]).keeping)
+    }
+
+    @Test("An empty loser whose goal is kept over the sibling's says both")
+    func anEmptyLoserWhoseGoalWinsNamesTheLoss() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let loser = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym)
+        fixture.log(sibling, reps: 5, weight: 100)
+        GoalScope.machine(loser).set(reps: 5, weight: 140, at: .days(ago: 2))
+        GoalScope.machine(sibling).set(reps: 3, weight: 150, at: .days(ago: 9))
+
+        #expect(MachineMerge(loser: loser, sibling: sibling).question == "Move your goal of 140 × 5 to Unlabelled and delete Hammer Strength? Your goal of 140 × 5 is kept; 1 other goal is cleared.")
+    }
+
+    @Test("An empty loser whose goal is kept says the goal moves")
+    func anEmptyLoserSaysItsGoalMoves() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let loser = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym)
+        fixture.log(sibling, reps: 5, weight: 100)
+        GoalScope.machine(loser).set(reps: 5, weight: 140)
+
+        let merge = MachineMerge(loser: loser, sibling: sibling)
+
+        #expect(merge.question == "Move your goal of 140 × 5 to Unlabelled and delete Hammer Strength?")
+    }
+
+    @Test("An empty loser whose goal is lost is a deletion that names the loss")
+    func anEmptyLoserSaysItsGoalIsLost() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let loser = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym)
+        fixture.log(sibling, reps: 5, weight: 100)
+        GoalScope.machine(loser).set(reps: 3, weight: 150, at: .days(ago: 9))
+        GoalScope.machine(sibling).set(reps: 5, weight: 140, at: .days(ago: 2))
+
+        let merge = MachineMerge(loser: loser, sibling: sibling)
+
+        #expect(merge.question == "Delete Hammer Strength? Your goal of 140 × 5 is kept; 1 other goal is cleared.")
+    }
+
+    @Test("The most recently set goal ends up on the survivor, whichever way you merge", arguments: [false, true])
+    func theLatestGoalWinsEitherWay(reversed: Bool) throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let unlabelled = fixture.machine(for: legPress, at: gym)
+        let hammer = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        fixture.log(unlabelled, reps: 5, weight: 100, on: .days(ago: 20))
+        fixture.log(hammer, reps: 5, weight: 110, on: .days(ago: 1))
+        let latest = Date.days(ago: 2)
+        GoalScope.machine(unlabelled).set(reps: 5, weight: 140, at: latest)
+        GoalScope.machine(hammer).set(reps: 3, weight: 150, at: .days(ago: 9))
+        let (loser, sibling) = reversed ? (hammer, unlabelled) : (unlabelled, hammer)
+
+        fixture.gymsModel().merge(loser, into: sibling)
+
+        let reopened = try fixture.afterRelaunch()
+        let survivor = try #require(try reopened.fetch(FetchDescriptor<Machine>()).first)
+        #expect(survivor.goalReps == 5)
+        #expect(survivor.goalWeight == 140)
+        #expect(survivor.goalSetAt == latest)
+        #expect(try reopened.fetchCount(FetchDescriptor<Entry>()) == 2)
+        // Its ring origin recomputes over the pooled entries dated before it.
+        let goal = try #require(GoalScope.machine(survivor).goal)
+        #expect(goal.origin == 100)
+        #expect(goal.current == 110)
+    }
+
+    @Test("The loser's goal survives its delete when the survivor had none")
+    func theLosersGoalSurvivesTheDelete() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let loser = fixture.machine(for: legPress, at: gym)
+        let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        fixture.log(loser, reps: 5, weight: 100)
+        let setAt = Date.days(ago: 3)
+        GoalScope.machine(loser).set(reps: 5, weight: 140, at: setAt)
+
+        fixture.gymsModel().merge(loser, into: sibling)
+
+        #expect(GoalScope.machine(sibling).goal?.text == "140 × 5")
+        let reopened = try fixture.afterRelaunch()
+        let survivor = try #require(try reopened.fetch(FetchDescriptor<Machine>()).first)
+        #expect(survivor.name == "Hammer Strength")
+        #expect(survivor.goalReps == 5)
+        #expect(survivor.goalWeight == 140)
+        #expect(survivor.goalSetAt == setAt)
+    }
+
+    @Test("An empty loser's goal survives too")
+    func anEmptyLosersGoalSurvives() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let loser = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let sibling = fixture.machine(for: legPress, at: gym)
+        GoalScope.machine(loser).set(reps: 5, weight: 140)
+
+        fixture.gymsModel().merge(loser, into: sibling)
+
+        let reopened = try fixture.afterRelaunch()
+        let survivor = try #require(try reopened.fetch(FetchDescriptor<Machine>()).first)
+        #expect(survivor.name == "Unlabelled")
+        #expect(survivor.goalWeight == 140)
     }
 
     // MARK: - The write
