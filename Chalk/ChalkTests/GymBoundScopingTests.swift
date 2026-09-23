@@ -287,6 +287,144 @@ struct GymBoundScopingTests {
         #expect(machine.entries?.count == 2)
         #expect(machine.entries?.allSatisfy { $0.weight == 55 } == true)
     }
+
+    // MARK: - Goals live on the machine
+
+    @Test("Setting a goal writes it to the machine in scope, and nowhere else")
+    func aGoalIsSetOnTheMachineInScope() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let window = fixture.machine(for: exercise, at: gym, label: "By the window")
+        let hammer = fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
+        fixture.log(window, reps: 8, weight: 150, on: .days(ago: 2))
+        fixture.log(hammer, reps: 8, weight: 120, on: .days(ago: 1))
+        try fixture.save()
+
+        let model = fixture.detailModel(for: exercise)
+        model.select(window)
+        model.select(8)
+        let sheet = try #require(model.goalSheet())
+        #expect(sheet.number.reps == 8)
+        sheet.number.advance()
+        for digit in [2, 0, 0] { sheet.number.type(.digit(digit)) }
+        sheet.setGoal()
+
+        #expect(model.goalLine?.text == "Goal 200 × 8 · 50 kg to go")
+        let reread = try fixture.afterRelaunch()
+        let machines = try reread.fetch(FetchDescriptor<Machine>())
+        let scoped = try #require(machines.first { $0.id == window.id })
+        let sibling = try #require(machines.first { $0.id == hammer.id })
+        #expect(scoped.goalReps == 8)
+        #expect(scoped.goalWeight == 200)
+        #expect(scoped.goalSetAt != nil)
+        #expect(sibling.goalReps == nil)
+        #expect(sibling.goalWeight == nil)
+        #expect(sibling.goalSetAt == nil)
+        // SPEC §3, invariant 8: a gym-bound exercise holds no goal of its own.
+        let owner = try #require(try reread.fetch(FetchDescriptor<Exercise>()).first)
+        #expect(owner.goalReps == nil)
+        #expect(owner.goalWeight == nil)
+        #expect(owner.goalSetAt == nil)
+    }
+
+    @Test("Two machines hold independent goals, and the qualifier shows each its own")
+    func twoMachinesHoldIndependentGoals() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let home = fixture.machine(for: exercise, at: fixture.gym("Home"), label: "Home")
+        let away = fixture.machine(for: exercise, at: fixture.gym("Away"), label: "Away")
+        fixture.log(home, reps: 8, weight: 150, on: .days(ago: 1))
+        fixture.log(away, reps: 8, weight: 150, on: .days(ago: 2))
+        GoalScope.machine(home).set(reps: 8, weight: 200, at: .days(ago: 10))
+        GoalScope.machine(away).set(reps: 5, weight: 140, at: .days(ago: 10))
+
+        let model = fixture.detailModel(for: exercise)
+        model.select(home)
+        #expect(model.goalLine?.text == "Goal 200 × 8 · 50 kg to go")
+        #expect(model.goalLine?.isReached == false)
+        #expect(model.goalMenuLabel == "Change goal…")
+
+        model.select(away)
+        // 8 × 150 on this machine reaches a 5-rep goal of 140.
+        #expect(model.goalLine?.text == "Goal 140 × 5 · reached")
+        #expect(model.goalLine?.isReached == true)
+        #expect(model.goalLine?.progress == 1)
+        #expect(model.goalMenuLabel == "Change goal…")
+
+        model.select(home)
+        #expect(model.goalLine?.text == "Goal 200 × 8 · 50 kg to go")
+    }
+
+    @Test("A sibling machine's entries never reach a goal or move its ring")
+    func aSiblingNeverReachesAMachinesGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let home = fixture.machine(for: exercise, at: fixture.gym("Home"), label: "Home")
+        let away = fixture.machine(for: exercise, at: fixture.gym("Away"), label: "Away")
+        // Home: 150 before the goal was set, 175 after — halfway from 150 to 200.
+        fixture.log(home, reps: 8, weight: 150, on: .days(ago: 10))
+        fixture.log(home, reps: 8, weight: 175, on: .days(ago: 1))
+        // Away: heavier on both sides of the moment the goal was set.
+        fixture.log(away, reps: 8, weight: 250, on: .days(ago: 10))
+        fixture.log(away, reps: 8, weight: 260, on: .days(ago: 2))
+        GoalScope.machine(home).set(reps: 8, weight: 200, at: .days(ago: 5))
+
+        let model = fixture.detailModel(for: exercise)
+        model.select(home)
+
+        #expect(model.goal?.origin == 150)
+        #expect(model.goal?.current == 175)
+        #expect(model.goalLine?.text == "Goal 200 × 8 · 25 kg to go")
+        #expect(model.goalLine?.isReached == false)
+        #expect(model.goalLine?.progress == 0.5)
+    }
+
+    @Test("A machine with nothing logged holds a goal, shown under the hint")
+    func aZeroEntryMachineHoldsAGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let fresh = fixture.machine(for: exercise, at: gym, label: "New")
+        let proven = fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
+        fixture.log(proven, reps: 5, weight: 100)
+
+        let model = fixture.detailModel(for: exercise)
+        model.select(fresh)
+        #expect(model.goalMenuLabel == "Set a goal…")
+        let sheet = try #require(model.goalSheet())
+        // No readout on a zero-entry screen, so reps start at 5 — and the sheet has
+        // nothing on this machine to compare against, whatever the sibling holds.
+        #expect(sheet.number.reps == 5)
+        sheet.number.advance()
+        #expect(sheet.line?.text == "First goal at 5 reps")
+        for digit in [1, 4, 0] { sheet.number.type(.digit(digit)) }
+        sheet.setGoal()
+
+        #expect(model.hasCurve == false)
+        #expect(model.hint != nil)
+        #expect(model.goalLine?.text == "Goal 140 × 5 · 140 kg to go")
+        #expect(model.goalLine?.progress == 0)
+        #expect(fresh.goalWeight == 140)
+        #expect(proven.goalWeight == nil)
+    }
+
+    @Test("Goal fields left on a gym-bound exercise are never read as its goal")
+    func aGymBoundExercisesOwnFieldsAreNotAGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let machine = fixture.machine(for: exercise, at: fixture.gym("Fitness X"))
+        fixture.log(machine, reps: 8, weight: 150)
+        // Written past `GoalScope`, which never would: the screen reads the machine.
+        exercise.goalReps = 8
+        exercise.goalWeight = 200
+        exercise.goalSetAt = .days(ago: 5)
+
+        let model = fixture.detailModel(for: exercise)
+
+        #expect(model.goalLine == nil)
+        #expect(model.goalMenuLabel == "Set a goal…")
+    }
 }
 
 /// Archive is a **display** concept: the derivation never sees `isArchived` (SPEC §7.4).
