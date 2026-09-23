@@ -40,10 +40,16 @@ struct Goal: Equatable {
     }
 
     /// `140 × 5` — the goal as every surface names it.
-    var target: String { "\(weight.kilogramsText) × \(reps)" }
+    var text: String { "\(weight.kilogramsText) × \(reps)" }
 
     /// `best[reps] >= weight` — a 5-rep 95 reaches a 1-rep goal of 95.
     var isReached: Bool { (current ?? 0) >= weight }
+
+    /// Whether logging `weight × reps` would **cross** the goal: reach it where nothing in
+    /// scope does yet. Higher-rep work counts, by the same backfill `isReached` reads.
+    func isCrossed(byReps reps: Int, weight: Double) -> Bool {
+        !isReached && reps >= self.reps && weight >= self.weight
+    }
 
     /// What is left between your best and the goal: the whole weight with nothing logged
     /// at that rep count, and zero once reached.

@@ -12,7 +12,7 @@ import SwiftUI
 /// (§6.4): one quiet tappable line reading `Hammer Strength · Fitness X`. It is never
 /// hidden "unless something is odd" — a strip that comes and goes shifts the layout and
 /// stops being trusted — and a free-weight sheet carries no machine row at all. The
-/// fifth verdict state is the machine hint and the sixth the goal crossing (§6.5).
+/// fifth verdict state is the machine hint and the first the goal crossing (§6.5).
 struct LogSheet: View {
     /// Held in `@State` for the life of the presentation, as the detail screen holds
     /// its own model: the sheet's content is rebuilt as the screen behind it changes,

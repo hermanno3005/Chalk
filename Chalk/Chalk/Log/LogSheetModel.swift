@@ -37,7 +37,7 @@ final class LogSheetModel: Identifiable {
         /// Drawn visibly softer than a real verdict, because it is not one — nothing
         /// here was lifted on the machine in front of you.
         case hint(String)
-        /// The sixth state: **saving this would reach the goal** at the sheet's scope.
+        /// The first state: **saving this would reach the goal** at the sheet's scope.
         /// Drawn in the goal colour behind a full ring, because at the crossing the goal
         /// is the news.
         case goal(String)
@@ -205,15 +205,15 @@ final class LogSheetModel: Identifiable {
     /// at precisely the moment you most need a number. It keeps its own fixed rep count,
     /// because it is a lookup and not a judgement of the weight on screen.
     ///
-    /// **The sixth state is the crossing** (SPEC §6.5): where saving would reach a goal
+    /// **The first state is the crossing** (SPEC §6.5): where saving would reach a goal
     /// nothing else in scope reaches yet, that is the line. It can only ever take over
     /// from Beats, First entry or the hint — a weight at or past an unreached goal is
     /// past your best by construction — and it has no opposite: lowering the entry that
     /// was reaching a goal is just the ordinary line, the derivation quietly un-reaching.
     var verdict: Verdict? {
         guard stage == .weight, let reps else { return nil }
-        if let goal, !goal.isReached, reps >= goal.reps, let weight, weight >= goal.weight {
-            return .goal("Reaches your goal of \(goal.target)")
+        if let goal, let weight, goal.isCrossed(byReps: reps, weight: weight) {
+            return .goal("Reaches your goal of \(goal.text)")
         }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
             if let hint {

@@ -132,7 +132,7 @@ final class ExerciseDetailModel {
     /// chart never carries one either way.
     var goalLine: GoalLine? {
         guard let goal else { return nil }
-        let target = "Goal \(goal.target)"
+        let target = "Goal \(goal.text)"
         return GoalLine(
             text: goal.isReached ? "\(target) · reached" : "\(target) · \(goal.gap.kilogramsText) kg to go",
             isReached: goal.isReached,

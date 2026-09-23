@@ -469,7 +469,7 @@ struct LogSheetModelTests {
         #expect(model.verdict == .hint("No history here — \(kg(55)) kg × 5 on Hammer Strength"))
     }
 
-    // MARK: - The sixth state: the crossing
+    // MARK: - The first state: the crossing
 
     @Test("Reaching the goal takes over from Beats")
     func theCrossingReplacesBeats() throws {
