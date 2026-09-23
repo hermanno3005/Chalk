@@ -52,7 +52,8 @@ enum GoalScope {
         write(reps: reps, weight: weight, setAt: date)
     }
 
-    /// **Clearing a goal**: all three fields back to nil. The only other write a goal has.
+    /// **Clearing a goal**: all three fields back to nil. Besides setting, the only
+    /// write a goal has — a kind change carries one across scopes with the two together.
     func clear() {
         write(reps: nil, weight: nil, setAt: nil)
     }
@@ -62,7 +63,7 @@ enum GoalScope {
     /// — and clears `source`. The kind change's move and pool (SPEC §8).
     func takeGoal(from source: GoalScope) {
         if let goal = source.goal {
-            write(reps: goal.reps, weight: goal.weight, setAt: goal.setAt)
+            set(reps: goal.reps, weight: goal.weight, at: goal.setAt)
         }
         source.clear()
     }

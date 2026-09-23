@@ -81,7 +81,7 @@ struct KindChange {
         case .toFreeWeight:
             let goals = machinesWithGoals.map(\.goal)
             guard let kept = goals.first, goals.count > 1 else { return poolingSentence }
-            let clause = kept.keptClause(clearing: goals.count - 1)
+            let clause = kept.lostGoalClause(clearing: goals.count - 1)
             return entryCount == 0 ? clause : "\(poolingSentence) \(clause)"
         }
     }

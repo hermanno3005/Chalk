@@ -3,10 +3,10 @@ import SwiftUI
 /// The machine prompt behind `Change kind`, free-weight → gym-bound (SPEC §8).
 ///
 /// **One decision: which machine the existing entries — and the goal, if there is one —
-/// belong to.** A free-weight exercise
-/// has no machines by construction — that is the whole reason the model refuses to keep
-/// them across a flip — so there is nothing to pick between and this is not the app's one
-/// machine picker (§5.3) drawn over an empty list. It asks for the gym and the machine's
+/// belong to.** A free-weight exercise has no machines by construction — that is the
+/// whole reason the model refuses to keep them across a flip — so there is nothing to
+/// pick between and this is not the app's one machine picker (§5.3) drawn over an empty
+/// list. It asks for the gym and the machine's
 /// optional name, in the same words `New machine here` asks them (§6.4), and the flip
 /// happens the moment they are answered.
 struct ChangeKindSheet: View {

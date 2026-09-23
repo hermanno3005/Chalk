@@ -45,7 +45,7 @@ struct Goal: Equatable {
     /// The lost-goal clause: **one sentence for one rule**, said word for word by the kind
     /// change (SPEC §8) and the merge (§7.5) wherever two goals meet and the most recently
     /// set wins. It names this goal, the survivor, and counts the ones that go.
-    func keptClause(clearing cleared: Int) -> String {
+    func lostGoalClause(clearing cleared: Int) -> String {
         let others = cleared == 1 ? "1 other goal is" : "\(cleared) other goals are"
         return "Your goal of \(text) is kept; \(others) cleared."
     }

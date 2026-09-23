@@ -353,6 +353,8 @@ struct ChangeKindTests {
         #expect(model.goalLine?.text == "Goal 140 × 5 · 40 kg to go")
 
         let reopened = try fixture.afterRelaunch()
+        #expect(try reopened.fetchCount(FetchDescriptor<Entry>()) == 1)
+        #expect(try reopened.fetch(FetchDescriptor<Entry>()).allSatisfy { $0.machine != nil })
         let exercise = try #require(try reopened.fetch(FetchDescriptor<Exercise>()).first)
         #expect(exercise.goalReps == nil)
         #expect(exercise.goalWeight == nil)
@@ -498,7 +500,7 @@ struct ChangeKindTests {
     @Test("The clause is one sentence, shared word for word with the merge")
     func theClauseIsOneSentence() {
         let goal = Goal(reps: 5, weight: 140, setAt: .now, entries: [])
-        #expect(goal?.keptClause(clearing: 1) == "Your goal of 140 × 5 is kept; 1 other goal is cleared.")
-        #expect(goal?.keptClause(clearing: 3) == "Your goal of 140 × 5 is kept; 3 other goals are cleared.")
+        #expect(goal?.lostGoalClause(clearing: 1) == "Your goal of 140 × 5 is kept; 1 other goal is cleared.")
+        #expect(goal?.lostGoalClause(clearing: 3) == "Your goal of 140 × 5 is kept; 3 other goals are cleared.")
     }
 }
