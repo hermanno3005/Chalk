@@ -33,10 +33,10 @@ struct LogSheet: View {
                 header
                 Spacer(minLength: 0)
                 caption
-                number
+                GiantNumber(number: $model.number)
                 verdict
                 Spacer(minLength: 0)
-                input
+                TwoStageNumberInput(number: $model.number)
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
@@ -117,15 +117,8 @@ struct LogSheet: View {
     private var header: some View {
         HStack {
             if model.stage == .weight {
-                Button {
-                    withAnimation(.snappy) { model.backToReps() }
-                } label: {
-                    Label(model.repsLabel, systemImage: "chevron.left")
-                        .font(.subheadline.weight(.medium))
-                }
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .transition(.opacity.combined(with: .move(edge: .leading)))
+                RepsBackButton(number: $model.number)
+                    .transition(.opacity.combined(with: .move(edge: .leading)))
             }
             Spacer(minLength: 0)
             // An edit says which lift it is correcting. The date is not editable
@@ -137,33 +130,6 @@ struct LogSheet: View {
             }
         }
         .frame(height: 44)
-    }
-
-    /// The one thing on screen with weight. **Tapping it swaps the steppers for the
-    /// keypad** and back (SPEC §6.2); the digits move rather than cross-fading, which
-    /// is what makes staging read as progress rather than a detour (§6.1).
-    private var number: some View {
-        Button {
-            withAnimation(.snappy) { model.tapNumber() }
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(model.numberText)
-                    .font(.system(size: 92, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(.snappy(duration: 0.2), value: model.numberText)
-                    .minimumScaleFactor(0.4)
-                    .lineLimit(1)
-                Text(model.unitText)
-                    .font(.title2.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 110)
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(model.numberText.isEmpty ? "Blank" : model.numberText) \(model.unitText)")
-        .accessibilityHint(model.mode == .keypad ? "Shows the steppers" : "Types a number")
     }
 
     /// **Weight stage only** (SPEC §6.5). The space is reserved on both stages: a line
@@ -181,44 +147,5 @@ struct LogSheet: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 22)
             .animation(.snappy(duration: 0.2), value: model.verdict)
-    }
-
-    @ViewBuilder
-    private var input: some View {
-        switch model.mode {
-        case .steppers: steppers
-        case .keypad: LogKeypad(decimalIsDead: model.stage == .reps, onKey: model.type)
-        }
-    }
-
-    /// **±1 rep, ±2.5 kg**, and on weight the step snaps to the grid rather than adding
-    /// (SPEC §6.2). Tap only — no hold-to-repeat and no acceleration, so these are plain
-    /// buttons and nothing here recognises a long press.
-    private var steppers: some View {
-        HStack(spacing: 16) {
-            stepper(-1, symbol: "minus")
-            stepper(+1, symbol: "plus")
-        }
-    }
-
-    private func stepper(_ direction: Int, symbol: String) -> some View {
-        Button {
-            withAnimation(.snappy) { model.step(direction) }
-        } label: {
-            Image(systemName: symbol)
-                .font(.title.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 88)
-        }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.roundedRectangle(radius: 16))
-        .accessibilityLabel(stepperLabel(direction))
-    }
-
-    private func stepperLabel(_ direction: Int) -> String {
-        let up = direction > 0
-        switch model.stage {
-        case .reps: return up ? "One rep more" : "One rep fewer"
-        case .weight: return up ? "Up to the next 2.5 kilograms" : "Down to the next 2.5 kilograms"
-        }
     }
 }

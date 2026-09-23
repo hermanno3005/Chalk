@@ -26,10 +26,6 @@ final class LogSheetModel: Identifiable {
 
     let id = UUID()
 
-    enum Stage {
-        case reps, weight
-    }
-
     /// The line under the number, in its two kinds (SPEC §6.5). Both are one string and
     /// they differ only in what stands behind them — which is exactly what the sheet
     /// draws differently.
@@ -54,18 +50,6 @@ final class LogSheetModel: Identifiable {
         }
     }
 
-    /// Steppers for nudges, keypad for jumps — the same pair on both stages (SPEC §6.2).
-    enum InputMode {
-        case steppers, keypad
-    }
-
-    /// A keypad press. `decimal` is dead on the reps stage.
-    enum Key: Equatable {
-        case digit(Int)
-        case decimal
-        case delete
-    }
-
     let exercise: Exercise
 
     /// The machine the entry is written onto — **the caller's answer, never this
@@ -86,24 +70,14 @@ final class LogSheetModel: Identifiable {
     /// the two presentations** — everything below this line is the same sheet.
     @ObservationIgnored private let editing: Entry?
 
-    private(set) var stage: Stage = .reps
-    private(set) var mode: InputMode = .steppers
-    private(set) var reps: Int?
-    private(set) var weight: Double?
+    /// The giant number itself — staging, steppers, keypad — **shared with the goal
+    /// sheet and carrying none of this sheet's meaning** (#73). Everything below reads
+    /// it; only the seeding rules decide what goes into it.
+    var number = TwoStageNumber(reps: nil, weight: nil)
 
     /// The gyms made from this sheet's own `New gym…`, which hold no machine for this
     /// exercise yet and still need a section to make one in.
     @ObservationIgnored private var addedHere: [Gym] = []
-
-    /// What the keypad has typed on the stage in view. Held as text, not a number, so
-    /// a half-typed `62.` shows what your thumb typed rather than snapping to `62`.
-    /// Cleared whenever the keypad opens or closes.
-    private var typed = ""
-
-    /// What the number said when the keypad opened over it. **A stray tap is not an
-    /// edit**: closing the keypad without typing anything puts the seed back rather
-    /// than costing you the two-tap log (SPEC §6.3).
-    private var beforeKeypad: (reps: Int?, weight: Double?)?
 
     @ObservationIgnored private let context: ModelContext
     /// The gyms, for the three things the sheet does with them: sectioning the picker,
@@ -121,17 +95,9 @@ final class LogSheetModel: Identifiable {
     /// the machine. **A lookup, never a seed**: it fills no number on this sheet.
     @ObservationIgnored private var hint: MachineHint?
 
-    /// The grid weight steps onto, in kilograms. **Global and hard-coded** — not
-    /// per-exercise, not per-machine, not a setting, and not a schema field (SPEC §6.2).
-    private static let weightGrid = 2.5
-
     /// The cold-start rep count (SPEC §6.3). There is no cold-start weight: the app
     /// never guesses a load it cannot back up.
     private static let defaultReps = 5
-
-    /// The keypad's ceiling. Not a validation rule — there is no upper bound on a lift
-    /// (SPEC §6.7) — just the point past which a thumb is holding a key down by mistake.
-    private static let maxTypedLength = 6
 
     init(
         exercise: Exercise,
@@ -151,15 +117,16 @@ final class LogSheetModel: Identifiable {
 
         if let editing {
             // Seeded from *that* entry — the numbers you tapped, ready to be corrected.
-            reps = editing.reps
-            weight = editing.weight
+            number = TwoStageNumber(reps: editing.reps, weight: editing.weight)
         } else {
-            // **Reps seed from your most recent entry on any machine** — rep counts
-            // transfer between machines in a way loads do not (SPEC §6.3).
-            reps = LastEntry.latest(in: entriesOnAnyMachine)?.reps ?? Self.defaultReps
-            // **The weight only from this exact machine**, so no number you have never
-            // lifted *there* is ever one tap from Save.
-            weight = LastEntry.latest(in: entries)?.weight
+            number = TwoStageNumber(
+                // **Reps seed from your most recent entry on any machine** — rep counts
+                // transfer between machines in a way loads do not (SPEC §6.3).
+                reps: LastEntry.latest(in: entriesOnAnyMachine)?.reps ?? Self.defaultReps,
+                // **The weight only from this exact machine**, so no number you have
+                // never lifted *there* is ever one tap from Save.
+                weight: LastEntry.latest(in: entries)?.weight
+            )
         }
         refreshMenu()
     }
@@ -208,32 +175,15 @@ final class LogSheetModel: Identifiable {
     /// resolve, closed by `New machine here` inside the picker (SPEC §6.4).
     static let noMachineCaption = "No machine"
 
-    /// The giant number, on whichever stage is in view. Empty while the value is blank —
-    /// an absence, not a zero.
-    var numberText: String {
-        if mode == .keypad {
-            return typed.replacingOccurrences(of: ".", with: WeightText.decimalSeparator)
-        }
-        switch stage {
-        case .reps: return reps.map(String.init) ?? ""
-        case .weight: return weight.map(\.kilogramsText) ?? ""
-        }
-    }
-
-    /// The quiet unit beside the number.
-    var unitText: String {
-        switch stage {
-        case .reps: return reps == 1 ? "rep" : "reps"
-        case .weight: return "kg"
-        }
-    }
-
-    /// The stage-two header: the earlier answer, always visible and one tap from being
-    /// corrected without cancelling (SPEC §6.1).
-    var repsLabel: String {
-        guard let reps else { return "reps" }
-        return reps == 1 ? "1 rep" : "\(reps) reps"
-    }
+    // The number's own readings and verbs, forwarded so the sheet's tests read the same
+    // as before the number was shared (#73). The view binds `number` directly.
+    var stage: TwoStageNumber.Stage { number.stage }
+    var mode: TwoStageNumber.Mode { number.mode }
+    var reps: Int? { number.reps }
+    var weight: Double? { number.weight }
+    var numberText: String { number.numberText }
+    var unitText: String { number.unitText }
+    var repsLabel: String { number.repsLabel }
 
     /// The line under the number, **weight stage only** (SPEC §6.5). Stage one stays
     /// silent: the line is meaningless until both numbers exist, and showing the target
@@ -263,7 +213,7 @@ final class LogSheetModel: Identifiable {
         return .measured("Your \(reps)-rep best is \(best.kilogramsText) kg")
     }
 
-    var canAdvance: Bool { (reps ?? 0) >= 1 }
+    var canAdvance: Bool { number.canAdvance }
 
     /// `reps >= 1` and `weight > 0` (SPEC §6.7). No upper bound and no outlier
     /// confirmation — a typo is corrected, not prevented.
@@ -345,10 +295,9 @@ final class LogSheetModel: Identifiable {
     private func reseed() {
         rescopeEntries()
         guard !isEditing else { return }
-        weight = LastEntry.latest(in: entries)?.weight
-        // Only where that weight is the number on screen; on stage one the seed simply
-        // waits for `advance()`.
-        if stage == .weight { openWeightStage() }
+        // Where that weight is the number on screen, the weight stage reopens over it —
+        // blank with the keypad up, if nothing was lifted on the machine you picked.
+        number.seedWeight(LastEntry.latest(in: entries)?.weight)
     }
 
     /// The picker's rows, rebuilt whenever a machine is made. Sectioned by gym, with the
@@ -379,109 +328,13 @@ final class LogSheetModel: Identifiable {
         [gyms.currentGym].compactMap { $0 } + addedHere
     }
 
-    // MARK: - Staging
+    // MARK: - Staging and input
 
-    func advance() {
-        guard canAdvance else { return }
-        stage = .weight
-        openWeightStage()
-    }
-
-    /// The weight stage, opened over whatever the seed left. **A weight nobody has
-    /// proven on this machine opens blank with the keypad already up** — not a new
-    /// control, just the mode the sheet already has, chosen at the one moment it is
-    /// obviously right (SPEC §6.3). Reached twice: arriving from stage one, and
-    /// correcting the machine while already here.
-    private func openWeightStage() {
-        typed = ""
-        beforeKeypad = nil
-        mode = weight == nil ? .keypad : .steppers
-    }
-
-    func backToReps() {
-        stage = .reps
-        typed = ""
-        beforeKeypad = nil
-        mode = .steppers
-    }
-
-    // MARK: - The two input modes
-
-    /// Tapping the giant number swaps the steppers for the keypad, and back (SPEC §6.2).
-    /// The keypad always opens empty: it is there for jumps, and a jump starts from
-    /// scratch rather than editing the digits of the number underneath.
-    func tapNumber() {
-        if mode == .keypad {
-            // Leaving keeps what was typed — or, if nothing was, puts back the number
-            // the keypad opened over.
-            if typed.isEmpty, let beforeKeypad {
-                reps = beforeKeypad.reps
-                weight = beforeKeypad.weight
-            }
-            beforeKeypad = nil
-            mode = .steppers
-        } else {
-            // Opening blanks the value, which is what makes 5 → 12 two taps rather
-            // than a correction of the digits underneath.
-            beforeKeypad = (reps, weight)
-            mode = .keypad
-        }
-        typed = ""
-        if mode == .keypad { applyTyped() }
-    }
-
-    /// A keypad press. The typed value flows into reps/weight as you type, so the
-    /// verdict stays live (SPEC §6.2).
-    func type(_ key: Key) {
-        mode = .keypad
-        switch key {
-        case .digit(let digit):
-            guard typed.count < Self.maxTypedLength else { return }
-            // A lone leading zero is a placeholder, not a digit of the number.
-            typed = typed == "0" ? String(digit) : typed + String(digit)
-        case .decimal:
-            // Dead on the reps stage — reps are whole (SPEC §6.2).
-            guard stage == .weight, !typed.contains(".") else { return }
-            guard typed.count < Self.maxTypedLength else { return }
-            typed = typed.isEmpty ? "0." : typed + "."
-        case .delete:
-            guard !typed.isEmpty else { return }
-            typed.removeLast()
-        }
-        applyTyped()
-    }
-
-    /// One stepper tap: **±1 rep, ±2.5 kg**. Tap only — no hold-to-repeat and no
-    /// acceleration, because the correction for an overshoot overshoots back (SPEC §6.2).
-    func step(_ direction: Int) {
-        switch stage {
-        case .reps:
-            reps = max(1, (reps ?? 0) + direction)
-        case .weight:
-            weight = Self.snapped(weight ?? 0, direction)
-        }
-    }
-
-    /// **The next multiple of 2.5 in the direction tapped — not an addition** (SPEC §6.2).
-    /// From a keypad-typed 57: `+` → 57.5 → 60; `−` → 55 → 52.5. On-grid values are
-    /// indistinguishable from plain arithmetic, which is the common case.
-    private static func snapped(_ weight: Double, _ direction: Int) -> Double {
-        let steps = weight / weightGrid
-        let nearest = steps.rounded()
-        let onGrid = abs(steps - nearest) < 1e-9
-        let target = onGrid
-            ? nearest + Double(direction < 0 ? -1 : 1)
-            : (direction < 0 ? steps.rounded(.down) : steps.rounded(.up))
-        // Never negative (SPEC §6.2). 0 kg is displayable but not savable.
-        return max(0, target * weightGrid)
-    }
-
-    private func applyTyped() {
-        switch stage {
-        case .reps: reps = typed.isEmpty ? nil : Int(typed)
-        case .weight: weight = typed.isEmpty ? nil : Double(typed)
-        }
-    }
+    func advance() { number.advance() }
+    func backToReps() { number.backToReps() }
+    func tapNumber() { number.tapNumber() }
+    func type(_ key: TwoStageNumber.Key) { number.type(key) }
+    func step(_ direction: Int) { number.step(direction) }
 
     // MARK: - Commit
 
