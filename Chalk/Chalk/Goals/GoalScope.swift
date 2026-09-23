@@ -33,7 +33,11 @@ enum GoalScope {
 
     /// The goal set here, judged against this scope's entries. Nil unless all three
     /// fields are set.
-    var goal: Goal? {
+    var goal: Goal? { goal(judgedAgainst: entries) }
+
+    /// The goal set here, judged against `entries` rather than all of this scope's —
+    /// the log sheet's edit, which leaves out the entry being corrected.
+    func goal(judgedAgainst entries: [Entry]) -> Goal? {
         switch self {
         case .exercise(let exercise):
             Goal(reps: exercise.goalReps, weight: exercise.goalWeight, setAt: exercise.goalSetAt, entries: entries)

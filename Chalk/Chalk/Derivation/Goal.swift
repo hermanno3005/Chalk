@@ -39,6 +39,9 @@ struct Goal: Equatable {
         origin = RepMaxCurve.best(atLeast: reps, in: entries.filter { $0.date < setAt }) ?? 0
     }
 
+    /// `140 × 5` — the goal as every surface names it.
+    var target: String { "\(weight.kilogramsText) × \(reps)" }
+
     /// `best[reps] >= weight` — a 5-rep 95 reaches a 1-rep goal of 95.
     var isReached: Bool { (current ?? 0) >= weight }
 
