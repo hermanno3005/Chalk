@@ -140,6 +140,97 @@ struct LibraryLayoutTests {
         #expect(try layout(fixture).resume == nil)
     }
 
+    // MARK: - The resume card's ring
+
+    @Test("A free-weight goal rings the resume card, filled from where you stood when it was set")
+    func aFreeWeightGoalRingsTheCard() throws {
+        let fixture = try LibraryFixture()
+        let bench = fixture.exercise("Bench Press")
+        fixture.log(bench, reps: 5, weight: 100, on: .days(ago: 10))
+        GoalScope.exercise(bench).set(reps: 5, weight: 120, at: .days(ago: 5))
+        fixture.log(bench, reps: 5, weight: 110, on: .now)
+        try fixture.save()
+
+        let goal = try #require(try layout(fixture).resume?.goal)
+
+        #expect(goal.isReached == false)
+        #expect(goal.progress == 0.5)
+    }
+
+    @Test("An exercise with no goal leaves the card's ring empty")
+    func noGoalNoRing() throws {
+        let fixture = try LibraryFixture()
+        fixture.log(fixture.exercise("Bench Press"), reps: 5, weight: 100, on: .now)
+        try fixture.save()
+
+        let resume = try #require(try layout(fixture).resume)
+
+        #expect(resume.goal == nil)
+    }
+
+    @Test("A gym-bound card rings the goal of the machine the resumed entry was logged on")
+    func aGymBoundCardRingsTheResumedMachine() throws {
+        let fixture = try LibraryFixture()
+        let press = fixture.exercise("Leg Press", kind: .gymBound)
+        let home = fixture.machine(for: press, at: fixture.gym("Home"))
+        let holiday = fixture.machine(for: press, at: fixture.gym("Holiday"))
+        GoalScope.machine(home).set(reps: 8, weight: 200, at: .days(ago: 20))
+        GoalScope.machine(holiday).set(reps: 8, weight: 120, at: .days(ago: 20))
+        fixture.log(home, reps: 8, weight: 190, on: .days(ago: 3))
+        fixture.log(holiday, reps: 8, weight: 60, on: .now)
+        try fixture.save()
+
+        let goal = try #require(try layout(fixture).resume?.goal)
+
+        #expect(goal.weight == 120)
+        #expect(goal.progress == 0.5)
+    }
+
+    @Test("A goal on a sibling machine never rings the card")
+    func aSiblingMachinesGoalNeverRingsTheCard() throws {
+        let fixture = try LibraryFixture()
+        let press = fixture.exercise("Leg Press", kind: .gymBound)
+        let home = fixture.machine(for: press, at: fixture.gym("Home"))
+        let holiday = fixture.machine(for: press, at: fixture.gym("Holiday"))
+        GoalScope.machine(home).set(reps: 8, weight: 200, at: .days(ago: 20))
+        fixture.log(home, reps: 8, weight: 190, on: .days(ago: 3))
+        fixture.log(holiday, reps: 8, weight: 60, on: .now)
+        try fixture.save()
+
+        let resume = try #require(try layout(fixture).resume)
+
+        #expect(resume.goal == nil)
+    }
+
+    @Test("A reached goal stays on the card as a full ring, marked reached")
+    func aReachedGoalIsAFullRing() throws {
+        let fixture = try LibraryFixture()
+        let bench = fixture.exercise("Bench Press")
+        GoalScope.exercise(bench).set(reps: 5, weight: 120, at: .days(ago: 5))
+        fixture.log(bench, reps: 5, weight: 122.5, on: .now)
+        try fixture.save()
+
+        let goal = try #require(try layout(fixture).resume?.goal)
+
+        #expect(goal.isReached)
+        #expect(goal.progress == 1)
+    }
+
+    @Test("A goal leaves the tile's subtitle as it was")
+    func tilesCarryNoGoal() throws {
+        let fixture = try LibraryFixture()
+        let bench = fixture.exercise("Bench Press")
+        GoalScope.exercise(bench).set(reps: 5, weight: 120, at: .days(ago: 5))
+        fixture.log(bench, reps: 5, weight: 100, on: .now)
+        try fixture.save()
+
+        let tile = try #require(try layout(fixture).tiles.first)
+
+        // The subtitle is all a tile says: it has no goal to read at all, since a tile
+        // would have to resolve a scope through the current gym.
+        #expect(tile.lastEntry?.text(asOf: .now) == "5 × 100 kg · today")
+    }
+
     // MARK: - Search
 
     @Test("Search matches anywhere in the name, ignoring case and diacritics")

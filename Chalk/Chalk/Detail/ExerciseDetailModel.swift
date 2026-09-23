@@ -345,8 +345,8 @@ final class ExerciseDetailModel {
         }
     }
 
-    /// The goal sheet over the scope in view, wired to put the line back in step when it
-    /// sets or clears. **Reps start where the scrub is** — reaching for a goal while
+    /// The goal sheet over the scope in view, wired to put the line — **and the resume
+    /// card's ring in the library behind it** — back in step when it sets or clears. **Reps start where the scrub is** — reaching for a goal while
     /// looking at your 3-rep number gives a 3-rep goal — or at 5 with no readout at all.
     ///
     /// Nil where there is no scope to set a goal on: a gym-bound exercise with no machine.
@@ -357,12 +357,13 @@ final class ExerciseDetailModel {
             reps: readout?.reps ?? Self.defaultReps,
             context: context
         ) { [weak self] in
-            self?.refresh()
+            self?.backInStep()
         }
     }
 
     /// What every write from a sheet over this screen has to put right: the curve here,
-    /// and the resume card, tile subtitle and recency order in the library behind it.
+    /// and the resume card, its ring, tile subtitle and recency order in the library
+    /// behind it.
     private func backInStep() {
         refresh()
         onLibraryChange()
