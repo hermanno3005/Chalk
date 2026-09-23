@@ -29,6 +29,12 @@ The twelve rep-maxes for one exercise, `best[1]` through `best[12]`, drawn on a 
 axis so shapes are comparable between exercises.
 _Avoid_: Graph, chart, progression
 
+**Scope**:
+What a strength curve is derived over and what a goal is set on: the exercise for a
+free-weight exercise, one machine for a gym-bound one. The boundary is transferability,
+so a number is only ever compared against numbers it is comparable to.
+_Avoid_: Owner, context, level
+
 **Ghost curve**:
 A see-through Epley projection drawn behind the strength curve, showing headroom you
 have not yet demonstrated. Guidance only — never a rep-max, never stored, never
@@ -41,6 +47,46 @@ currently setting the cell flagged. It mirrors the derivation rather than restat
 which is what makes it sufficient. The only entry point to raw history and the only place
 an entry is edited or deleted; there is no all-entries log screen.
 _Avoid_: Log screen, entry list, records list
+
+### What you're heading toward
+
+**Goal**:
+A weight you have named at a rep count and have not lifted yet, held on one scope — at
+most one, replaced rather than added to. The only number Chalk stores that is not a lift
+you performed, and its job is motivation: it never tells you what to load.
+_Avoid_: Target, PR, PB, milestone, aim, projection
+
+**Reached**:
+What a goal is once your best at its rep count meets it — `best[reps] >= weight`. Asked
+of the entries each time it is shown and never stored, so correcting an entry downward un-reaches a goal
+on its own, with nothing to repair.
+_Avoid_: Achieved, hit, completed, retired, `reachedAt`
+
+**Gap**:
+The weight between your curve and your goal, `goal weight − best[reps]` — the number the
+whole feature exists to show. With nothing logged it is the entire weight; a reached goal
+has none.
+_Avoid_: Headroom, remainder, deficit, progress
+
+**Setting a goal**:
+The one write a goal has: naming a `(reps, weight)` pair on a scope, which replaces
+whatever goal was there and records the moment it was named, which is where the ring
+counts from. Naming your first goal and replacing a reached one are the same act, which is
+why *change* is a word on a menu row rather than an operation.
+_Avoid_: Update, edit, amend, adjust, save
+
+**Clearing a goal**:
+Removing a goal without naming another — the only other way one leaves a scope. It sits at
+the foot of the goal sheet, not in the exercise's overflow, which carries lifetime
+operations only.
+_Avoid_: Delete, remove, cancel, abandon, retire
+
+**Goal sheet**:
+Where a goal is named: the log sheet's two-stage giant number borrowed whole — reps, then
+weight — and nothing else of it. No machine row, because the scope comes from the caller;
+no seeded weight, because a goal is by definition one you have not lifted; and it commits
+with *Set goal*, never *Save*.
+_Avoid_: Goal editor, target sheet, goal modal
 
 ### The library
 
@@ -104,7 +150,9 @@ _Avoid_: Latest, most recent set, history line
 The last thing you logged anywhere in the library, at the top of the home screen: the
 exercise, its last entry, and a one-tap way back into the log sheet. Derived from the
 entries like everything else, so it has nothing to maintain and is simply absent when
-nothing has been logged.
+nothing has been logged. It carries the goal ring, with no words, but only for a goal at
+the last entry's own scope — never a sibling machine's — so a log at a holiday gym never
+shows your home machine's goal.
 _Avoid_: Recent card, quick log, continue
 
 ### Where you lift
