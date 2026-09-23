@@ -57,8 +57,8 @@ you performed, and its job is motivation: it never tells you what to load.
 _Avoid_: Target, PR, PB, milestone, aim, projection
 
 **Reached**:
-What a goal is once the curve has passed it — `best[reps] >= weight`. Asked of the entries
-each time it is shown and never stored, so correcting an entry downward un-reaches a goal
+What a goal is once your best at its rep count meets it — `best[reps] >= weight`. Asked
+of the entries each time it is shown and never stored, so correcting an entry downward un-reaches a goal
 on its own, with nothing to repair.
 _Avoid_: Achieved, hit, completed, retired, `reachedAt`
 
@@ -70,9 +70,9 @@ _Avoid_: Headroom, remainder, deficit, progress
 
 **Setting a goal**:
 The one write a goal has: naming a `(reps, weight)` pair on a scope, which replaces
-whatever goal was there and records what the curve read at that moment. Naming your first
-goal and replacing a reached one are the same act, which is why *change* is a word on a
-menu row rather than an operation.
+whatever goal was there and records the moment it was named, which is where the ring
+counts from. Naming your first goal and replacing a reached one are the same act, which is
+why *change* is a word on a menu row rather than an operation.
 _Avoid_: Update, edit, amend, adjust, save
 
 **Clearing a goal**:
@@ -150,7 +150,9 @@ _Avoid_: Latest, most recent set, history line
 The last thing you logged anywhere in the library, at the top of the home screen: the
 exercise, its last entry, and a one-tap way back into the log sheet. Derived from the
 entries like everything else, so it has nothing to maintain and is simply absent when
-nothing has been logged.
+nothing has been logged. It carries the goal ring, with no words, but only for a goal at
+the last entry's own scope — never a sibling machine's — so a log at a holiday gym never
+shows your home machine's goal.
 _Avoid_: Recent card, quick log, continue
 
 ### Where you lift

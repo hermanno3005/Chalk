@@ -8,8 +8,10 @@ Read `CONTEXT.md` first: it is the glossary, and this document uses its words ex
 (**Entry**, **rep-max**, **monotonic backfill**, **strength curve**, **ghost curve**,
 **free-weight**, **gym-bound**, **Group**, **Ungrouped**, **Gym**, **Machine**, **Merge**,
 **current gym**,
-**Archived**, **Hint**). Read `docs/adr/0001` and `docs/adr/0002` before touching persistence
-or the derivation — they record the two decisions most likely to be "helpfully" undone.
+**Archived**, **Hint**, **Scope**, **Goal**, **Reached**, **Gap**, **Setting a goal**,
+**Clearing a goal**, **Goal sheet**). Read `docs/adr/0001` and `docs/adr/0002` before touching
+persistence or the derivation — they record the two decisions most likely to be "helpfully"
+undone. Read `docs/adr/0004` before touching how a goal is stored.
 
 Build it in the order of §10. Where this document says **must**, it is closing a hole an
 implementer would otherwise fill by invention.
@@ -85,7 +87,8 @@ Pull a container before doing anything irreversible (see the merge in §7.5).
 ## 3. Domain model and schema
 
 From [#9](https://github.com/hermanno3005/Chalk/issues/9), amended by
-[#14](https://github.com/hermanno3005/Chalk/issues/14). Governed by ADR-0001.
+[#14](https://github.com/hermanno3005/Chalk/issues/14) and, for the goal fields,
+[#66](https://github.com/hermanno3005/Chalk/issues/66). Governed by ADR-0001 and ADR-0004.
 
 Five entities. Every attribute optional or defaulted; every relationship optional with an
 explicit inverse; no `.unique`; no `.deny`. **These are CloudKit-mirroring rules obeyed under a
@@ -104,6 +107,9 @@ enum ExerciseKind: String, Codable { case freeWeight, gymBound }
     var entries: [Entry]? = []
     @Relationship(deleteRule: .cascade, inverse: \Machine.exercise)
     var machines: [Machine]? = []
+    var goalReps: Int?                   // goal (§12): all three set, or none
+    var goalWeight: Double?              // kilograms
+    var goalSetAt: Date?                 // nil while gym-bound (invariant 8)
 }
 
 @Model final class Entry {
@@ -131,6 +137,9 @@ enum ExerciseKind: String, Codable { case freeWeight, gymBound }
     var gym: Gym?
     @Relationship(deleteRule: .cascade, inverse: \Entry.machine)
     var entries: [Entry]? = []
+    var goalReps: Int?                   // goal (§12): all three set, or none
+    var goalWeight: Double?              // kilograms
+    var goalSetAt: Date?
 }
 
 @Model final class ExerciseGroup {
@@ -156,6 +165,9 @@ schema rule. Gym is the one that matters: cascading from a gym would reach every
 logged there. Nullify instead — a gym-less machine is recoverable by reassignment, deleted
 history is not.
 
+**A goal adds no row.** It is three fields on its **scope**, not an entity, so it dies with its
+scope and a gym-less machine keeps its goal (ADR-0004).
+
 ### Invariants the schema cannot express
 
 Every one of these must be maintained in app code. They are listed because this is exactly where
@@ -177,6 +189,9 @@ an implementer invents behaviour.
 7. **Gyms and groups are held explicitly on the store, never derived from the machines or
    exercises that happen to exist.** A newly created empty gym or group must survive the sheet
    closing. (The library prototype hit this bug for real.)
+8. **Goal fields are nil on an `Exercise` while it is gym-bound.** A gym-bound exercise's goals
+   live on its machines, one per machine; the kind change moves them (§8). A partly filled set
+   of three is **no goal**, and nothing reads the raw fields except through `Goal` (§12.2).
 
 ### Storage details
 
@@ -189,7 +204,9 @@ an implementer invents behaviour.
 - **Identity is `var id: UUID = UUID()` on every entity.** No `.unique`, no `#Unique`.
   App-level uniqueness only.
 - **No `createdAt` anywhere except `Entry.date`.** The library sorts by last-logged, which derives
-  from entries; group order is `sortIndex`. Nothing else has a reader.
+  from entries; group order is `sortIndex`. Nothing else has a reader. `goalSetAt` is not a
+  creation date: every **setting a goal** rewrites it, and the ring's origin is measured from it
+  (§12.2).
 - **`ExerciseGroup.sortIndex` is a real field, not array position** — relationship arrays are not
   order-preserving when mirrored. `Gym` deliberately has **no** `sortIndex`: gyms order by
   usage recency, which they already know (§7.4).
@@ -198,7 +215,7 @@ an implementer invents behaviour.
 
 ```swift
 enum ChalkSchemaV1: VersionedSchema {
-    static var versionIdentifier = Schema.Version(1, 0, 0)
+    static var versionIdentifier = Schema.Version(2, 0, 0)
     static var models: [any PersistentModel.Type] {
         [Exercise.self, Entry.self, Gym.self, Machine.self, ExerciseGroup.self]
     }
@@ -213,6 +230,13 @@ enum ChalkMigrationPlan: SchemaMigrationPlan {
 The container is `ModelConfiguration(cloudKitDatabase: .none)`, built against
 `ChalkMigrationPlan`. Do **not** add a `schemaVersion: Int` attribute — `VersionedSchema`
 already carries the version.
+
+**The goal fields bumped the schema to `2.0.0` in place** (ADR-0004). The change is additive, so
+`stages` stays empty and no frozen copy of V1 is kept. Whether SwiftData infers that migration
+with no stage listed is unverified, so **a test that opens a store written at `1.0.0`, reopens it
+at `2.0.0`, and asserts every row survives with nil goal fields is required**, alongside the
+round-trip test covering the goal fields on both `Exercise` and `Machine`. Download the container
+(§2) before the first launch of that build on the phone.
 
 **If the container fails to open**, present a plain full-screen message naming the store path
 and stop. Do **not** delete or recreate the store, and do not retry in a loop: deleting is the
@@ -290,11 +314,14 @@ Top to bottom:
 1. **The scrub readout.** One large number — the best weight at the selected rep count — with
    `best for N reps · M entries ›` beneath it. `M` is the count of entries with `reps >= N` in
    scope. The number animates on change (`.contentTransition(.numericText())`).
+   **The goal line** sits directly under that subhead when the scope has a goal (§12.4), and
+   nothing takes its place when it has none.
 2. **The strength curve**, **150 pt tall**. Full-bleed was tried and rejected as making the screen
    read as a chart rather than as an exercise.
 3. **Empty space.** It ships empty and that is deliberate
    ([#16](https://github.com/hermanno3005/Chalk/issues/16)): it keeps the Log bar high and
-   thumb-reachable. Do not fill it with a recent-entries list or a rep-max strip.
+   thumb-reachable. Do not fill it with a recent-entries list or a rep-max strip — or with the
+   goal, which lives in the goal line and never on the chart (§12.4).
 4. **Log bar** — full width, pinned at the bottom. Opens the log sheet (§6).
 
 **Toolbar:** back to the library (supplied by `NavigationStack`, not hand-drawn); the machine
@@ -324,7 +351,8 @@ back and no other rep count can be held. Default selection is **5 reps**.
 ### 5.3 The machine qualifier — gym-bound only
 
 A nav-bar menu listing **every machine for this exercise**, flat, sectioned by gym, each row
-reading `label · gym`. Switching it re-scopes the screen and **re-derives the whole curve**.
+reading `label · gym`. Switching it re-scopes the screen and **re-derives the whole curve**,
+and the goal line with it: each machine's goal is measured only against that machine's curve.
 
 This is the app's **one machine picker**, shared with the log sheet (§6.4) — one behaviour,
 learned once.
@@ -366,12 +394,22 @@ sits under the text:
 This hint is **the only thing on the detail screen that reads another machine's entries.** Treat
 it as a distinct lookup, not part of `RepMaxCurve` over the machine in view.
 
+**A goal still shows here.** A goal can be set on a scope with nothing logged, so when the scope
+has one, the goal line (§12.4) sits under the text, and under the hint if there is one. The prompt
+to go and log still comes first. With nothing logged the **gap** is the whole goal weight.
+
 ### 5.5 The overflow menu
 
 - **Rename** — an inline field or one-field alert. Cosmetic; identity is the UUID.
 - **Change kind** — the free-weight ↔ gym-bound flip (§8).
-- **Delete exercise** — cascades to its entries and machines (§3). Confirm destructively, phrased
-  as the outcome with the count: *"Delete Bench Press and its 84 entries?"* No undo.
+- **`Set a goal…`**, or **`Change goal…`** once the scope has a goal — opens the goal sheet
+  (§12.3) on the scope the screen is showing, seeded with the selected rep count. **On a
+  gym-bound exercise with no machine yet there is no scope, so the item is absent, not
+  disabled** — §7.5's rule for dead verbs. There is no clear item: clearing a goal lives in the
+  goal sheet, and the overflow keeps lifetime operations only.
+- **Delete exercise** — cascades to its entries and machines (§3), and their goals with them.
+  Confirm destructively, phrased as the outcome with the count: *"Delete Bench Press and its 84
+  entries?"* No undo.
 
 There is deliberately **no "edit entries" item**: the curve is how you find a bad entry
 ([#11](https://github.com/hermanno3005/Chalk/issues/11)), and no all-entries log screen exists.
@@ -506,10 +544,11 @@ relabel what you log next.
 
 ### 6.5 The verdict line — weight stage only
 
-Under the number, one line with five states:
+Under the number, one line with six states:
 
 | Condition | Line |
 |---|---|
+| Saving would reach the goal (below) | `Reaches your goal of 140 × 5` |
 | Beats `best[reps]` | `Beats your 5-rep best by 2.5 kg` |
 | Equals `best[reps]` | `Matches your 5-rep best` |
 | Below `best[reps]` | `Your 5-rep best is 55 kg` |
@@ -522,8 +561,32 @@ state of a line that already reserves that space. It replaces nothing of value �
 machine `First entry at 5 reps` is true and tells you nothing at precisely the moment you most
 need a number.
 
+The first state is the **crossing**, from [#71](https://github.com/hermanno3005/Chalk/issues/71).
+It shows only when **all** of these hold:
+
+- the sheet's current scope has a goal, and the entries in that scope do **not** already reach it;
+- `reps >= goal.reps` — monotonic backfill counts here too, so a 6-rep entry at a 5-rep goal's
+  weight crosses it;
+- `weight >= goal.weight`.
+
+- **It takes over from *Beats*, *First entry* and the hint.** At the crossing the goal is the
+  news. By construction it can only ever replace those three.
+- **The ordinary line returns** as soon as the weight steps below the goal. The line stays live
+  under the steppers.
+- It is drawn with a **full donut in the goal colour** in front of the words — the only full
+  coloured ring in the app, so *about to reach* reads differently from *reached* (§12.5). The
+  `Verdict` enum gains a goal case for this.
+- **No haptic.** Stepping back and forth across the goal weight must not buzz.
+- **Changing the machine caption** (§6.4) re-reads that machine's goal along with its entries, so
+  the verdict always matches the scope the entry will land in.
+- **There is no gap line in ordinary logging.** Below the goal the verdict is the ordinary one,
+  and nothing about the goal shows.
+- **After Save, nothing new** — §6.7 is unchanged. The only acknowledgement is the greyed goal
+  line you land on.
+
 **Stage one stays silent.** The line is meaningless until both numbers exist, and showing the
 target on the reps stage would turn the log sheet into a lookup surface — the detail screen's job.
+That includes the goal: no goal text on the reps stage.
 
 ### 6.6 Edit mode
 
@@ -536,6 +599,10 @@ rather than from your most recent one, presented as an edit. **No new sheet is d
   at and both curves change. No confirmation, no toast: mistakes here are cheap (move it back),
   and *move* and *delete* are already distinct gestures on that row.
 - Editing never moves the current gym (§6.4).
+- **The crossing (§6.5) is judged against every other entry in scope**, the one being edited
+  excluded — the same rule the verdict already uses. Raising an old entry past the goal says so,
+  and reopening the entry that reached it still says so. **There is no "un-reaches your goal"
+  state** when you lower it: the goal quietly becoming unreached is the derivation working.
 
 ### 6.7 Validation and commit
 
@@ -566,11 +633,21 @@ pinned in thumb reach.**
    one-tap **Log again** (opens the log sheet, machine taken from that entry — §6.4) and a tap
    through to its detail screen. It is the single likeliest thing you want, so it gets the
    biggest target on the screen.
+   **It carries the goal donut** ([#70](https://github.com/hermanno3005/Chalk/issues/70)) — 18 pt,
+   leading the last-entry line, with **no words**. Three states: **none**, with the slot still
+   reserved, so every card's subtitle is indented and the card never changes shape; **partial**;
+   and **reached**, a full grey ring rather than nothing, so success never looks like "no goal".
+   - **Only a goal at the resumed entry's own scope** — the entry's machine for a gym-bound
+     exercise, the exercise for a free-weight one. **There is no fallback to a sibling machine's
+     goal**, so a log at a holiday gym never shows your home machine's goal.
+   - **The donut is inert.** Taps pass through to the card body; it is not a target between
+     *Log again* and the card.
 2. **Search field, pinned in thumb reach.** Filters instantly. **A name matching nothing offers
    *Create it* as the last result** — find and create are the same gesture.
 3. **Tiles, grouped into sections** — one section per group in **your** order (`sortIndex`),
    **Ungrouped last**. Each tile shows the exercise name and what you last did
-   (`8 × 52.5 kg · today`). **Tiles within a group order by recency** of last entry.
+   (`8 × 52.5 kg · today`). **Tiles within a group order by recency** of last entry. **Tiles carry
+   no goal in any form**: a tile would have to guess a scope via the current gym.
 4. **No browsable list.** Past the grid, you type.
 
 **Empty state** (no exercises): real copy saying what the app is for, plus a primary button that
@@ -680,7 +757,8 @@ long-presses in the picker.
 Both live on a machine row inside `Manage gyms…` → gym → machine, and **nowhere else**.
 
 **`Move to another gym…`** repoints `machine.gym`. It fixes the commoner mistake — filing a
-machine under the wrong gym — and is half the duplicate-gym repair.
+machine under the wrong gym — and is half the duplicate-gym repair. **Its goal rides along
+untouched**: the goal is three fields on the machine, and Move never pools two machines.
 
 **`Merge into…`** re-points **every** entry from this machine onto a sibling and then
 **hard-deletes** the loser. It exists because the real failure is **late relabelling**: ten
@@ -708,12 +786,44 @@ gyms, **machine creation gets no near-name warning.**
 > reassignment has not landed, and the cascade eats exactly the history the merge existed to
 > save.
 
+**Goals on a merge** ([#68](https://github.com/hermanno3005/Chalk/issues/68)): **the most recently
+set goal wins**, the same rule as a kind change (§8). The goal with the later `goalSetAt` ends up
+on the survivor and keeps its own `goalSetAt`; its ring origin recomputes over the pooled entries
+dated before it. **The outcome does not depend on which way you merge** — direction is the thing people
+get wrong, and getting it wrong must not cost you your only goal. (*Survivor keeps its own* was
+rejected: in late relabelling the goal usually sits on the old machine, the one being deleted.)
+
+The confirmation changes only when a goal is lost:
+
+| Loser | Survivor | Text |
+|---|---|---|
+| no goal | no goal | unchanged |
+| goal | no goal | unchanged — the loser's goal moves across |
+| no goal | goal | unchanged |
+| goal | goal | gains the lost-goal clause: *"Move 8 entries to Hammer Strength and delete Unlabelled? Your goal of 140 × 5 is kept; 1 other goal is cleared."* |
+
+**The lost-goal clause is one string, shared word for word with §8.** It names the survivor, not
+the goal being cleared.
+
+**When the loser has zero entries** — possible now, since a goal can be set with nothing
+logged — there is no entry sentence to carry the move, so the confirmation names what moves:
+
+- the loser's goal survives: *"Move your goal of 140 × 5 to Unlabelled and delete Hammer
+  Strength?"*
+- nothing of the loser survives: *"Delete Hammer Strength?"*, plus the lost-goal clause if one
+  applies.
+
+> **The same hazard, for goals.** Write the winning goal onto the survivor **in the same save as
+> the entry reassignment, before deleting the loser.** The cascade takes the loser's goal fields
+> with it.
+
 **Merge is all-or-nothing.** Every loser entry moves. Re-pointing only some of them — both
 machines genuinely used — is served by §6.6's per-entry machine edit. **Do not build a
 checkbox-select merge.**
 
 Merge is affordable at all only because ADR-0002 stores no rep-max: it is a relationship edit and
-nothing more, and the curve is simply correct on the next read.
+nothing more, and the curve is simply correct on the next read. A goal is the one stored thing a
+merge has to make a choice about, and the rule above is that choice (ADR-0004).
 
 **Accepted cost, stated rather than hidden:** the repair is undiscoverable from where the problem
 is noticed. You spot the split on a curve on the detail screen; the fix is four taps away behind a
@@ -744,12 +854,30 @@ case.**
 
 **Free-weight → gym-bound.** Prompt once for **which machine the existing entries belong to**
 (picking or creating one, at a gym), then move them wholesale. Every existing entry gets that
-machine.
+machine. **The exercise's goal moves onto that machine too**, keeping its `goalSetAt`, and is
+nilled on the exercise in the same save as the entry move (§3 invariant 8). The prompt appears
+when there are entries **or** a goal, so its copy must make sense with zero entries (e.g. *"Which
+machine is this on?"* — final wording is the build's).
 
 **Gym-bound → free-weight.** **Pool everything, behind one confirmation that names the
 consequence out loud:** *"Bench Press has entries on 3 machines. They'll merge into one curve."*
 Entries keep their exercise and **nullify their machine link**; the now-meaningless `Machine`
 rows are deleted.
+
+**Goals: the most recently set wins** ([#67](https://github.com/hermanno3005/Chalk/issues/67)).
+The machine goal with the latest `goalSetAt` is copied onto
+the exercise, keeping its own `goalSetAt`, **before any machine is deleted**; every other goal dies
+with its machine. The confirmation appears whenever there is a consequence to name — entries on
+more than one machine, **or a goal being cleared** — and when a goal is lost it gains the
+lost-goal clause shared with §7.5:
+
+> *"Bench Press has entries on 3 machines. They'll merge into one curve. Your goal of 140 × 5 is
+> kept; 1 other goal is cleared."*
+
+The clause names the survivor; the count covers the losers. With zero or one goal the confirmation
+is unchanged. **With zero entries the sentences about entries are dropped** and the clause
+stands alone (*"Your goal of 140 × 5 is kept; 1 other goal is cleared."*), so no goal disappears
+unannounced.
 
 This merges numbers from separate machines into one curve — the pollution the model otherwise
 forbids — except that here **you are asserting that the load transfers**, which is what makes it
@@ -784,14 +912,20 @@ NavigationStack
 
 Exercise detail (§5)
 ├── machine qualifier (gym-bound only)  → machine menu (§5.3)     menu
-├── overflow → Rename / Change kind (§8) / Delete exercise
+├── overflow → Rename / Change kind (§8) / Set a goal… / Delete exercise
+│   └── Set a goal… / Change goal…      → Goal sheet (§12.3)      sheet
 ├── readout `best for N reps ›`         → History sheet (§5.6)    sheet
 │   ├── row tap                         → Log sheet, edit mode    sheet
 │   └── swipe                           → Delete (full-swipe off)
+├── goal line (no ›)                    → Goal sheet (§12.3)      sheet
 └── Log bar                             → Log sheet (§6)          sheet
 
 Log sheet (§6)                          stage 1 reps ⇄ stage 2 weight
 └── caption line (gym-bound only)       → machine menu + New machine here / New gym…
+
+Goal sheet (§12.3)                      stage 1 reps ⇄ stage 2 weight
+├── Set goal                            → closes
+└── Clear goal (only with a goal)       → closes, no confirmation
 ```
 
 **Every screen state to build**, so none is invented at the keyboard:
@@ -799,11 +933,16 @@ Log sheet (§6)                          stage 1 reps ⇄ stage 2 weight
 | Screen | States |
 |---|---|
 | Library | empty (first launch) · normal · searching, with results · searching, no match (*Create it*) · Arrange mode |
-| Exercise detail | zero entries, free-weight (bare text) · zero entries, gym-bound with usable sibling (text + hint) · zero entries, gym-bound with no usable sibling (bare text) · one entry (flat curve, ghost far above) · normal |
+| Resume card | no goal (slot reserved) · goal, partial ring · goal reached (full grey ring) |
+| Exercise detail | zero entries, free-weight (bare text) · zero entries, gym-bound with usable sibling (text + hint) · zero entries, gym-bound with no usable sibling (bare text) · one entry (flat curve, ghost far above) · normal · gym-bound with no machine yet (no *Set a goal…*) |
+| Goal line | absent (no goal) · gap (`Goal 140 × 5 · 40 kg to go`) · reached (grey) · under the zero-entry text · under the zero-entry text and hint |
 | Log sheet | stage 1 steppers · stage 1 keypad · stage 2 steppers · stage 2 keypad · stage 2 blank + keypad (unproven machine) · edit mode · Save disabled |
-| Verdict line | five states (§6.5) |
+| Verdict line | six states (§6.5) |
+| Goal sheet | stage 1 steppers · stage 1 keypad · stage 2 blank + keypad · stage 2 steppers · goal line: above best · already reached (grey) · first goal · *Set goal* disabled · *Clear goal* present (a goal exists) |
 | History sheet | populated (always — it is only reachable from a cell that exists) |
 | Manage gyms | no gyms · gyms · archived section · gym with no machines (delete available) · machine with no sibling (no *Merge into…*) |
+| Merge confirmation | the four goal rows of §7.5 · loser with zero entries, its goal moving · loser with zero entries, nothing moving |
+| Kind-change confirmation | entries on several machines · plus the lost-goal clause · zero entries, clause alone |
 
 There is no error state beyond §3's container failure. There is no network, so there is nothing
 to fail.
@@ -829,6 +968,15 @@ Each step leaves the app runnable on the phone.
 9. **`Manage gyms…`** (§7.4) — rename, archive, delete-empty, move, merge (§7.5).
 10. **Change kind** (§8).
 
+Goals ([#72](https://github.com/hermanno3005/Chalk/issues/72)) build on top, in this order:
+
+11. **Storage and `Goal`** (§3, §12.1–12.2) — the goal fields, the `2.0.0` schema and the
+    required migration test, the `Goal` value with its unit tests (no `ModelContainer`).
+12. **Goal sheet and the detail screen's goal line** (§5.5, §12.3–12.5).
+13. **The log sheet's crossing** (§6.5, §6.6).
+14. **The resume card's donut** (§7.1).
+15. **Goals under kind change and merge** (§8, §7.5).
+
 ---
 
 ## 11. Out of scope
@@ -853,8 +1001,139 @@ Carried from the map's Out of scope. These are **decided**, not deferred by acci
 - **Undo, tombstones, retraction entities, audit trails** ([#11](https://github.com/hermanno3005/Chalk/issues/11)).
 - **An all-entries log screen.** The curve is how you reach history.
 - **Materialised rep-maxes.** See ADR-0002 — the obvious optimisation, explicitly rejected.
+- **Weight prescription** — pace, progression, "lift 130 today", or anything that plans a
+  session. A goal is a number you name; Chalk never tells you what to lift (§12).
+- **A history of goals reached** — no trophy shelf, no `reachedAt`, no record of past goals.
+  Setting a goal replaces the old one and nothing remembers it (§12).
 
-## 12. Still open
+## 12. Goals
+
+From [#72](https://github.com/hermanno3005/Chalk/issues/72), built from the map
+[#62](https://github.com/hermanno3005/Chalk/issues/62) and its eight resolved tickets.
+Storage is governed by ADR-0004. Prototype:
+[`docs/prototypes/goals/`](docs/prototypes/goals/README.md) (R2, the donut).
+
+On each **scope** you can name one **goal**: a weight at a rep count you have not lifted yet. A
+free-weight exercise has one scope; a gym-bound exercise has one per machine. Chalk shows the goal
+quietly, never tells you what to lift, never celebrates, and keeps no record of past goals.
+
+### 12.1 What is stored
+
+- **Three optional fields on the scope, not an entity** (§3, ADR-0004): `goalReps: Int?`,
+  `goalWeight: Double?`, `goalSetAt: Date?` — on `Exercise` while free-weight, on `Machine` for
+  gym-bound. One goal per scope holds by structure. **A partly filled set of three is no goal.**
+- **Setting a goal** writes all three, with `goalSetAt = now`. That one write replaces whatever
+  goal was there and is also what restarts the ring. **Clearing a goal** sets all three to nil.
+  **There is no other write.**
+- **Nothing else is stored.** No `reachedAt`, no origin number, no history of goals. **Reached**,
+  the **gap** and the ring's origin are all derived, so ADR-0002 stands untouched: there is no
+  stale state to repair.
+- A goal at more than 12 reps is an ordinary goal. A 1-rep goal is an ordinary goal with
+  `reps = 1` — there is no one-rep-max concept.
+
+### 12.2 The `Goal` value
+
+A Foundation-only struct beside `RepMaxCurve` (§4), and **the only way to build a goal** from the
+three fields: it is nil unless all three are set. It is built from the goal fields plus the
+scope's `[Entry]`:
+
+| Member | Meaning |
+|---|---|
+| `reps`, `weight` | the goal |
+| `current` | `RepMaxCurve.best(atLeast: reps, in: entries)` — off the drawn axis, so `reps > 12` works, and monotonic backfill applies: a `5 × 95` reaches a 1-rep goal of 95 |
+| `isReached` | `current >= weight` |
+| `gap` | `weight − (current ?? 0)`, or zero when reached — the whole goal weight with nothing logged |
+| `origin` | `best(atLeast: reps)` over the scope's entries dated **strictly before** `setAt`, else zero. An entry at the same instant does not count. Sound because `Entry.date` is immutable (§3 invariant 6) |
+| `progress` | the donut's fill, `(current − origin) / (weight − origin)`, clamped to 0…1, and 1 when reached |
+
+`current >= origin` holds by construction — the current best is taken over a superset of the
+origin's entries — so the ring never reads negative. Correcting or deleting an entry recomputes
+everything: a goal it was reaching silently becomes unreached, and an origin it set drops.
+
+**Scoping stays the caller's job**, exactly as for `RepMaxCurve`: every entry for a free-weight
+exercise, one machine's entries for a gym-bound one. A small read/write helper resolves the goal
+fields for a scope, so **screens never touch the three raw fields directly.**
+
+### 12.3 The goal sheet
+
+From [#65](https://github.com/hermanno3005/Chalk/issues/65). Opened from the detail screen's
+overflow (`Set a goal…` / `Change goal…`, §5.5) or by tapping the goal line.
+
+- **The log sheet's two-stage giant number, borrowed whole** — reps, then weight — with the same
+  steppers, keypad, 2.5 kg snapping and clamps (§6.1–6.2). **Share that input logic with the log
+  sheet; do not copy it.**
+- **Nothing else of the log sheet:** no machine caption, because the caller supplies the scope
+  (the one the detail screen is showing); no seeded weight, because a goal is by definition one
+  you have not lifted; no verdict line.
+- **Reps start at the detail screen's selected rep count**, or at 5 when there is no scrub readout
+  (§5.4) — the log sheet's and the hint's cold start.
+- **The weight stage opens blank with the keypad up.** The app never suggests a load it cannot
+  back up.
+- **The commit button reads `Set goal`, never `Save`**, and is enabled for any `reps >= 1` and
+  `weight > 0`. No ceiling. A goal can be set on a scope with zero entries.
+- **One line under the weight**, live as you type, in the goal colour — grey in its
+  already-reached state — with **no donut**, since there is no goal yet for a ring to fill toward:
+
+  | Condition | Line |
+  |---|---|
+  | weight > `best[reps]` | `40 kg above your 5-rep best` |
+  | weight ≤ `best[reps]` | `Already reached — your 5-rep best is 115 kg` |
+  | no entry reaches `reps` | `First goal at 5 reps` |
+
+  An already-reached value is shown, not blocked.
+- **`Clear goal`** sits at the foot of the sheet, only when the scope has a goal. **No
+  confirmation**; the sheet closes. It is the only way a goal leaves a scope without naming
+  another, and it lives nowhere else.
+- **Replacing a reached goal is the same act as naming the first one** — tap the line, type,
+  `Set goal`. The detail screen refreshes after a set or a clear.
+
+### 12.4 The goal line on the detail screen
+
+From [#64](https://github.com/hermanno3005/Chalk/issues/64).
+
+- **One line directly under the scrub readout's subhead** (§5.1): `Goal 140 × 5 · 40 kg to go`,
+  led by the donut. On the zero-entry screen it sits under §5.4's text, and under the hint.
+- **Reached, the whole line and donut go grey**: `Goal 140 × 5 · reached`. The goal you crossed
+  stays visible; nothing celebrates.
+- **No line at all when the scope has no goal.** On a gym-bound exercise, one machine's goal never
+  appears under another machine's curve; switching the qualifier switches the line (§5.3).
+- **The line is tappable and opens the goal sheet, and carries no `›`** — unlike the history row
+  above it, so the two stacked tappable rows stay distinguishable.
+- **The goal is never drawn on the chart.** No marker, no rule, no change to the ghost curve or
+  the y-axis framing; §5.1's empty space stays empty.
+- `ExerciseDetailModel` exposes the scope's `Goal?` and the line's text and state, re-derived on
+  every refresh and every qualifier switch, and hands the goal sheet its scope and selected reps.
+
+### 12.5 Presentation
+
+- **One goal colour, orange** — a named colour used by every goal surface and nothing else: the
+  goal line and its donut, the resume card's ring, the goal sheet's line, and the crossing
+  verdict.
+- **A reached goal is always grey.**
+- **The donut is 18 pt**, always leading its words (or the last-entry line, on the resume card),
+  and is **one shared view** drawn in all three places. The only full *coloured* ring in the app
+  is the crossing verdict (§6.5).
+- Where it appears: the goal line (§12.4), the resume card (§7.1) and the log sheet's crossing
+  (§6.5). Nowhere else.
+- Views, colour and the donut drawing are not unit-tested. Check them on the phone, starting with
+  the resume card's leading gutter — no prototype ever showed a ring on that card.
+
+### 12.6 Out of scope for goals
+
+Beyond §11's two:
+
+- **More than one goal per scope**, and goal ladders per rep count.
+- **Goals on library tiles**, or on any surface that would have to resolve a scope via the current
+  gym. **Borrowing another machine's goal** anywhere, the resume card included.
+- **Drawing the goal on the chart**, and any change to the ghost curve.
+- **Celebration** — prompts, animations, haptics, or a post-Save message on reaching a goal.
+- **A gap line in ordinary logging**, and any goal text on the reps stage.
+- **An "un-reaches your goal" state** when editing.
+- **A goal at a not-yet-created machine.** A gym-bound exercise with no machine offers no
+  `Set a goal…` (§5.5). Decided in [#72](https://github.com/hermanno3005/Chalk/issues/72) rather
+  than in a ticket; reopen it if that turns out to matter.
+
+## 13. Still open
 
 One thing, deliberately: **app identity.** The name (Chalk) and the icon. The bundle id
 `com.hermannaust.Chalk` and the 18.0 deployment target are provisional facts from the skeleton
