@@ -57,6 +57,16 @@ enum GoalScope {
         write(reps: nil, weight: nil, setAt: nil)
     }
 
+    /// Moves the goal set at `source` here, **keeping its `goalSetAt`** — the goal is the
+    /// same goal wherever it lands, so its ring still counts from the moment it was named
+    /// — and clears `source`. The kind change's move and pool (SPEC §8).
+    func takeGoal(from source: GoalScope) {
+        if let goal = source.goal {
+            write(reps: goal.reps, weight: goal.weight, setAt: goal.setAt)
+        }
+        source.clear()
+    }
+
     private func write(reps: Int?, weight: Double?, setAt: Date?) {
         switch self {
         case .exercise(let exercise):

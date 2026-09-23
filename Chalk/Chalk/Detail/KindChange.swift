@@ -38,22 +38,56 @@ struct KindChange {
 
     var entryCount: Int { (exercise.entries ?? []).count }
 
+    /// The free-weight exercise's own goal — what the flip to gym-bound carries onto the
+    /// machine. Nil going the other way: a gym-bound exercise holds no goal of its own
+    /// (SPEC §3).
+    private var exerciseGoal: Goal? {
+        direction == .toGymBound ? GoalScope.exercise(exercise).goal : nil
+    }
+
+    /// The machines holding a goal, the latest set first — **the first is the one
+    /// pooling keeps** (SPEC §8, #67), and the rest die with their machines. Machine
+    /// order plays no part.
+    private var machinesWithGoals: [(machine: Machine, goal: Goal)] {
+        machines
+            .compactMap { machine in GoalScope.machine(machine).goal.map { (machine, $0) } }
+            .sorted { $0.goal.setAt > $1.goal.setAt }
+    }
+
+    /// The machine whose goal pooling copies onto the exercise: the most recently set.
+    var machineKeepingGoal: Machine? { machinesWithGoals.first?.machine }
+
     /// Whether the flip has to ask which machine the existing entries belong to.
     ///
-    /// **Only where there are entries to place.** An exercise with nothing logged has
-    /// nothing to orphan, and a gym-bound exercise with no machine is a state the app
-    /// already has — the empty state, until the first log makes one (SPEC §5.3, §6.4).
-    /// Asking for a machine there would invent a decision the flip does not need.
-    var needsAMachine: Bool { direction == .toGymBound && entryCount > 0 }
+    /// **Only where there is something to place: entries or a goal.** An exercise with
+    /// neither has nothing to orphan, and a gym-bound exercise with no machine is a state
+    /// the app already has — the empty state, until the first log makes one (SPEC §5.3,
+    /// §6.4). Asking for a machine there would invent a decision the flip does not need.
+    var needsAMachine: Bool {
+        direction == .toGymBound && (entryCount > 0 || exerciseGoal != nil)
+    }
 
     /// The confirmation's title. Going free-weight it is **the consequence, phrased as
     /// the sentence the spec puts in the user's face**: *"Bench Press has entries on 3
     /// machines. They'll merge into one curve."*
+    ///
+    /// **When pooling clears a goal it says so**, with the lost-goal clause shared with
+    /// the merge (§7.5). With nothing logged there is no curve to talk about, so the
+    /// clause stands alone and no goal disappears unannounced.
     var question: String {
         switch direction {
         case .toGymBound:
             return "Make \(exercise.name) gym-bound?"
         case .toFreeWeight:
+            let goals = machinesWithGoals.map(\.goal)
+            guard let kept = goals.first, goals.count > 1 else { return poolingSentence }
+            let clause = kept.keptClause(clearing: goals.count - 1)
+            return entryCount == 0 ? clause : "\(poolingSentence) \(clause)"
+        }
+    }
+
+    /// What pooling does to the curves, before anything is said about goals.
+    private var poolingSentence: String {
             switch loggedMachineCount {
             case 0:
                 return "Make \(exercise.name) free-weight?"
@@ -64,7 +98,6 @@ struct KindChange {
             default:
                 return "\(exercise.name) has entries on \(phrase(machines: loggedMachineCount)). They'll merge into one curve."
             }
-        }
     }
 
     /// The line under the question: what is kept, what goes, and that nothing brings it
@@ -90,11 +123,22 @@ struct KindChange {
 
     /// The machine prompt's question — **one machine, for every entry there is**. It is
     /// asked once and there is no "some of them": splitting a history across machines
-    /// after the fact is the history sheet's per-entry machine edit (SPEC §6.6).
-    var prompt: String { "Which machine are these entries on?" }
+    /// after the fact is the history sheet's per-entry machine edit (SPEC §6.6). With
+    /// nothing logged it is a goal being placed, so it asks about the exercise instead.
+    var prompt: String {
+        entryCount == 0 ? "Which machine is this on?" : "Which machine are these entries on?"
+    }
 
+    /// What moves: the entries, the goal, or both — the goal keeping the moment it was
+    /// set (SPEC §8).
     var promptDetail: String {
-        "\(exercise.name) becomes gym-bound, and all \(phrase(entries: entryCount)) move to the machine you pick."
+        let moving = [
+            entryCount == 0 ? nil : entryCount == 1 ? "1 entry" : "all \(phrase(entries: entryCount))",
+            exerciseGoal.map { "your goal of \($0.text)" },
+        ].compactMap { $0 }
+        // One entry or one goal moves; several entries, or entries and a goal, move.
+        let verb = moving.count == 1 && entryCount <= 1 ? "moves" : "move"
+        return "\(exercise.name) becomes gym-bound, and \(moving.joined(separator: " and ")) \(verb) to the machine you pick."
     }
 
     /// Counted nouns, so no sentence here says *1 machines*. Labelled rather than

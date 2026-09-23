@@ -42,6 +42,14 @@ struct Goal: Equatable {
     /// `140 × 5` — the goal as every surface names it.
     var text: String { "\(weight.kilogramsText) × \(reps)" }
 
+    /// The lost-goal clause: **one sentence for one rule**, said word for word by the kind
+    /// change (SPEC §8) and the merge (§7.5) wherever two goals meet and the most recently
+    /// set wins. It names this goal, the survivor, and counts the ones that go.
+    func keptClause(clearing cleared: Int) -> String {
+        let others = cleared == 1 ? "1 other goal is" : "\(cleared) other goals are"
+        return "Your goal of \(text) is kept; \(others) cleared."
+    }
+
     /// `best[reps] >= weight` — a 5-rep 95 reaches a 1-rep goal of 95.
     var isReached: Bool { (current ?? 0) >= weight }
 
