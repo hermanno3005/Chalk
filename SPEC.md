@@ -232,11 +232,13 @@ The container is `ModelConfiguration(cloudKitDatabase: .none)`, built against
 already carries the version.
 
 **The goal fields bumped the schema to `2.0.0` in place** (ADR-0004). The change is additive, so
-`stages` stays empty and no frozen copy of V1 is kept. Whether SwiftData infers that migration
-with no stage listed is unverified, so **a test that opens a store written at `1.0.0`, reopens it
-at `2.0.0`, and asserts every row survives with nil goal fields is required**, alongside the
-round-trip test covering the goal fields on both `Exercise` and `Machine`. Download the container
-(§2) before the first launch of that build on the phone.
+`stages` stays empty and no frozen copy of V1 is kept in the app. **SwiftData infers that
+migration with no stage listed**: `SchemaMigrationTests` copies a store the app wrote at `1.0.0`
+(`ChalkTests/Fixtures/Chalk-1.0.0.store`) into place, opens it through `ChalkStore.open`, and
+asserts every row survives with nil goal fields. The fixture is a real file, not a test-only
+copy of the old `@Model` classes: two classes with one entity name in the same test process
+collide in SwiftData while suites run in parallel. The round-trip test covers the goal fields on both `Exercise` and `Machine`. Download
+the container (§2) before the first launch of that build on the phone.
 
 **If the container fails to open**, present a plain full-screen message naming the store path
 and stop. Do **not** delete or recreate the store, and do not retry in a loop: deleting is the
@@ -1080,7 +1082,8 @@ overflow (`Set a goal…` / `Change goal…`, §5.5) or by tapping the goal line
   | weight ≤ `best[reps]` | `Already reached — your 5-rep best is 115 kg` |
   | no entry reaches `reps` | `First goal at 5 reps` |
 
-  An already-reached value is shown, not blocked.
+  An already-reached value is shown, not blocked. With the weight still blank the line is
+  silent, except `First goal at 5 reps`, which does not depend on the weight.
 - **`Clear goal`** sits at the foot of the sheet, only when the scope has a goal. **No
   confirmation**; the sheet closes. It is the only way a goal leaves a scope without naming
   another, and it lives nowhere else.

@@ -25,6 +25,16 @@ final class ExerciseDetailModel {
         let entriesBehind: Int
     }
 
+    /// The one line a goal gets on this screen, under the readout's subhead:
+    /// `Goal 140 × 5 · 40 kg to go`, led by a donut filled to `progress`. **It stays once
+    /// reached**, greyed and reading `· reached` — no celebration, and no vanishing.
+    struct GoalLine: Equatable {
+        let text: String
+        let isReached: Bool
+        /// The donut's fill, 0…1.
+        let progress: Double
+    }
+
     let exercise: Exercise
 
     private(set) var curve = RepMaxCurve(entries: [])
@@ -37,6 +47,11 @@ final class ExerciseDetailModel {
     /// distinct lookup rather than part of `RepMaxCurve` over the machine in view: it is
     /// text, never a shape on the chart.
     private(set) var hint: MachineHint?
+
+    /// The goal at the scope in view — the exercise, or the machine the qualifier is on —
+    /// judged against the same entries the curve is. Re-read on every refresh and every
+    /// machine switch, so a downward edit un-reaches it on the next read.
+    private(set) var goal: Goal?
 
     /// Whether this exercise's load transfers between gyms. **The qualifier exists only
     /// where it does not** — a free-weight exercise shows no qualifier at all, not a
@@ -111,6 +126,26 @@ final class ExerciseDetailModel {
             weight: curve.best[selectedReps],
             entriesBehind: curve.entriesBehind[selectedReps] ?? 0
         )
+    }
+
+    /// Nil without a goal: **the screen gains nothing** where no goal is set, and the
+    /// chart never carries one either way.
+    var goalLine: GoalLine? {
+        guard let goal else { return nil }
+        let target = "Goal \(goal.weight.kilogramsText) × \(goal.reps)"
+        return GoalLine(
+            text: goal.isReached ? "\(target) · reached" : "\(target) · \(goal.gap.kilogramsText) kg to go",
+            isReached: goal.isReached,
+            progress: goal.progress
+        )
+    }
+
+    /// The overflow's goal item — and **absent, not disabled, on a gym-bound exercise
+    /// with no machine yet**: there is no scope to hold a goal, and a verb with nothing
+    /// to act on is left out rather than greyed (SPEC §7.5).
+    var goalMenuLabel: String? {
+        guard !needsFirstMachine else { return nil }
+        return goal == nil ? "Set a goal…" : "Change goal…"
     }
 
     /// The destructive confirmation, phrased as the outcome with its count (SPEC §5.5).
@@ -310,6 +345,22 @@ final class ExerciseDetailModel {
         }
     }
 
+    /// The goal sheet over the scope in view, wired to put the line back in step when it
+    /// sets or clears. **Reps start where the scrub is** — reaching for a goal while
+    /// looking at your 3-rep number gives a 3-rep goal — or at 5 with no readout at all.
+    ///
+    /// Nil where there is no scope to set a goal on: a gym-bound exercise with no machine.
+    func goalSheet() -> GoalSheetModel? {
+        guard let scope = GoalScope(exercise: exercise, machine: machine) else { return nil }
+        return GoalSheetModel(
+            scope: scope,
+            reps: readout?.reps ?? Self.defaultReps,
+            context: context
+        ) { [weak self] in
+            self?.refresh()
+        }
+    }
+
     /// What every write from a sheet over this screen has to put right: the curve here,
     /// and the resume card, tile subtitle and recency order in the library behind it.
     private func backInStep() {
@@ -344,6 +395,7 @@ final class ExerciseDetailModel {
 
         curve = RepMaxCurve(entries: MachineScope.entries(of: exercise, on: machine))
         hint = MachineHint.lookUp(exercise, scopedTo: machine)
+        goal = GoalScope(exercise: exercise, machine: machine)?.goal
     }
 
     private func save() {

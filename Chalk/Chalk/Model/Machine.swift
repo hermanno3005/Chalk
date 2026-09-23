@@ -17,6 +17,13 @@ final class Machine {
     @Relationship(deleteRule: .cascade, inverse: \Entry.machine)
     var entries: [Entry]? = []
 
+    /// This machine's goal — **all three set, or no goal at all** (ADR-0004). Rides the
+    /// machine: it dies with it and survives its gym's deletion. Read and written through
+    /// `GoalScope`, never directly by a screen.
+    var goalReps: Int?
+    var goalWeight: Double?
+    var goalSetAt: Date?
+
     /// What this machine is called on screen: its label, or the make when it has no
     /// label of its own, or `Unlabelled` when it has neither.
     ///

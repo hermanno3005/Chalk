@@ -38,6 +38,11 @@ struct TemporaryStore {
         try Self.openContainer(at: url)
     }
 
+    /// A container over a store file this type did not make — a fixture copied into place.
+    static func reopen(at url: URL) throws -> ModelContainer {
+        try openContainer(at: url)
+    }
+
     private static func openContainer(at url: URL) throws -> ModelContainer {
         switch ChalkStore.open(at: url) {
         case .opened(let container):

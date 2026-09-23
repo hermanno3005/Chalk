@@ -173,6 +173,23 @@ final class LibraryFixture {
         )
     }
 
+    /// A goal sheet over this store's context, on the scope a detail screen scoped to
+    /// `machine` would hand it. `onChange` stands in for that screen, which a set or a
+    /// clear has to put back in step.
+    func goalSheetModel(
+        for exercise: Exercise,
+        on machine: Machine? = nil,
+        reps: Int,
+        onChange: @escaping () -> Void = {}
+    ) -> GoalSheetModel {
+        GoalSheetModel(
+            scope: GoalScope(exercise: exercise, machine: machine)!,
+            reps: reps,
+            context: context,
+            onChange: onChange
+        )
+    }
+
     /// The same file read through a second container, so what a test asserts is what
     /// reached the disk rather than what is sitting in this context's cache.
     func afterRelaunch() throws -> ModelContext {

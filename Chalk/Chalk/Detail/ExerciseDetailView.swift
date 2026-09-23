@@ -26,6 +26,7 @@ struct ExerciseDetailView: View {
     @State private var changingKind = false
     @State private var logging = false
     @State private var history: HistorySheetModel?
+    @State private var goalSheet: GoalSheetModel?
     @State private var flashingConfirmation = false
 
     var body: some View {
@@ -36,9 +37,12 @@ struct ExerciseDetailView: View {
                     // readout, not a `Button`: the number keeps its own colour, and
                     // nothing on this screen should look tappable twice over. An
                     // unproven cell hands back no sheet, and shows no chevron.
-                    ScrubReadout(readout: readout)
-                        .contentShape(.rect)
-                        .onTapGesture { history = model.historySheet() }
+                    VStack(alignment: .leading, spacing: 6) {
+                        ScrubReadout(readout: readout)
+                            .contentShape(.rect)
+                            .onTapGesture { history = model.historySheet() }
+                        goalLine
+                    }
                 }
                 StrengthCurve(
                     curve: model.curve,
@@ -78,6 +82,13 @@ struct ExerciseDetailView: View {
                             confirmingKindChange = true
                         }
                     }
+                    // Setting, changing and clearing all happen in the goal sheet;
+                    // clearing is kept out of here, which holds lifetime operations.
+                    if let goalMenuLabel = model.goalMenuLabel {
+                        Button(goalMenuLabel, systemImage: "scope") {
+                            goalSheet = model.goalSheet()
+                        }
+                    }
                     Button("Delete exercise", systemImage: "trash", role: .destructive) {
                         confirmingDelete = true
                     }
@@ -92,6 +103,7 @@ struct ExerciseDetailView: View {
             LogSheet(model: model.logSheet { flashConfirmation() })
         }
         .sheet(item: $history) { HistorySheet(model: $0) }
+        .sheet(item: $goalSheet) { GoalSheet(model: $0) }
         .alert("Rename", isPresented: $renaming) {
             TextField("Name", text: $draftName)
             Button("Cancel", role: .cancel) {}
@@ -165,6 +177,17 @@ struct ExerciseDetailView: View {
         .disabled(model.machines.isEmpty)
     }
 
+    /// The goal, one line under the readout's subhead — or under the empty state's text
+    /// — and **never on the chart** (#74). Tapping it opens the goal sheet: the thing you
+    /// are looking at is also the door to changing it.
+    @ViewBuilder
+    private var goalLine: some View {
+        if let line = model.goalLine {
+            GoalLineView(line: line)
+                .onTapGesture { goalSheet = model.goalSheet() }
+        }
+    }
+
     /// The brief confirmation the screen flashes after a save, while the curve behind
     /// it has already moved (SPEC §6.7). It says the entry landed and then gets out of
     /// the way — there is nothing to undo here and nothing to tap.
@@ -214,6 +237,9 @@ struct ExerciseDetailView: View {
                     .foregroundStyle(.tertiary)
                     .padding(.top, 2)
             }
+            // After the prompt to go and log, never ahead of it.
+            goalLine
+                .padding(.top, 6)
         }
         .padding(.top, 8)
     }
