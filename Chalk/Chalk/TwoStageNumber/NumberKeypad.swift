@@ -3,9 +3,9 @@ import SwiftUI
 /// The keypad, for jumps (SPEC §6.2). Same control on both stages, with the **decimal
 /// key dead on the reps stage** — present and inert rather than missing, so the keys do
 /// not move under your thumb between stages.
-struct LogKeypad: View {
+struct NumberKeypad: View {
     let decimalIsDead: Bool
-    let onKey: (LogSheetModel.Key) -> Void
+    let onKey: (TwoStageNumber.Key) -> Void
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
 
@@ -23,7 +23,7 @@ struct LogKeypad: View {
 
     private func key(
         _ title: String?,
-        _ pressed: LogSheetModel.Key,
+        _ pressed: TwoStageNumber.Key,
         symbol: String? = nil,
         accessibilityLabel: String? = nil
     ) -> some View {
