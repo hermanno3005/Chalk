@@ -44,18 +44,37 @@ struct MachineMerge {
     /// What the sibling holds once they land.
     var resultingCount: Int { (sibling.entries ?? []).count + movingCount }
 
+    /// The two machines' goals — **the most recently set one ends up on the sibling**
+    /// (SPEC §7.5, #68), the same rule as a kind change (§8). Which machine is the loser
+    /// plays no part, so direction cannot cost you your only goal.
+    private var machineGoals: MachineGoals { MachineGoals([loser, sibling]) }
+
+    /// Whether the loser's goal is the one kept — and so has to be written onto the
+    /// sibling before the delete cascades over it.
+    var losersGoalIsKept: Bool { machineGoals.keeping === loser }
+
     /// The confirmation's question — **phrased as the outcome and carrying the count**:
     /// *"Move 8 entries to Hammer Strength and delete Unlabelled?"*
     ///
     /// This breaks the app's no-confirmation posture deliberately: it is the only action
     /// irreversible *in principle* — once the entries are re-pointed nothing records that
-    /// they were ever separate — and the direction is the thing people get wrong, so both
-    /// machines are named in the order the entries travel.
+    /// they were ever separate — and the direction is the thing people get wrong, so when
+    /// entries move both machines are named in the order they travel.
+    ///
+    /// **Where both machines hold a goal it gains the lost-goal clause**, word for word
+    /// the kind change's. With nothing to move there is no entry sentence to carry the
+    /// goal, so the question names the goal instead.
     var question: String {
-        guard movingCount > 0 else {
-            return "Delete \(loser.name) and keep \(sibling.name)?"
+        let outcome: String
+        if movingCount > 0 {
+            outcome = "Move \(entries(movingCount)) to \(sibling.name) and delete \(loser.name)?"
+        } else if losersGoalIsKept, let kept = machineGoals.kept {
+            outcome = "Move your goal of \(kept.text) to \(sibling.name) and delete \(loser.name)?"
+        } else {
+            outcome = "Delete \(loser.name)?"
         }
-        return "Move \(entries(movingCount)) to \(sibling.name) and delete \(loser.name)?"
+        guard let clause = machineGoals.lostGoalClause else { return outcome }
+        return "\(outcome) \(clause)"
     }
 
     /// The line under the question: where the numbers end up, and that nothing brings

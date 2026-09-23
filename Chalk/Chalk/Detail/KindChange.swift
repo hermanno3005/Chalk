@@ -45,17 +45,12 @@ struct KindChange {
         direction == .toGymBound ? GoalScope.exercise(exercise).goal : nil
     }
 
-    /// The machines holding a goal, the latest set first — **the first is the one
-    /// pooling keeps** (SPEC §8, #67), and the rest die with their machines. Machine
-    /// order plays no part.
-    private var machinesWithGoals: [(machine: Machine, goal: Goal)] {
-        machines
-            .compactMap { machine in GoalScope.machine(machine).goal.map { (machine, $0) } }
-            .sorted { $0.goal.setAt > $1.goal.setAt }
-    }
+    /// The machines' goals — pooling keeps the most recently set (SPEC §8, #67), and the
+    /// rest die with their machines.
+    private var machineGoals: MachineGoals { MachineGoals(machines) }
 
     /// The machine whose goal pooling copies onto the exercise: the most recently set.
-    var machineKeepingGoal: Machine? { machinesWithGoals.first?.machine }
+    var machineKeepingGoal: Machine? { machineGoals.keeping }
 
     /// Whether the flip has to ask which machine the existing entries belong to.
     ///
@@ -79,9 +74,7 @@ struct KindChange {
         case .toGymBound:
             return "Make \(exercise.name) gym-bound?"
         case .toFreeWeight:
-            let goals = machinesWithGoals.map(\.goal)
-            guard let kept = goals.first, goals.count > 1 else { return poolingSentence }
-            let clause = kept.lostGoalClause(clearing: goals.count - 1)
+            guard let clause = machineGoals.lostGoalClause else { return poolingSentence }
             return entryCount == 0 ? clause : "\(poolingSentence) \(clause)"
         }
     }
