@@ -469,6 +469,220 @@ struct LogSheetModelTests {
         #expect(model.verdict == .hint("No history here — \(kg(55)) kg × 5 on Hammer Strength"))
     }
 
+    // MARK: - The first state: the crossing
+
+    @Test("Reaching the goal takes over from Beats")
+    func theCrossingReplacesBeats() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.advance()
+        model.tapNumber()
+        type("140", into: model)
+
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 5"))
+    }
+
+    @Test("Reaching the goal takes over from First entry")
+    func theCrossingReplacesFirstEntry() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        GoalScope.exercise(exercise).set(reps: 5, weight: 60)
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.advance()
+        type("60", into: model)
+
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(60)) × 5"))
+    }
+
+    @Test("Reaching the goal takes over from the machine hint")
+    func theCrossingReplacesTheHint() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let here = fixture.machine(for: exercise, at: gym, label: "By the window")
+        let sibling = fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
+        fixture.log(sibling, reps: 5, weight: 55, on: .days(ago: 2))
+        GoalScope.machine(here).set(reps: 5, weight: 80)
+
+        let model = fixture.logSheetModel(for: exercise, on: here)
+        model.advance()
+        #expect(model.verdict?.isHint == true)
+
+        type("80", into: model)
+
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(80)) × 5"))
+    }
+
+    @Test("A 6-rep entry at the goal weight crosses a 5-rep goal")
+    func aHigherRepEntryCrossesTheGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.tapNumber()
+        type("6", into: model)
+        model.advance()
+        type("140", into: model)
+
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 5"))
+    }
+
+    @Test("Fewer reps than the goal's do not cross it, however heavy")
+    func fewerRepsDoNotCross() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 4, weight: 100, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.advance()
+        model.tapNumber()
+        type("150", into: model)
+
+        #expect(model.verdict == .measured("Beats your 4-rep best by \(kg(50)) kg"))
+    }
+
+    @Test("Stepping below the goal weight brings the ordinary line straight back")
+    func theOrdinaryLineReturnsBelowTheGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.advance()
+        model.tapNumber()
+        type("140", into: model)
+        model.tapNumber()
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 5"))
+
+        model.step(-1)
+        #expect(model.verdict == .measured("Beats your 5-rep best by \(kg(37.5)) kg"))
+
+        model.step(+1)
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 5"))
+    }
+
+    @Test("A goal already reached is not crossed again")
+    func aReachedGoalIsNotCrossed() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 140, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140, at: .days(ago: 5))
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.advance()
+        model.tapNumber()
+        type("145", into: model)
+
+        #expect(model.verdict == .measured("Beats your 5-rep best by \(kg(5)) kg"))
+    }
+
+    @Test("Stage one stays silent about the goal")
+    func stageOneIsSilentAboutTheGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 140, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 6, weight: 140)
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.step(+1)
+
+        // Six reps at the seeded 140 would reach it, and stage one still says nothing.
+        #expect(model.stage == .reps)
+        #expect(model.verdict == nil)
+        model.advance()
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 6"))
+    }
+
+    @Test("Reopening the entry that reached the goal still says it reaches it")
+    func editingJudgesAgainstEveryOtherEntry() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 9))
+        fixture.log(exercise, reps: 5, weight: 140, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140, at: .days(ago: 5))
+        let reaching = try #require(exercise.entries?.first { $0.weight == 140 })
+
+        let model = fixture.logSheetModel(for: exercise, editing: reaching)
+        model.advance()
+
+        // The edited entry is not part of its own verdict, so the goal is unreached by
+        // everything else in scope — and this entry is what reaches it.
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 5"))
+    }
+
+    @Test("Raising an old entry past the goal says it reaches it")
+    func raisingAnOldEntryCrossesTheGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 9))
+        fixture.log(exercise, reps: 5, weight: 120, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+        let old = try #require(exercise.entries?.first { $0.weight == 100 })
+
+        let model = fixture.logSheetModel(for: exercise, editing: old)
+        model.advance()
+        model.tapNumber()
+        type("140", into: model)
+
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 5"))
+    }
+
+    @Test("Lowering the entry that reached the goal shows no un-reach state")
+    func loweringTheReachingEntryIsJustTheOrdinaryLine() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 9))
+        fixture.log(exercise, reps: 5, weight: 140, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140, at: .days(ago: 5))
+        let reaching = try #require(exercise.entries?.first { $0.weight == 140 })
+
+        let model = fixture.logSheetModel(for: exercise, editing: reaching)
+        model.advance()
+        model.tapNumber()
+        type("130", into: model)
+
+        // Silently un-reaching is the derivation working, not news for this line.
+        #expect(model.verdict == .measured("Beats your 5-rep best by \(kg(30)) kg"))
+    }
+
+    @Test("Correcting the machine re-reads that machine's goal")
+    func correctingTheMachineRereadsTheGoal() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("Fitness X")
+        let logged = fixture.machine(for: exercise, at: gym, label: "By the window")
+        let other = fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
+        fixture.log(logged, reps: 5, weight: 100, on: .days(ago: 2))
+        fixture.log(other, reps: 5, weight: 100, on: .days(ago: 3))
+        GoalScope.machine(logged).set(reps: 5, weight: 140)
+
+        let model = fixture.logSheetModel(for: exercise, on: logged)
+        model.advance()
+        model.tapNumber()
+        type("140", into: model)
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 5"))
+
+        // The weight re-seeds from the machine picked, so dial the same load back in.
+        model.select(other)
+        model.tapNumber()
+        type("140", into: model)
+        #expect(model.verdict == .measured("Beats your 5-rep best by \(kg(40)) kg"))
+
+        model.select(logged)
+        model.tapNumber()
+        type("140", into: model)
+        #expect(model.verdict == .goal("Reaches your goal of \(kg(140)) × 5"))
+    }
+
     // MARK: - Commit
 
     @Test("Save is disabled at zero and enabled at any positive weight")
@@ -546,6 +760,13 @@ struct LogSheetModelTests {
         let exercise = fixture.exercise("Bench Press")
         fixture.log(exercise, reps: reps, weight: best)
         return fixture.logSheetModel(for: exercise)
+    }
+
+    /// Types a number on the keypad, which must already be up.
+    private func type(_ digits: String, into model: LogSheetModel) {
+        for digit in digits {
+            model.type(.digit(Int(String(digit))!))
+        }
     }
 }
 

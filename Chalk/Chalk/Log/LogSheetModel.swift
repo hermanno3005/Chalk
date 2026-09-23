@@ -26,7 +26,7 @@ final class LogSheetModel: Identifiable {
 
     let id = UUID()
 
-    /// The line under the number, in its two kinds (SPEC §6.5). Both are one string and
+    /// The line under the number, in its three kinds (SPEC §6.5). All are one string and
     /// they differ only in what stands behind them — which is exactly what the sheet
     /// draws differently.
     enum Verdict: Equatable {
@@ -37,10 +37,14 @@ final class LogSheetModel: Identifiable {
         /// Drawn visibly softer than a real verdict, because it is not one — nothing
         /// here was lifted on the machine in front of you.
         case hint(String)
+        /// The first state: **saving this would reach the goal** at the sheet's scope.
+        /// Drawn in the goal colour behind a full ring, because at the crossing the goal
+        /// is the news.
+        case goal(String)
 
         var text: String {
             switch self {
-            case .measured(let text), .hint(let text): return text
+            case .measured(let text), .hint(let text), .goal(let text): return text
             }
         }
 
@@ -95,6 +99,11 @@ final class LogSheetModel: Identifiable {
     /// the machine. **A lookup, never a seed**: it fills no number on this sheet.
     @ObservationIgnored private var hint: MachineHint?
 
+    /// The goal at the sheet's scope, judged against the same entries the verdict is —
+    /// so an edit is judged against every other entry, never itself — and re-read when
+    /// the caption corrects the machine.
+    @ObservationIgnored private var goal: Goal?
+
     /// The cold-start rep count (SPEC §6.3). There is no cold-start weight: the app
     /// never guesses a load it cannot back up.
     private static let defaultReps = 5
@@ -142,6 +151,7 @@ final class LogSheetModel: Identifiable {
         // one thing on this sheet: an edit whose only entry on this machine is the one
         // being corrected is a machine with nothing else to say.
         hint = MachineHint.lookUp(exercise, scopedTo: machine, historyHere: entries)
+        goal = GoalScope(exercise: exercise, machine: machine)?.goal(judgedAgainst: entries)
     }
 
     /// Every entry for the exercise, whichever machine it was logged on — what the
@@ -194,8 +204,17 @@ final class LogSheetModel: Identifiable {
     /// rather than saying `First entry at 5 reps` — which is true, and tells you nothing
     /// at precisely the moment you most need a number. It keeps its own fixed rep count,
     /// because it is a lookup and not a judgement of the weight on screen.
+    ///
+    /// **The first state is the crossing** (SPEC §6.5): where saving would reach a goal
+    /// nothing else in scope reaches yet, that is the line. It can only ever take over
+    /// from Beats, First entry or the hint — a weight at or past an unreached goal is
+    /// past your best by construction — and it has no opposite: lowering the entry that
+    /// was reaching a goal is just the ordinary line, the derivation quietly un-reaching.
     var verdict: Verdict? {
         guard stage == .weight, let reps else { return nil }
+        if let goal, let weight, goal.isCrossed(byReps: reps, weight: weight) {
+            return .goal("Reaches your goal of \(goal.text)")
+        }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
             if let hint {
                 return .hint(hint.verdictLine)

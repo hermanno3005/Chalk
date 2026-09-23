@@ -12,7 +12,7 @@ import SwiftUI
 /// (§6.4): one quiet tappable line reading `Hammer Strength · Fitness X`. It is never
 /// hidden "unless something is odd" — a strip that comes and goes shifts the layout and
 /// stops being trusted — and a free-weight sheet carries no machine row at all. The
-/// fifth verdict state is the machine hint (§6.5).
+/// fifth verdict state is the machine hint and the first the goal crossing (§6.5).
 struct LogSheet: View {
     /// Held in `@State` for the life of the presentation, as the detail screen holds
     /// its own model: the sheet's content is rebuilt as the screen behind it changes,
@@ -139,13 +139,29 @@ struct LogSheet: View {
     /// derived from this machine, so a number lifted on another one never reads as a
     /// verdict about yours here. The same dimming the detail screen's hint carries, and
     /// zero new layout: it is a fifth state of the line that already reserves this space.
+    ///
+    /// **The crossing leads with a full donut in the goal colour** — the only full
+    /// coloured ring in the app, so "about to reach" never looks like "reached", which is
+    /// grey. No haptic: stepping back and forth across the goal weight must not buzz.
     private var verdict: some View {
-        let isHint = model.verdict?.isHint == true
-        return Text(model.verdict?.text ?? " ")
-            .font(.subheadline)
-            .foregroundStyle(isHint ? HierarchicalShapeStyle.tertiary : .secondary)
-            .multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity, minHeight: 22)
-            .animation(.snappy(duration: 0.2), value: model.verdict)
+        HStack(spacing: 8) {
+            if case .goal = model.verdict {
+                GoalDonut(progress: 1, isReached: false)
+            }
+            Text(model.verdict?.text ?? " ")
+                .font(.subheadline)
+                .foregroundStyle(verdictStyle)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, minHeight: 22)
+        .animation(.snappy(duration: 0.2), value: model.verdict)
+    }
+
+    private var verdictStyle: AnyShapeStyle {
+        switch model.verdict {
+        case .goal: AnyShapeStyle(Color.goal)
+        case .hint: AnyShapeStyle(.tertiary)
+        case .measured, nil: AnyShapeStyle(.secondary)
+        }
     }
 }
