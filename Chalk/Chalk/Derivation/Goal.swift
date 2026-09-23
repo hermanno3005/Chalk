@@ -15,6 +15,10 @@ struct Goal: Equatable {
     /// Kilograms.
     let weight: Double
     /// When the goal was last set — the moment the ring counts from.
+    ///
+    /// Stored as a moment rather than as the best you had then, because `Entry.date` never
+    /// changes (SPEC §3): the before/after split is fixed, and an edited or deleted entry
+    /// simply moves the origin with it.
     let setAt: Date
 
     /// `best[reps]` over the scope, **off the drawn axis**: a goal above 12 reps is an
@@ -22,12 +26,8 @@ struct Goal: Equatable {
     let current: Double?
 
     /// `best[reps]` over the scope's entries dated **strictly before** `setAt`, or zero
-    /// when there are none — where the ring counts from.
-    ///
-    /// Stored as a moment rather than a number because `Entry.date` never changes
-    /// (SPEC §3): the before/after split is fixed, and an edited or deleted entry simply
-    /// moves the origin with it. Since `current` is taken over a superset of these
-    /// entries, `current >= origin` holds by construction.
+    /// when there are none — where the ring counts from. Since `current` is taken over a
+    /// superset of these entries, `current >= origin` holds by construction.
     let origin: Double
 
     init?(reps: Int?, weight: Double?, setAt: Date?, entries: [Entry]) {

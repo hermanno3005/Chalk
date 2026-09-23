@@ -69,7 +69,7 @@ struct GoalSheet: View {
     private var line: some View {
         Text(model.line?.text ?? " ")
             .font(.subheadline)
-            .foregroundStyle(model.line?.isReached == true ? Color.secondary : .goal)
+            .foregroundStyle(Color.goal(reached: model.line?.isReached == true))
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 22)
             .animation(.snappy(duration: 0.2), value: model.line)

@@ -20,7 +20,7 @@ struct GoalDonut: View {
             Circle()
                 // A sliver rather than nothing at zero would read as progress that is
                 // not there, so an empty ring is drawn empty.
-                .trim(from: 0, to: min(1, max(0, progress)))
+                .trim(from: 0, to: progress)
                 .stroke(tint, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                 .rotationEffect(.degrees(-90))
         }
@@ -29,7 +29,13 @@ struct GoalDonut: View {
         .accessibilityHidden(true)
     }
 
-    private var tint: Color { isReached ? .secondary : .goal }
+    private var tint: Color { .goal(reached: isReached) }
+}
+
+extension Color {
+    /// The goal colour, or grey once reached — **a reached goal is always grey**, on every
+    /// surface that draws one (SPEC §12.5).
+    static func goal(reached: Bool) -> Color { reached ? .secondary : .goal }
 }
 
 /// The detail screen's goal line: `Goal 140 × 5 · 40 kg to go`, led by the donut, both
@@ -47,7 +53,7 @@ struct GoalLineView: View {
                 .font(.subheadline)
                 .contentTransition(.numericText())
         }
-        .foregroundStyle(line.isReached ? Color.secondary : .goal)
+        .foregroundStyle(Color.goal(reached: line.isReached))
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)

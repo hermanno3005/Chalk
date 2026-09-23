@@ -20,9 +20,9 @@ final class Exercise {
     /// This exercise's goal while it is free-weight — **all three set, or no goal at
     /// all** (ADR-0004). Nil on a gym-bound exercise, whose goals live on its machines
     /// (SPEC §3). Read and written through `GoalScope`, never directly by a screen.
-    var goalReps: Int? = nil
-    var goalWeight: Double? = nil
-    var goalSetAt: Date? = nil
+    var goalReps: Int?
+    var goalWeight: Double?
+    var goalSetAt: Date?
 
     /// Whether this exercise's load transfers between gyms — the one question the whole
     /// second shape hangs off (SPEC §5.3, §6.4, §7.3).
