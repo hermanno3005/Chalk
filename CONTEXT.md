@@ -25,7 +25,8 @@ _Avoid_: Cardio, ergs, conditioning, endurance section, endurance mode, tab
 **Entry**:
 One logged performance, and the only thing Chalk stores about your training. A strength
 entry is a rep count and a weight; an endurance entry is a duration, an intensity, an
-average heart rate and optionally a peak heart rate. Either carries the moment it was
+average heart rate and a peak heart rate, plus an incline on a speed erg — every one of
+them required. Either carries the moment it was
 logged, and either is mutable and deletable. Four intervals are four entries, exactly as
 four lifts are, and nothing wraps them.
 _Avoid_: Record, set, log line, interval, bout, piece, rep
@@ -69,18 +70,38 @@ _Avoid_: Log screen, entry list, records list
 ### An endurance entry
 
 **Intensity**:
-The number an endurance entry was done at, in its erg's own unit — a speed on a treadmill,
-a split or watts on a Concept2, a level on a Stairmaster. It is what you set on the
-machine, and what endurance exists to tell you.
+The number an endurance entry was done at, in its erg's unit — a speed on a treadmill,
+watts on a bike, a split on a rower, a level on a Stairmaster. It is what you set or hold
+on the machine, and what endurance exists to tell you. Stored exactly as you typed it and
+never converted; the only number ever worked out from it is a speed's pace, shown beside
+it.
 _Avoid_: Pace, speed, output, load, level, setting, workload
+
+**Unit**:
+The kind of number an erg's intensity is written in — one of four the spec defines:
+**speed** (km/h, with its pace in min/km shown beside it), **watts**, **split** (time per
+500 m) or **level** (the console's own scale). Chosen when you create the erg and
+changeable only while it has no entries, because changing it would reinterpret every
+number logged. A unit is a kind of number, never a brand: Chalk converts nothing between
+units.
+_Avoid_: Unit type, measure, metric, scale, readout
+
+**Incline**:
+The treadmill's grade, in percent, recorded on every entry of a speed erg beside its
+intensity. 0 % is a value, not a blank. The one machine setting Chalk records: it never
+draws a scope, but entries at different inclines never answer each other's question —
+incline is to the lookup what reps are to the curve.
+_Avoid_: Grade, gradient, slope, elevation
 
 **Average heart rate**:
 Your mean heart rate across one endurance entry, read off your watch and typed by hand.
+The number that says what an entry cost you — the heart rate an entry's effort is read by.
 _Avoid_: HR, avg, pulse
 
 **Peak heart rate**:
-The highest heart rate your watch showed during one endurance entry. Optional. A property
-of the interval, not of you, which is why it is never called a max.
+The highest heart rate your watch showed during one endurance entry. Required, but second
+to the average, which is what an entry's effort is read by. A property of the interval,
+not of you, which is why it is never called a max. Never below the entry's average.
 _Avoid_: Max heart rate, max HR, max, top
 
 **Heart-rate zone**:
@@ -146,8 +167,8 @@ _Avoid_: Lift, movement, activity
 **Erg**:
 A kind of indoor endurance machine you train on, held in your endurance library —
 treadmill, rower, SkiErg, bike erg, Stairmaster, air bike, or one you add. A type of
-machine, not a particular one: that is a machine. Either transferable or gym-bound, and
-which is your call: Chalk knows no brands, so a *Concept2 RowErg* is simply an erg you
+machine, not a particular one: that is a machine. It speaks one unit. Either transferable
+or gym-bound, and which is your call: Chalk knows no brands, so a *Concept2 RowErg* is simply an erg you
 named that way.
 _Avoid_: Cardio machine, equipment, exercise
 
@@ -232,7 +253,7 @@ _Avoid_: Location, club, venue
 A gym-bound exercise or erg at a particular gym, optionally distinguished by
 manufacturer or label. One gym may hold several for the same exercise or erg, and their
 numbers are separate. For an erg the label is its model, by convention, so one machine
-stands for every unit of that model at that gym; the same model at another gym is
+stands for every one of that model at that gym; the same model at another gym is
 another machine.
 _Avoid_: Station, equipment, apparatus
 
