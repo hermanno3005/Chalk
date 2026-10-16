@@ -46,9 +46,11 @@ axis so shapes are comparable between exercises.
 _Avoid_: Graph, chart, progression
 
 **Scope**:
-What a strength curve is derived over and what a goal is set on: the exercise for a
-free-weight exercise, one machine for a gym-bound one. The boundary is transferability,
-so a number is only ever compared against numbers it is comparable to.
+What a number is derived over and what a goal is set on: the exercise or erg itself when
+it is free-weight or transferable, one machine when it is gym-bound. The boundary is
+transferability, so a number is only ever compared against numbers it is comparable to.
+Nothing you set on a machine — a treadmill's incline — draws a scope of its own; it is
+part of the entry.
 _Avoid_: Owner, context, level
 
 **Ghost curve**:
@@ -144,18 +146,29 @@ _Avoid_: Lift, movement, activity
 **Erg**:
 A kind of indoor endurance machine you train on, held in your endurance library —
 treadmill, rower, SkiErg, bike erg, Stairmaster, air bike, or one you add. A type of
-machine, not a particular one: that is a machine.
+machine, not a particular one: that is a machine. Either transferable or gym-bound, and
+which is your call: Chalk knows no brands, so a *Concept2 RowErg* is simply an erg you
+named that way.
 _Avoid_: Cardio machine, equipment, exercise
 
 **Free-weight**:
 An exercise whose load transfers between gyms. 60 kg is 60 kg wherever you lift it,
-so its rep-maxes derive across every entry.
+so its rep-maxes derive across every entry. A strength word only; an erg whose numbers
+transfer is transferable.
 _Avoid_: Barbell, non-machine
 
+**Transferable**:
+An erg whose numbers transfer between gyms — the endurance counterpart of free-weight.
+Its entries derive together wherever you logged them, and it has no machines. Never
+Chalk's judgement: an erg is gym-bound until you say its numbers mean the same thing
+everywhere.
+_Avoid_: Free-weight (of an erg), portable, calibrated, standard
+
 **Gym-bound**:
-An exercise whose load does not transfer between gyms — machines, cables, and
-plate-loaded kit alike. The test is transferability, not whether it is colloquially a
-machine. Its rep-maxes derive from one machine's entries only.
+An exercise or erg whose numbers do not transfer between gyms — machines, cables, and
+plate-loaded kit alike; a treadmill whose speed costs a different heart rate from one
+model to the next. The test is transferability, not whether it is colloquially a
+machine. Its numbers derive from one machine's entries only.
 _Avoid_: Machine exercise, fixed-weight
 
 **Group**:
@@ -208,7 +221,7 @@ the last entry's own scope — never a sibling machine's — so a log at a holid
 shows your home machine's goal.
 _Avoid_: Recent card, quick log, continue
 
-### Where you lift
+### Where you train
 
 **Gym**:
 A place you train, held in its own right with an identity independent of its name — which
@@ -216,9 +229,11 @@ is what makes renaming one cost nothing. Gyms churn, so one can also be archived
 _Avoid_: Location, club, venue
 
 **Machine**:
-A gym-bound exercise, or an erg, at a particular gym, optionally distinguished by
+A gym-bound exercise or erg at a particular gym, optionally distinguished by
 manufacturer or label. One gym may hold several for the same exercise or erg, and their
-numbers are separate.
+numbers are separate. For an erg the label is its model, by convention, so one machine
+stands for every unit of that model at that gym; the same model at another gym is
+another machine.
 _Avoid_: Station, equipment, apparatus
 
 **Merge**:
@@ -230,7 +245,8 @@ _Avoid_: Combine, de-duplicate, consolidate
 
 **Current gym**:
 The gym you are standing in, chosen once per visit and remembered until you change it.
-A property of a device in a moment, not of your account.
+A property of a device in a moment, not of your account, so strength and endurance share
+it.
 _Avoid_: Home gym, default gym, active location
 
 **Archived**:
@@ -240,6 +256,8 @@ display alone — no derived number is ever affected by it.
 _Avoid_: Hidden, deleted, inactive, retired
 
 **Hint**:
-Your numbers for the same exercise on a different machine, shown when the machine in
-front of you has no history. Visibly marked as such, and never part of any derivation.
+Your numbers for the same exercise or erg on a different machine, shown when the machine
+in front of you has no history — for an erg, one of the same model at another gym when
+there is one, since that is the likeliest to feel the same. Visibly marked as such, and
+never part of any derivation.
 _Avoid_: Estimate, reference, suggestion
