@@ -1,18 +1,34 @@
 # Chalk
 
-A personal strength-record tracker for iOS. You keep a library of the exercises you
-actually do, log what you lifted as plain `reps × weight` entries, and the app tells
-you what to load at the rack. It is not a workout logger: there are no sessions and
-no sets.
+A personal training-record tracker for iOS, in two halves. In strength you log
+`reps × weight` entries and Chalk tells you what to load at the rack; in endurance you
+log intervals on indoor ergs with the heart rate they cost you, and Chalk tells you what
+to set on the machine. It is not a workout logger: there are no sessions and no sets.
 
 ## Language
+
+### Strength and endurance
+
+**Strength**:
+The half of Chalk for lifting, where an entry is `reps × weight` and the question is what
+to load at the rack. Everything Chalk shipped first.
+_Avoid_: Lifting, weights, strength section, strength mode
+
+**Endurance**:
+The half of Chalk for indoor ergs, where an entry is one interval and the heart rate it
+cost you, and the question is what to set on this machine to hit a given effort. Reached
+from strength by a toggle on the home screen.
+_Avoid_: Cardio, ergs, conditioning, endurance section, endurance mode, tab
 
 ### The record
 
 **Entry**:
-One logged performance of an exercise: a rep count, a weight, and the moment it was
-logged. The only thing Chalk stores about your lifting. Mutable and deletable.
-_Avoid_: Record, set, log line
+One logged performance, and the only thing Chalk stores about your training. A strength
+entry is a rep count and a weight; an endurance entry is a duration, an intensity, an
+average heart rate and optionally a peak heart rate. Either carries the moment it was
+logged, and either is mutable and deletable. Four intervals are four entries, exactly as
+four lifts are, and nothing wraps them.
+_Avoid_: Record, set, log line, interval, bout, piece, rep
 
 **Rep-max**:
 The heaviest weight you have proven at a given rep count, derived from your entries
@@ -47,6 +63,23 @@ currently setting the cell flagged. It mirrors the derivation rather than restat
 which is what makes it sufficient. The only entry point to raw history and the only place
 an entry is edited or deleted; there is no all-entries log screen.
 _Avoid_: Log screen, entry list, records list
+
+### An endurance entry
+
+**Intensity**:
+The number an endurance entry was done at, in its erg's own unit — a speed on a treadmill,
+a split or watts on a Concept2, a level on a Stairmaster. It is what you set on the
+machine, and what endurance exists to tell you.
+_Avoid_: Pace, speed, output, load, level, setting, workload
+
+**Average heart rate**:
+Your mean heart rate across one endurance entry, read off your watch and typed by hand.
+_Avoid_: HR, avg, pulse
+
+**Peak heart rate**:
+The highest heart rate your watch showed during one endurance entry. Optional. A property
+of the interval, not of you, which is why it is never called a max.
+_Avoid_: Max heart rate, max HR, max, top
 
 ### What you're heading toward
 
@@ -91,8 +124,14 @@ _Avoid_: Goal editor, target sheet, goal modal
 ### The library
 
 **Exercise**:
-A movement you train, held in your library. Either free-weight or gym-bound.
+A lift you train, held in your strength library. Either free-weight or gym-bound.
 _Avoid_: Lift, movement, activity
+
+**Erg**:
+A kind of indoor endurance machine you train on, held in your endurance library —
+treadmill, rower, SkiErg, bike erg, Stairmaster, air bike, or one you add. A type of
+machine, not a particular one: that is a machine.
+_Avoid_: Cardio machine, equipment, exercise
 
 **Free-weight**:
 An exercise whose load transfers between gyms. 60 kg is 60 kg wherever you lift it,
@@ -163,8 +202,9 @@ is what makes renaming one cost nothing. Gyms churn, so one can also be archived
 _Avoid_: Location, club, venue
 
 **Machine**:
-A gym-bound exercise at a particular gym, optionally distinguished by manufacturer or
-label. One gym may hold several for the same exercise, and their numbers are separate.
+A gym-bound exercise, or an erg, at a particular gym, optionally distinguished by
+manufacturer or label. One gym may hold several for the same exercise or erg, and their
+numbers are separate.
 _Avoid_: Station, equipment, apparatus
 
 **Merge**:
@@ -182,7 +222,7 @@ _Avoid_: Home gym, default gym, active location
 **Archived**:
 The state of a gym you have stopped visiting. It leaves the current gym picker but keeps
 every entry it holds, and un-archives itself the moment you log there again. A matter of
-display alone — no rep-max is ever affected by it.
+display alone — no derived number is ever affected by it.
 _Avoid_: Hidden, deleted, inactive, retired
 
 **Hint**:
