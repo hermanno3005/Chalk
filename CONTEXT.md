@@ -81,6 +81,20 @@ The highest heart rate your watch showed during one endurance entry. Optional. A
 of the interval, not of you, which is why it is never called a max.
 _Avoid_: Max heart rate, max HR, max, top
 
+**Heart-rate zone**:
+One of five bands of heart rate, Z1 to Z5, whose boundaries you worked out yourself —
+from your watch's data or a lactate test — and typed in. Chalk holds one set, shared by
+every erg; you can move the boundaries, never the count. Chalk owns no zone model and
+computes no boundary — never from an age, never from a max. A zone is a way to name a
+target heart rate, so it is read when you ask for one and never written onto an entry.
+_Avoid_: Training zone, HR zone, band, level, intensity zone
+
+**Settings**:
+Chalk's one app-wide screen, reached from the home screen in either half. It holds your
+heart-rate zones and nothing else; each further setting is its own decision, and none of
+them is export.
+_Avoid_: Preferences, options, profile, configuration
+
 ### What you're heading toward
 
 **Goal**:
