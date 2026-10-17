@@ -110,7 +110,24 @@ from your watch's data or a lactate test — and typed in. Chalk holds one set, 
 every erg; you can move the boundaries, never the count. Chalk owns no zone model and
 computes no boundary — never from an age, never from a max. A zone is a way to name a
 target heart rate, so it is read when you ask for one and never written onto an entry.
-_Avoid_: Training zone, HR zone, band, level, intensity zone
+No boundary is ever called a threshold: which one that is depends on a zone model, and
+Chalk owns none.
+_Avoid_: Training zone, HR zone, band, level, intensity zone, threshold
+
+**Zone line**:
+What endurance derives, and its counterpart of the strength curve: for one zone on one
+scope at one incline, the intensity you held at each duration you have done — the mean of
+every entry at that duration whose average heart rate fell in that zone, over the last ten
+visits on which you did it — joined in duration order and ending at the shortest and
+longest durations you have done. Derived and never stored, and it states only what you
+have held: a zone you have never landed in on a machine has no line there.
+_Avoid_: Calibration, fit, threshold speed, pace curve, zone speed
+
+**Visit**:
+A calendar day on which you logged on a scope — what the zone line's window counts,
+because entries from one day share that day's heat, hydration and fatigue. Not a session:
+nothing groups a visit's entries, and nothing about it is stored.
+_Avoid_: Session, workout, training day
 
 **Settings**:
 Chalk's one app-wide screen, reached from the home screen in either half. It holds your
