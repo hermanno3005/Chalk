@@ -114,9 +114,10 @@ struct EnduranceGoal: Equatable {
 
     // MARK: - Words
 
-    /// `15.5 km/h · 6:00 in Z4 · 1 %` — the goal as every surface names it.
+    /// `15.5 km/h · 6:00 in Z4 · 1 %`, `L12 · 10:00 in Z3` — the goal as every surface
+    /// names it: its goal line, the unit change's notice and the lost-goal clause.
     var text: String {
-        "\(EnduranceText.intensity(intensity, unit, pace: false)) · \(pointText)"
+        "\(EnduranceText.goalIntensity(intensity, unit)) · \(pointText)"
     }
 
     /// What follows the goal on its line: `0.4 km/h to go`, `reached`, or `not held yet`.

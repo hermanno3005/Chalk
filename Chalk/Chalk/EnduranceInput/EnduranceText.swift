@@ -44,6 +44,12 @@ enum EnduranceText {
         }
     }
 
+    /// The intensity as a goal names it: no pace, so the line stays short, and a level
+    /// written `L12` rather than `Level 12` (SPEC §13.2, §13.10).
+    static func goalIntensity(_ value: Double, _ unit: ErgUnit) -> String {
+        unit == .level ? "L\(intensityNumber(value, unit))" : intensity(value, unit, pace: false)
+    }
+
     /// A speed's pace, `60 / km/h` to the whole second — the one number ever worked out
     /// from an intensity, and for display only (SPEC §13.2).
     static func pace(_ kmh: Double) -> String {

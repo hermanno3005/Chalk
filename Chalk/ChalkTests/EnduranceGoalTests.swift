@@ -60,6 +60,12 @@ struct EnduranceGoalTests {
         #expect(watts.text == "260 W · 10:00 in Z3")
     }
 
+    @Test("A level goal is named L12, the goal line's short form, not Level 12")
+    func aLevelGoalIsNamedShort() throws {
+        let level = try #require(goal(unit: .level, zone: 3, duration: 600, intensity: 12, incline: nil, []))
+        #expect(level.text == "L12 · 10:00 in Z3")
+    }
+
     // MARK: - Reached
 
     @Test("A goal is reached when the point's mean meets it exactly")
