@@ -30,7 +30,12 @@ average heart rate and a peak heart rate, plus an incline on a speed erg — eve
 them required. Either carries the moment it was
 logged, and either is mutable and deletable. Four intervals are four entries, exactly as
 four lifts are, and nothing wraps them.
-_Avoid_: Record, set, log line, interval, bout, piece, rep
+_Avoid_: Record, set, log line, bout, piece, rep
+
+An endurance entry may be called an **interval** in prose, as a strength entry is a lift —
+the word for the thing you did, never a name for the stored row. A **valid interval** has
+its duration, intensity and average heart rate all set: the endurance twin of the lift
+check (`isAnInterval` beside `isALift`, ADR-0008).
 
 **Rep-max**:
 The heaviest weight you have proven at a given rep count, derived from your entries
@@ -127,6 +132,7 @@ visits on which you did it — joined in duration order and ending at the shorte
 longest durations you have done. Derived and never stored, and it states only what you
 have held: a zone you have never landed in on a machine has no line there.
 _Avoid_: Calibration, fit, threshold speed, pace curve, zone speed
+(The endurance empty state's *Calibrate the machines you train on* is copy, not a domain term.)
 
 **Visit**:
 A calendar day on which you logged on a scope — what the zone line's window counts,
