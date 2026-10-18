@@ -167,6 +167,37 @@ final class ErgDetailModel {
     /// The incline menu, on a speed erg.
     func select(incline: Double) { reading.select(incline: incline) }
 
+    /// The point's sheet the readout's `12 entries ›` opens — **the chart's only door**
+    /// (SPEC §13.9) — at the selected duration, zone and incline on this scope. Nil
+    /// without a readout: zones not set, or a zone with no line here.
+    func historySheet() -> ErgHistoryModel? {
+        guard readout != nil, let selection else { return nil }
+        return history(.point(duration: selection.duration), selection)
+    }
+
+    /// The flat list the over-20:00 caption opens, for the selected zone and incline. Nil
+    /// where there is no caption.
+    func overTheAxisSheet() -> ErgHistoryModel? {
+        guard overTheAxisCaption != nil, let selection else { return nil }
+        return history(.overTheAxis, selection)
+    }
+
+    private func history(_ listing: ErgHistoryModel.Listing, _ selection: ErgReading.Selection) -> ErgHistoryModel {
+        ErgHistoryModel(
+            erg: erg,
+            machine: machine,
+            zone: selection.zone,
+            incline: selection.incline,
+            listing: listing,
+            context: context,
+            gyms: gyms,
+            defaults: defaults
+        ) { [weak self] in
+            self?.refresh()
+            self?.onLibraryChange()
+        }
+    }
+
     /// Settings, opened in place of the zone buttons while zones are not set. The screen
     /// re-reads when it closes: entries logged before the zones join the lines then.
     func settings() -> SettingsModel {

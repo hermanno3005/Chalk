@@ -225,16 +225,20 @@ final class LibraryFixture {
 
     /// The lap-list log sheet over this store's context, reading this fixture's zones.
     /// `machine` is the caller's answer, as the detail screen hands it over; `onSave`
-    /// stands in for the screen behind the sheet.
+    /// stands in for the screen behind the sheet. `editing` opens it as an edit of that
+    /// entry, as a history row does (SPEC §13.9).
     func lapListModel(
         for erg: Exercise,
         on machine: Machine? = nil,
+        editing: Entry? = nil,
         gyms: GymsModel? = nil,
         onSave: @escaping () -> Void = {}
     ) -> LapListModel {
         LapListModel(
             erg: erg,
-            machine: machine,
+            // An edit starts on the entry's own machine, as the history row hands it.
+            machine: machine ?? editing?.machine,
+            editing: editing,
             context: context,
             gyms: gyms ?? gymsModel(),
             defaults: defaults,
