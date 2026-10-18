@@ -461,6 +461,10 @@ struct LapListSheet: View {
     let config: ProtoSheetConfig
     @State private var rows: [ProtoEditor]
     @State private var current: Int
+    /// Round two: once anything is typed, a block is too much to lose to a stray Cancel or
+    /// swipe. Swipe-down is off and Cancel asks; an untouched sheet still just closes.
+    @State private var touched: Bool
+    @State private var confirmingDiscard = false
     @Environment(\.dismiss) private var dismiss
 
     init(config: ProtoSheetConfig) {
@@ -478,6 +482,7 @@ struct LapListSheet: View {
         if let focus = config.start.focus { rows[current].focus(on: focus) }
         _rows = State(initialValue: rows)
         _current = State(initialValue: current)
+        _touched = State(initialValue: config.start.prefill > 0)
     }
 
     private var erg: ProtoLogErg { config.erg }
@@ -524,6 +529,7 @@ struct LapListSheet: View {
                 }
                 .padding(.bottom, 8)
                 ProtoKeypad(decimalIsDead: rows[current].decimalIsDead, tally: config.tally) { key in
+                    touched = true
                     if rows[current].type(key), !rows[current].isLast { rows[current].next() }
                 }
             }
@@ -531,9 +537,22 @@ struct LapListSheet: View {
             .padding(.bottom, 12)
             .navigationTitle(erg.name)
             .navigationBarTitleDisplayMode(.inline)
+            .interactiveDismissDisabled(touched)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        if touched { confirmingDiscard = true } else { dismiss() }
+                    }
+                    .confirmationDialog(
+                        rows.count == 1 ? "Discard this entry?" : "Discard \(rows.count) entries?",
+                        isPresented: $confirmingDiscard,
+                        titleVisibility: .visible
+                    ) {
+                        Button(rows.count == 1 ? "Discard Entry" : "Discard \(rows.count) Entries", role: .destructive) {
+                            dismiss()
+                        }
+                        Button("Keep Typing", role: .cancel) {}
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(rows.count == 1 ? "Save" : "Save \(rows.count)", action: save)
@@ -561,23 +580,42 @@ struct LapListSheet: View {
                     ForEach(erg.fields, id: \.self) { field in
                         cell(index, field)
                     }
-                    badge(index)
+                    deleteButton(index)
                         .frame(width: 34)
                 }
-                .contextMenu {
-                    if rows.count > 1 {
-                        Button("Delete This Entry", systemImage: "trash", role: .destructive) {
-                            withAnimation { delete(index) }
-                        }
-                    }
-                }
             }
+        }
+    }
+
+    /// Round two: **a row added one too many is deleted from the row itself**, in plain
+    /// sight. The last row has none — Cancel is how you log nothing.
+    @ViewBuilder
+    private func deleteButton(_ index: Int) -> some View {
+        if rows.count > 1 {
+            Button {
+                config.tally.tap()
+                withAnimation(.snappy) { delete(index) }
+            } label: {
+                Image(systemName: "minus.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.white, .red)
+                    .frame(width: 34, height: 46)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Delete row \(index + 1)")
+        } else {
+            Color.clear.frame(width: 34, height: 46)
         }
     }
 
     private func cell(_ index: Int, _ field: ProtoField) -> some View {
         let focused = index == current && rows[index].focus == field
         let text = rows[index].text(field)
+        // Round two: no zone per row, so an impossible row is marked on the heart rates
+        // that make it so — otherwise a disabled *Save 5* says nothing about which row.
+        let flagged = (field == .average || field == .peak) && ProtoCheck.problem(rows[index].values) != nil
         return Button {
             config.tally.tap()
             withAnimation(.snappy(duration: 0.15)) {
@@ -598,25 +636,10 @@ struct LapListSheet: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 9)
-                        .strokeBorder(focused ? Color.accentColor : .clear, lineWidth: 2)
+                        .strokeBorder(flagged ? Color.red : focused ? Color.accentColor : .clear, lineWidth: 2)
                 )
         }
         .buttonStyle(.plain)
-    }
-
-    /// The zone the row's average lands in, or why it cannot be saved.
-    @ViewBuilder
-    private func badge(_ index: Int) -> some View {
-        let values = rows[index].values
-        if ProtoCheck.problem(values) != nil {
-            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
-        } else if config.verdict != .none, let average = values[.average], (40...230).contains(average) {
-            Text("Z\(ProtoZones.zone(average))")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-        } else {
-            Text(" ")
-        }
     }
 
     private func next() {
@@ -631,12 +654,14 @@ struct LapListSheet: View {
     }
 
     private func addRow() {
+        touched = true
         rows[current].settle()
         rows.append(ProtoEditor(erg: erg, seed: rows[rows.count - 1].values))
         current = rows.count - 1
     }
 
     private func delete(_ index: Int) {
+        touched = true
         rows.remove(at: index)
         current = min(current, rows.count - 1)
     }
