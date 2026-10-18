@@ -5,10 +5,11 @@ import SwiftData
 /// The erg detail screen's state (SPEC §13.8), beside `ExerciseDetailModel` and reached
 /// from the library model as `detail(for:)` is.
 ///
-/// **Bare for now**: the erg's name, the machine qualifier on a gym-bound erg, §5.4's
-/// empty state, the Log bar's lap-list sheet, and the overflow's lifetime operations —
-/// Rename, *Change unit…* and Delete. The zone line, readout, hint, goal and the other
-/// sheets join it in later tickets.
+/// The erg's name, the machine qualifier on a gym-bound erg, **the zone line read one
+/// zone at a time** — zone buttons, incline menu, scrub readout, the over-20:00 caption,
+/// the zones gate and §5.4's empty state, all through `reading` — the Log bar's lap-list
+/// sheet, and the overflow's lifetime operations: Rename, *Change unit…* and Delete. The
+/// no-line text, hint, goal and the other sheets join it in later tickets.
 @Observable
 final class ErgDetailModel {
 
@@ -36,6 +37,12 @@ final class ErgDetailModel {
     /// app's one machine menu (SPEC §5.3). Built on refresh rather than behind `var
     /// body`.
     private(set) var machineMenu = MachineMenu(machines: [])
+
+    /// What the screen reads off the scope in view: the selected zone, duration and
+    /// incline, every zone's line, the readout and the over-20:00 caption. **Re-derived on
+    /// every refresh** — a write, a machine switch, zones set in Settings — with the
+    /// selection carried over, so the screen stays where you left it (SPEC §5.2).
+    private(set) var reading = ErgReading(entries: [], zones: nil, unit: nil, keeping: nil)
 
     @ObservationIgnored private let context: ModelContext
     /// The gyms, shared with the library — the machine qualifier and the log sheet read
@@ -124,6 +131,48 @@ final class ErgDetailModel {
         refresh()
     }
 
+    // MARK: - Reading the zone line
+
+    /// Where the screen is looking; nil with zones not set or nothing logged on the scope.
+    var selection: ErgReading.Selection? { reading.selection }
+
+    var readout: ErgReading.Readout? { reading.readout }
+
+    /// Zones not set: a *Set your heart-rate zones* row, opening Settings, stands in place
+    /// of the zone buttons, readout and line (SPEC §13.8). The Log bar works as normal.
+    var needsZones: Bool { reading.zones == nil }
+
+    /// Nothing logged on the scope in view — §5.4's empty state. A gym-bound erg's scope
+    /// is the qualifier's machine, so a machine with nothing on it is empty however much
+    /// its siblings hold.
+    var isEmpty: Bool { reading.isEmpty }
+
+    /// The incline menu's choices — every incline logged on this scope, on a speed erg
+    /// only. Empty on any other unit, which has no menu.
+    var inclines: [Double] { reading.inclines }
+
+    /// The dimmed `2 entries over 20:00` caption under the line; nil without one.
+    var overTheAxisCaption: String? { reading.overTheAxisCaption }
+
+    /// Whether a zone has a line on this scope and incline. A zone without one is dimmed
+    /// but still tappable.
+    func hasLine(_ zone: Int) -> Bool { reading.hasLine(zone) }
+
+    /// A zone button: every zone is tappable, a dimmed one too.
+    func select(zone: Int) { reading.select(zone: zone) }
+
+    /// The scrub: snapped to a duration done, and sticky — `nil` on lift is ignored.
+    func select(duration: Int?) { reading.select(duration: duration) }
+
+    /// The incline menu, on a speed erg.
+    func select(incline: Double) { reading.select(incline: incline) }
+
+    /// Settings, opened in place of the zone buttons while zones are not set. The screen
+    /// re-reads when it closes: entries logged before the zones join the lines then.
+    func settings() -> SettingsModel {
+        SettingsModel(defaults: defaults)
+    }
+
     /// Cosmetic; identity is the UUID (SPEC §5.5). A blank name is not a rename.
     func rename(to newName: String) {
         let newName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -171,6 +220,14 @@ final class ErgDetailModel {
             machines = []
             machineMenu = MachineMenu(machines: [])
         }
+
+        // The zones are read live, never cached (ADR-0005).
+        reading = ErgReading(
+            entries: MachineScope.entries(of: erg, on: machine),
+            zones: HeartRateZones(defaults: defaults),
+            unit: unit,
+            keeping: reading.selection
+        )
     }
 
     private func save() {
