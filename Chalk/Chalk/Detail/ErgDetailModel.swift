@@ -116,6 +116,47 @@ final class ErgDetailModel {
         return true
     }
 
+    // MARK: - Change kind (SPEC §8, §13.11)
+
+    /// `Change kind` over this erg — the words the confirmation and *Which machine is
+    /// this on?* say. **Only the scope changes**: unit and incline are untouched.
+    var kindChange: KindChange { KindChange(exercise: erg) }
+
+    /// **Transferable → gym-bound**: every entry moves to one new machine at `gym`, and
+    /// the screen opens on it — the only one there is.
+    ///
+    /// The erg's goal is not moved yet (#121).
+    func makeGymBound(at gym: Gym, named name: String?) {
+        guard erg.isErg, !erg.isGymBound else { return }
+        let machine = kindChange.placeEntries(at: gym, named: name, in: context)
+        save()
+        self.machine = machine
+        refresh()
+        onLibraryChange()
+    }
+
+    /// **Transferable → gym-bound with nothing to place**: the empty state a gym-bound
+    /// erg already has, until the first block makes a machine (SPEC §5.3).
+    func makeGymBound() {
+        guard erg.isErg, !erg.isGymBound, !kindChange.needsAMachine else { return }
+        erg.kind = ExerciseKind.gymBound.rawValue
+        save()
+        refresh()
+        onLibraryChange()
+    }
+
+    /// **Gym-bound → transferable**: every machine pooled, the machines deleted, and no
+    /// interval lost to the cascade — reassigned and flushed first (ADR-0002).
+    func makeTransferable() {
+        guard erg.isErg, erg.isGymBound else { return }
+        guard kindChange.pool(in: context) else {
+            refresh()
+            return
+        }
+        refresh()
+        onLibraryChange()
+    }
+
     /// Re-scopes the screen to another machine (SPEC §5.3). Nothing is cached, so this
     /// is a re-read and not an invalidation.
     func select(_ machine: Machine) {
