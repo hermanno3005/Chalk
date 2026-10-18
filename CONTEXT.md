@@ -294,14 +294,16 @@ A gym-bound exercise or erg at a particular gym, optionally distinguished by
 manufacturer or label. One gym may hold several for the same exercise or erg, and their
 numbers are separate. For an erg the label is its model, by convention, so one machine
 stands for every one of that model at that gym; the same model at another gym is
-another machine.
+another machine. Its identity is independent of its label, so a label can be renamed
+without touching its numbers — though an erg's renamed model changes which machine the
+hint prefers, which is usually why you rename it.
 _Avoid_: Station, equipment, apparatus
 
 **Merge**:
-Moving every entry from one machine onto a sibling — same exercise, same gym — and
-deleting the emptied machine. The repair for a split curve, when the same physical
+Moving every entry from one machine onto a sibling — same exercise or erg, same gym —
+and deleting the emptied machine. The repair for split numbers, when the same physical
 machine was recorded twice because you learned its name late. Costs nothing to the
-numbers, because no rep-max is stored to recompute.
+numbers, because no derived number is stored to recompute.
 _Avoid_: Combine, de-duplicate, consolidate
 
 **Current gym**:
