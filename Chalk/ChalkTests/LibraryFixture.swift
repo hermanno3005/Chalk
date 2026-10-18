@@ -259,6 +259,23 @@ final class LibraryFixture {
         )
     }
 
+    /// Sets this fixture's heart-rate zones — the lower bounds of Z2 to Z5 — as Settings
+    /// would, in its own defaults suite. A fixture that never calls this has zones not yet
+    /// set, which is every zone-gated screen's first state.
+    func zones(_ z2: Int, _ z3: Int, _ z4: Int, _ z5: Int) {
+        HeartRateZones(lowerBounds: [z2, z3, z4, z5])!.save(to: defaults)
+    }
+
+    /// The zones this fixture holds, read the one way the app reads them.
+    func heldZones() -> HeartRateZones? {
+        HeartRateZones(defaults: defaults)
+    }
+
+    /// Settings, opened from the home overflow exactly as the app opens it.
+    func settingsModel() -> SettingsModel {
+        libraryModel().settings()
+    }
+
     /// The same file read through a second container, so what a test asserts is what
     /// reached the disk rather than what is sitting in this context's cache.
     func afterRelaunch() throws -> ModelContext {

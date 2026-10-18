@@ -55,6 +55,8 @@ final class LibraryModel {
     let groups: GroupsModel
 
     @ObservationIgnored private let context: ModelContext
+    /// Where this device's settings live, beside the store: the current gym, the half
+    /// on screen, the seed flags and the heart-rate zones.
     @ObservationIgnored private let defaults: UserDefaults
 
     init(context: ModelContext, defaults: UserDefaults = .standard) {
@@ -88,6 +90,12 @@ final class LibraryModel {
         groups.show(half)
         query = ""
         refresh()
+    }
+
+    /// Settings, opened from the home overflow's *Settings…* row. It belongs to neither
+    /// half (ADR-0005), so it reads nothing of the library but this device's defaults.
+    func settings() -> SettingsModel {
+        SettingsModel(defaults: defaults)
     }
 
     /// Filters the library to `text`, or returns to the grid when it is cleared.

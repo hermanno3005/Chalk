@@ -29,6 +29,9 @@ struct LibraryView: View {
     /// `Manage gyms…`, the one gym admin surface (SPEC §7.4) — a sheet from the same
     /// menu *Edit groups…* opens from, and the only door to it.
     @State private var managingGyms = false
+    /// Settings, from *Settings…* at the overflow's foot (ADR-0005). Made at the tap, so
+    /// it opens on the zones as they are now.
+    @State private var settings: SettingsModel?
     /// Whether the search field is first responder — **the state that makes the keyboard
     /// dismissible at all** (#56). It lives here rather than in `LibrarySearchField`
     /// because every exit from the keyboard is a gesture on the library around the field,
@@ -138,6 +141,9 @@ struct LibraryView: View {
                     // behind the sheet is already in step when it closes.
                     ManageGymsSheet(gyms: model.gyms)
                 }
+                .sheet(item: $settings) { settings in
+                    SettingsSheet(model: settings)
+                }
                 .sheet(isPresented: $creatingGym) {
                     // Created here and selected here: you opened this door standing in
                     // the gym, so that is where you now are.
@@ -183,8 +189,8 @@ struct LibraryView: View {
     }
 
     /// The overflow. *Arrange* and *Edit groups…* are the two halves of §7.2 — one files
-    /// exercises into groups, the other edits the groups themselves — and the Gym menu
-    /// carries §7.4's symmetric pair.
+    /// exercises into groups, the other edits the groups themselves. The foot is the part
+    /// every half shares: the Gym menu, carrying §7.4's symmetric pair, and *Settings…*.
     private var overflow: some View {
         Menu {
             Section {
@@ -193,9 +199,12 @@ struct LibraryView: View {
                 }
                 Button("Edit groups…", systemImage: "folder") { editingGroups = true }
             }
-            // The current-gym picker. *Manage gyms…* joins it at the foot of this menu,
-            // a direct sibling of *Edit groups* (§7.4, #31).
-            GymMenu(gyms: model.gyms, onNewGym: { creatingGym = true }, onManageGyms: { managingGyms = true })
+            SharedOverflow(
+                gyms: model.gyms,
+                onNewGym: { creatingGym = true },
+                onManageGyms: { managingGyms = true },
+                onSettings: { settings = model.settings() }
+            )
         } label: {
             Label("More", systemImage: "ellipsis.circle")
         }
