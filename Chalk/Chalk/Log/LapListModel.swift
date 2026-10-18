@@ -158,30 +158,20 @@ final class LapListModel: Identifiable {
     /// The first row's values: the scope's most recent valid interval — the erg's when
     /// transferable, **this machine's** when gym-bound, never a sibling's (SPEC §13.7).
     private static func seed(_ erg: Exercise, on machine: Machine?) -> [EnduranceField: Double]? {
-        LastInterval.latest(in: MachineScope.entries(of: erg, on: machine)).map(values)
+        LastInterval.latestEntry(in: MachineScope.entries(of: erg, on: machine)).map(values)
     }
 
-    /// An entry's own values, the one row of an edit — whatever it holds, valid or not.
+    /// An entry's own values: the seed's, and the one row of an edit — whatever it holds,
+    /// valid or not.
     private static func values(of entry: Entry) -> [EnduranceField: Double] {
         var values: [EnduranceField: Double] = [
             .duration: Double(entry.duration),
             .intensity: entry.intensity,
+            // 0 % is a value, seeded like any other — never defaulted to 1 %.
             .incline: entry.incline,
             .averageHeartRate: Double(entry.averageHeartRate),
         ]
         if entry.peakHeartRate > 0 { values[.peakHeartRate] = Double(entry.peakHeartRate) }
-        return values
-    }
-
-    private static func values(_ last: LastInterval) -> [EnduranceField: Double] {
-        var values: [EnduranceField: Double] = [
-            .duration: Double(last.duration),
-            .intensity: last.intensity,
-            // 0 % is a value, seeded like any other — never defaulted to 1 %.
-            .incline: last.incline,
-            .averageHeartRate: Double(last.averageHeartRate),
-        ]
-        if last.peakHeartRate > 0 { values[.peakHeartRate] = Double(last.peakHeartRate) }
         return values
     }
 
@@ -368,16 +358,9 @@ final class LapListModel: Identifiable {
     /// Corrects the machine from the caption's menu — for every row, since a block is
     /// logged on one machine. **Picking another gym's machine moves the current gym at
     /// the pick** (SPEC §6.4); an archived gym's waits for the Save.
-    ///
-    /// An untouched sheet re-seeds from the machine you picked — the seed is a number
-    /// held *there* (SPEC §13.7) — but a block already typed stays as typed: it is what
-    /// you did, and the caption only corrects where you did it.
     func select(_ machine: Machine) {
-        // On an edit the row is the entry being corrected, never a seed: the pick only
-        // moves it (SPEC §6.6).
-        guard caption.select(machine), editing == nil, !isTouched else { return }
-        rows = [row(seededFrom: Self.seed(erg, on: machine))]
-        focus = Cell(row: 0, field: columns[0])
+        guard caption.select(machine) else { return }
+        reseed()
     }
 
     /// `New machine here` in the caption's menu: the gym is implied by its section, and
@@ -386,7 +369,17 @@ final class LapListModel: Identifiable {
     /// A name that looks like this erg's machine at the same gym lands on that machine
     /// (SPEC §13.11) — a pick, so an untouched sheet re-seeds from it as from any pick.
     func createMachine(at gym: Gym, named name: String?) {
-        guard caption.createMachine(at: gym, named: name), editing == nil, !isTouched, let machine else { return }
+        guard caption.createMachine(at: gym, named: name) else { return }
+        reseed()
+    }
+
+    /// What a corrected machine changes: an untouched sheet re-seeds from the machine now
+    /// in the caption — the seed is a number held *there* (SPEC §13.7) — but a block
+    /// already typed stays as typed: it is what you did, and the caption only corrects
+    /// where you did it. On an edit the row is the entry being corrected, never a seed:
+    /// the pick only moves it (SPEC §6.6).
+    private func reseed() {
+        guard editing == nil, !isTouched else { return }
         rows = [row(seededFrom: Self.seed(erg, on: machine))]
         focus = Cell(row: 0, field: columns[0])
     }
