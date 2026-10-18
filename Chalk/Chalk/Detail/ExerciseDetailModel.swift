@@ -214,19 +214,10 @@ final class ExerciseDetailModel {
     func makeGymBound(at gym: Gym, named name: String?) {
         guard !exercise.isGymBound else { return }
 
-        let machine = Machine(
-            label: Machine.label(from: name),
-            exercise: exercise,
-            gym: gym
-        )
-        context.insert(machine)
-        for entry in exercise.entries ?? [] {
-            entry.machine = machine
-        }
+        let machine = kindChange.placeEntries(at: gym, named: name, in: context)
         // The goal rides along, keeping when it was set, and leaves the exercise in the
         // same save: a gym-bound exercise holds no goal of its own (SPEC §3).
         GoalScope.machine(machine).takeGoal(from: .exercise(exercise))
-        exercise.kind = ExerciseKind.gymBound.rawValue
         save()
 
         // The screen opens on the machine the entries just landed on rather than on
@@ -249,63 +240,26 @@ final class ExerciseDetailModel {
         onLibraryChange()
     }
 
-    /// **Gym-bound → free-weight** (SPEC §8): pool everything. Entries keep their
-    /// exercise and **nullify their machine link**; the now-meaningless `Machine` rows
-    /// are deleted.
-    ///
-    /// > **The same cascade hazard as the merge.** Deletion runs from `Machine` to its
-    /// > entries (SPEC §3), so the order below is load-bearing: every entry is detached
-    /// > and **flushed to the store before any machine row goes**. This is the second
-    /// > write in the app whose save error is not swallowed — everywhere else the change
-    /// > simply waits in the context for the next save, but here the next statement
-    /// > destroys history.
-    ///
-    /// **A machine still holding an entry after that flush is left standing.** In a store
-    /// this app wrote there is none — every entry it holds is one of the exercise's, and
-    /// they were all just detached — so the guard only fires over a row that arrived some
-    /// other way, holding an entry with no exercise of its own (SPEC §3, invariant 2).
-    /// What it leaves behind is a machine the free-weight screen never draws; what
-    /// dropping it would leave behind is an entry that no longer exists. **A stranded row
-    /// is a nuisance; a lost curve is not.**
+    /// **Gym-bound → free-weight** (SPEC §8): pool everything — entries keep their
+    /// exercise and lose their machine, and are flushed before the machines are deleted
+    /// (`KindChange.pool(in:)`, ADR-0002).
     ///
     /// Nothing is recomputed: no rep-max is stored, so the pooled curve is simply correct
     /// on the next read (ADR-0002).
     func makeFreeWeight() {
         guard exercise.isGymBound else { return }
 
-        let machines = exercise.machines ?? []
+        let change = kindChange
         // The most recently set goal survives onto the exercise, keeping its own
         // `goalSetAt`, **before any machine goes** — the cascade takes every machine's
         // goal fields with it, which is how the others are cleared (SPEC §8).
-        if let keeping = kindChange.machineKeepingGoal {
+        if let keeping = change.machineKeepingGoal {
             GoalScope.exercise(exercise).takeGoal(from: .machine(keeping))
         }
-        // The exercise's own entries, and no others: an entry with no exercise is
-        // treated as non-existent — never repaired, never surfaced, never counted
-        // (SPEC §3, invariant 2) — so this does not reach through the machines to go
-        // looking for one.
-        for entry in exercise.entries ?? [] {
-            entry.machine = nil
-        }
-        exercise.kind = ExerciseKind.freeWeight.rawValue
-        do {
-            try context.save()
-        } catch {
-            // Nothing reached the store, so the entries are still their machines' and
-            // deleting one would cascade over them. The flip is abandoned whole rather
-            // than left half-applied in the context, where a later save would commit
-            // the kind without the detaching and leave a free-weight exercise holding
-            // machines. `rollback()` discards everything unsaved on this context, which
-            // here is this flip: every other write in the app saves as it goes.
-            context.rollback()
+        guard change.pool(in: context) else {
             refresh()
             return
         }
-
-        for machine in machines where (machine.entries ?? []).isEmpty {
-            context.delete(machine)
-        }
-        save()
 
         refresh()
         onLibraryChange()
