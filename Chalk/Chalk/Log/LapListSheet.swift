@@ -11,10 +11,26 @@ struct LapListSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDiscard = false
+    /// The gym `New machine here` was tapped in, held while its one-field alert is up —
+    /// always asked, as strength's is (SPEC §6.4).
+    @State private var naming: Gym?
+    @State private var creatingGym = false
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // **Once, above the grid, covering every row** — a block is logged on
+                // one machine (SPEC §13.7). Absent on a transferable erg.
+                if let machineCaption = model.machineCaption {
+                    MachineCaptionMenu(
+                        text: machineCaption,
+                        menu: model.machineMenu,
+                        selected: model.machine,
+                        onSelect: model.select,
+                        onNewMachine: { naming = $0 },
+                        onNewGym: { creatingGym = true }
+                    )
+                }
                 ScrollViewReader { proxy in
                     ScrollView {
                         grid
@@ -70,6 +86,12 @@ struct LapListSheet: View {
                     .fontWeight(.semibold)
                     .disabled(!model.canSave)
                 }
+            }
+            .namingMachine(at: $naming) { gym, name in
+                model.createMachine(at: gym, named: name)
+            }
+            .sheet(isPresented: $creatingGym) {
+                NewGymSheet(gyms: model.gyms, onCreate: model.gymCreated)
             }
         }
     }

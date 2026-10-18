@@ -89,25 +89,14 @@ struct LogSheet: View {
     @ViewBuilder
     private var caption: some View {
         if let machineCaption = model.machineCaption {
-            Menu {
-                MachinePicker(
-                    menu: model.machineMenu,
-                    selected: model.machine,
-                    onSelect: model.select,
-                    onNewMachine: { naming = $0 },
-                    onNewGym: { creatingGym = true }
-                )
-            } label: {
-                Label(machineCaption, systemImage: "square.stack.3d.up")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .padding(.vertical, 8)
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("Changes the machine this is logged on")
+            MachineCaptionMenu(
+                text: machineCaption,
+                menu: model.machineMenu,
+                selected: model.machine,
+                onSelect: model.select,
+                onNewMachine: { naming = $0 },
+                onNewGym: { creatingGym = true }
+            )
         }
     }
 

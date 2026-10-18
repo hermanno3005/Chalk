@@ -125,4 +125,90 @@ struct ErgDetailModelTests {
 
         #expect(fixture.ergDetailModel(for: erg).deleteConfirmation == "Delete SkiErg?")
     }
+
+    // MARK: - The machine qualifier (SPEC §13.8, §5.3)
+
+    @Test("A transferable erg has no machine qualifier at all")
+    func aTransferableErgHasNoQualifier() throws {
+        let fixture = try LibraryFixture()
+        let skiErg = fixture.erg("SkiErg", unit: .split, kind: .freeWeight)
+        fixture.interval(skiErg, intensity: 110)
+        try fixture.save()
+
+        let model = fixture.ergDetailModel(for: skiErg)
+
+        #expect(model.isGymBound == false)
+        #expect(model.machine == nil)
+        #expect(model.machineMenu.isEmpty)
+        #expect(model.logSheet()?.machineCaption == nil)
+    }
+
+    @Test("A gym-bound erg opens on the current gym's machine, and logs on it")
+    func aGymBoundErgOpensOnTheCurrentGymsMachine() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let home = fixture.gym("Urban Gym")
+        let away = fixture.gym("FitX")
+        let atHome = fixture.machine(for: treadmill, at: home, label: "Technogym Run")
+        let atAway = fixture.machine(for: treadmill, at: away, label: "Matrix T7")
+        fixture.interval(treadmill, machine: atHome, on: .days(ago: 9))
+        fixture.interval(treadmill, machine: atAway, on: .days(ago: 1))
+        try fixture.save()
+
+        let gyms = fixture.gymsModel()
+        gyms.select(home)
+        let model = fixture.ergDetailModel(for: treadmill, gyms: gyms)
+
+        // Where you are standing, not where you last trained (SPEC §5.3, unchanged).
+        #expect(model.machine === atHome)
+        #expect(model.machineMenu.sections.map(\.title) == ["Urban Gym", "FitX"])
+        #expect(model.logSheet()?.machineCaption == "Technogym Run · Urban Gym")
+    }
+
+    @Test("Switching machines from the qualifier hands the log sheet that machine")
+    func switchingMachinesRescopesTheLogSheet() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let atHome = fixture.machine(for: treadmill, at: fixture.gym("Urban Gym"), label: "Technogym Run")
+        let atAway = fixture.machine(for: treadmill, at: fixture.gym("FitX"), label: "Matrix T7")
+        fixture.interval(treadmill, machine: atHome, on: .days(ago: 1))
+        fixture.interval(treadmill, machine: atAway, intensity: 13.5, on: .days(ago: 9))
+        try fixture.save()
+
+        let model = fixture.ergDetailModel(for: treadmill)
+        #expect(model.machine === atHome)
+        model.select(atAway)
+
+        #expect(model.machine === atAway)
+        let sheet = try #require(model.logSheet())
+        #expect(sheet.machineCaption == "Matrix T7 · FitX")
+        #expect(sheet.drawn == ["6:00 | 13.5 | 0 | 164 | 170"])
+    }
+
+    @Test("A gym-bound erg with no machine yet logs from a sheet reading No machine")
+    func aGymBoundErgWithNoMachineStillLogs() throws {
+        let fixture = try LibraryFixture()
+        let rower = fixture.erg("Rower", unit: .split)
+        let gym = fixture.gym("Urban Gym")
+        try fixture.save()
+        let gyms = fixture.gymsModel()
+        gyms.select(gym)
+
+        let model = fixture.ergDetailModel(for: rower, gyms: gyms)
+        #expect(model.isGymBound)
+        #expect(model.machine == nil)
+        #expect(model.entryCount == 0)
+
+        let sheet = try #require(model.logSheet())
+        #expect(sheet.machineCaption == "No machine")
+        // `New machine here` is reachable at the gym you are standing in (SPEC §6.4).
+        #expect(sheet.machineMenu.sections.map(\.title) == ["Urban Gym"])
+        sheet.createMachine(at: gym, named: "Concept2")
+        sheet.fill(0, "400", "105.0", "150", "158")
+        sheet.save()
+
+        // The screen behind re-reads onto the machine the first block made.
+        #expect(model.machine?.label == "Concept2")
+        #expect(model.entryCount == 1)
+    }
 }

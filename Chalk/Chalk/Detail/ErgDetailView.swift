@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The erg detail screen (SPEC §13.8) — **bare for now**: the erg's name, §5.4's empty
-/// state, the Log bar into the lap-list sheet (§13.7), and an overflow of its lifetime
-/// operations. The zone line and the readout join it with the detail screen.
+/// The erg detail screen (SPEC §13.8) — **bare for now**: the erg's name, the machine
+/// qualifier on a gym-bound erg, §5.4's empty state, the Log bar into the lap-list sheet
+/// (§13.7), and an overflow of its lifetime operations. The zone line and the readout
+/// join it with the detail screen.
 struct ErgDetailView: View {
     /// Held in `@State` for the life of the push, as `ExerciseDetailView`'s model is.
     @State var model: ErgDetailModel
@@ -34,6 +35,9 @@ struct ErgDetailView: View {
         .safeAreaInset(edge: .bottom) { logBar }
         .sheet(item: $logging) { LapListSheet(model: $0) }
         .toolbar {
+            if model.isGymBound {
+                ToolbarItem(placement: .topBarTrailing) { qualifier }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Rename", systemImage: "pencil") {
@@ -76,6 +80,24 @@ struct ErgDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    /// The machine qualifier — **gym-bound only**, as on a gym-bound exercise (SPEC §5.3,
+    /// §13.8): the app's one machine picker, switching which machine the screen and its
+    /// Log bar are scoped to. Creating a machine belongs in the log sheet's caption,
+    /// where the hole is.
+    private var qualifier: some View {
+        Menu {
+            MachinePicker(
+                menu: model.machineMenu,
+                selected: model.machine,
+                onSelect: model.select
+            )
+        } label: {
+            // An erg with no machine yet says so rather than staying blank.
+            Label(model.machine?.name ?? MachineCaption.noMachine, systemImage: "square.stack.3d.up")
+        }
+        .disabled(model.machines.isEmpty)
     }
 
     private var logBar: some View {
