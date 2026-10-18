@@ -17,7 +17,8 @@ _Avoid_: Lifting, weights, strength section, strength mode
 **Endurance**:
 The half of Chalk for indoor ergs, where an entry is one interval and the heart rate it
 cost you, and the question is what to set on this machine to hit a given effort. Reached
-from strength by a toggle on the home screen.
+from strength by the segmented control that stands in the home screen's title, and the
+app reopens on whichever half you left it in.
 _Avoid_: Cardio, ergs, conditioning, endurance section, endurance mode, tab
 
 ### The record
@@ -210,16 +211,18 @@ machine. Its numbers derive from one machine's entries only.
 _Avoid_: Machine exercise, fixed-weight
 
 **Group**:
-A user-owned, ordered bucket that an exercise may sit in, and a shelf rather than a
-taxonomy — "Compound" next to "Legs" is incoherent as a classification and entirely
-fine here. An exercise sits in at most one, chosen when it is created and changed
-whenever you like. Its job is structure, not navigation, which is why it never has to
-beat search.
+A user-owned, ordered bucket that an exercise or an erg may sit in, and a shelf rather
+than a taxonomy — "Compound" next to "Legs" is incoherent as a classification and
+entirely fine here. Each half keeps its own groups, so an erg never sits in a strength
+group nor an exercise in an endurance one. Anything sits in at most one, chosen when it
+is created and changed whenever you like. Its job is structure, not navigation, which is
+why it never has to beat search.
 _Avoid_: Category, muscle group, tag
 _Note_: the Swift type is `ExerciseGroup`, to leave SwiftUI's `Group` view alone.
 
 **Ungrouped**:
-The state of an exercise that sits in no group — a named place, not a missing value. It
+The state of an exercise or erg that sits in no group — a named place, not a missing
+value, and the catch-all in both halves, so neither seeds an *Other*. It
 is the last section on the library screen and the default answer in the create sheet's
 group picker, because meeting a machine before you know which shelf it belongs on is
 ordinary rather than an omission to be nagged about.
@@ -251,8 +254,9 @@ say it in the same words.
 _Avoid_: Latest, most recent set, history line
 
 **Resume card**:
-The last thing you logged anywhere in the library, at the top of the home screen: the
-exercise, its last entry, and a one-tap way back into the log sheet. Derived from the
+The last thing you logged anywhere in this half's library, at the top of its home
+screen: the exercise or erg, its last entry, and a one-tap way back into the log sheet.
+Each half has its own, since you rarely train both on one day. Derived from the
 entries like everything else, so it has nothing to maintain and is simply absent when
 nothing has been logged. It carries the goal ring, with no words, but only for a goal at
 the last entry's own scope — never a sibling machine's — so a log at a holiday gym never
