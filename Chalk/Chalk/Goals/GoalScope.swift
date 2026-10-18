@@ -64,16 +64,16 @@ enum GoalScope {
     /// with its incline.
     func enduranceGoal(zones: HeartRateZones?, calendar: Calendar = .current) -> EnduranceGoal? {
         guard let unit else { return nil }
-        let fields: (Int?, Int?, Double?, Double?, Date?) = switch self {
+        let stored: (zone: Int?, duration: Int?, intensity: Double?, incline: Double?, setAt: Date?) = switch self {
         case .exercise(let e): (e.goalZone, e.goalDuration, e.goalIntensity, e.goalIncline, e.goalSetAt)
         case .machine(let m): (m.goalZone, m.goalDuration, m.goalIntensity, m.goalIncline, m.goalSetAt)
         }
         return EnduranceGoal(
-            zone: fields.0,
-            duration: fields.1,
-            intensity: fields.2,
-            incline: fields.3,
-            setAt: fields.4,
+            zone: stored.zone,
+            duration: stored.duration,
+            intensity: stored.intensity,
+            incline: stored.incline,
+            setAt: stored.setAt,
             entries: entries,
             zones: zones,
             unit: unit,
