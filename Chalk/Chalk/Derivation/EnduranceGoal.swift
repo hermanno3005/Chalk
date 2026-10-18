@@ -91,10 +91,7 @@ struct EnduranceGoal: Equatable {
     /// zero.
     var gap: Int? {
         guard let current else { return nil }
-        let left = unit == .split
-            ? unit.steps(current) - unit.steps(intensity)
-            : unit.steps(intensity) - unit.steps(current)
-        return max(0, left)
+        return max(0, unit.hardness(intensity) - unit.hardness(current))
     }
 
     /// How much of the way from the origin to the goal the point has come, in steps and
@@ -103,9 +100,8 @@ struct EnduranceGoal: Equatable {
     var progress: Double {
         guard !isReached else { return 1 }
         guard let current, let origin else { return 0 }
-        let (done, span) = unit == .split
-            ? (unit.steps(origin) - unit.steps(current), unit.steps(origin) - unit.steps(intensity))
-            : (unit.steps(current) - unit.steps(origin), unit.steps(intensity) - unit.steps(origin))
+        let done = unit.hardness(current) - unit.hardness(origin)
+        let span = unit.hardness(intensity) - unit.hardness(origin)
         // An origin already past the goal, with the point since fallen short of it, has
         // no way left to measure: the ring is as empty as it is below the origin.
         guard span > 0 else { return 0 }

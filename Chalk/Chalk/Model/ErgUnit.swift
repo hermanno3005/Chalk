@@ -41,6 +41,20 @@ enum ErgUnit: String, Codable, CaseIterable {
     func rounded(_ value: Double) -> Double {
         Double(steps(value)) / (1 / step).rounded()
     }
+
+    // MARK: - Harder
+
+    /// `1`, or `-1` on a split, where lower is harder: multiplied in, an intensity reads
+    /// harder-is-more on every unit. **The one place a split's direction lives.**
+    var hardnessSign: Double {
+        self == .split ? -1 : 1
+    }
+
+    /// `value` in whole steps, signed so that harder is more on every unit — the steps to
+    /// subtract when a goal's gap or ring asks how much harder one number is than another.
+    func hardness(_ value: Double) -> Int {
+        steps(value) * Int(hardnessSign)
+    }
 }
 
 // MARK: - Incline

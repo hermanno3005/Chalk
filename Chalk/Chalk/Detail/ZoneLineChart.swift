@@ -77,11 +77,11 @@ struct ZoneLineChart: View {
 
     /// **A split is plotted upside down**, so harder is up on every erg.
     private func plotted(_ intensity: Double) -> Double {
-        unit == .split ? -intensity : intensity
+        intensity * unit.hardnessSign
     }
 
     private func unplotted(_ value: Double) -> Double {
-        unit == .split ? -value : value
+        value * unit.hardnessSign
     }
 
     /// Framed to the data with a little air, never anchored at 0, as §5.2's is. One
