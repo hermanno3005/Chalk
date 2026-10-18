@@ -277,6 +277,21 @@ struct ZoneLineTests {
         #expect(line.entriesOverTheAxis.count == 1)
     }
 
+    @Test("A duration over 20:00 is never drawn but is still a point, by the same window")
+    func aPointOverTwentyMinutesCanBeRead() throws {
+        let entries = [
+            interval(1500, at: 12.0, bpm: 160, day: 0),
+            interval(1500, at: 13.0, bpm: 160, day: 1),
+        ]
+
+        let line = line(entries, zone: 4)
+        #expect(line.points.isEmpty)
+        let point = try #require(line.point(at: 1500))
+        #expect(point.intensity == 12.5)
+        #expect(point.entryCount == 2)
+        #expect(line.point(at: 1501) == nil)
+    }
+
     @Test("Entries over 20:00 at another incline are not this line's")
     func overTwentyMinutesKeepsToItsIncline() {
         let entries = [interval(3600, at: 12.0, bpm: 160, incline: 1)]

@@ -44,6 +44,15 @@ final class ErgDetailModel {
     /// selection carried over, so the screen stays where you left it (SPEC §5.2).
     private(set) var reading = ErgReading(entries: [], zones: nil, unit: nil, keeping: nil)
 
+    /// The goal on the scope in view — the erg, or the machine the qualifier is on —
+    /// judged against the same entries and live zones the line is (SPEC §13.10). Re-read
+    /// on every refresh, so a slower visit un-reaches it on the next read.
+    private(set) var goal: EnduranceGoal?
+
+    /// What the last unit change said of the goal it cleared — *Your goal of 260 W · 10:00
+    /// in Z3 is cleared.* — shown once, then dismissed. Nil when it cleared none.
+    var clearedGoalNotice: String?
+
     @ObservationIgnored private let context: ModelContext
     /// The gyms, shared with the library — the machine qualifier and the log sheet read
     /// the current gym through it.
@@ -112,11 +121,12 @@ final class ErgDetailModel {
         guard canChangeUnit, erg.isErg else { return false }
         guard newUnit != unit else { return true }
 
+        // Named in the old unit, before it goes — and said, since nothing else would.
+        let scopes = [GoalScope.exercise(erg)] + (erg.machines ?? []).map(GoalScope.machine)
+        clearedGoalNotice = EnduranceGoal.clearedNotice(scopes.compactMap { $0.enduranceGoal(zones: reading.zones) })
+
         erg.unit = newUnit.rawValue
-        GoalScope.exercise(erg).clear()
-        for machine in erg.machines ?? [] {
-            GoalScope.machine(machine).clear()
-        }
+        scopes.forEach { $0.clear() }
         save()
         refresh()
         onLibraryChange()
@@ -171,6 +181,39 @@ final class ErgDetailModel {
     /// re-reads when it closes: entries logged before the zones join the lines then.
     func settings() -> SettingsModel {
         SettingsModel(defaults: defaults)
+    }
+
+    // MARK: - The goal (SPEC §13.10)
+
+    /// Where a goal on the scope in view lives — **nil on a gym-bound erg with no machine
+    /// yet**, and never a sibling machine's (§12.6).
+    private var goalScope: GoalScope? { GoalScope(exercise: erg, machine: machine) }
+
+    /// The overflow's goal item — **absent, not disabled, until zones are set** and on a
+    /// gym-bound erg with no machine: there is nothing a goal could name or nowhere to
+    /// hold it.
+    var goalMenuLabel: String? {
+        guard !needsZones, goalScope != nil else { return nil }
+        return goal == nil ? "Set a goal…" : "Change goal…"
+    }
+
+    /// The line under the readout, whatever zone is selected; nil without a goal.
+    var goalLine: ExerciseDetailModel.GoalLine? { goal.map(ExerciseDetailModel.GoalLine.init(endurance:)) }
+
+    /// The goal sheet over the scope in view, seeded from where the screen is scrubbed,
+    /// wired to put this screen — and the resume card's ring behind it — back in step
+    /// when it sets or clears. Nil behind either gate.
+    func goalSheet() -> EnduranceGoalSheetModel? {
+        guard let goalScope else { return nil }
+        return EnduranceGoalSheetModel(
+            scope: goalScope,
+            selection: selection,
+            zones: reading.zones,
+            context: context
+        ) { [weak self] in
+            self?.refresh()
+            self?.onLibraryChange()
+        }
     }
 
     // MARK: - Machines
@@ -255,6 +298,7 @@ final class ErgDetailModel {
             unit: unit,
             keeping: reading.selection
         )
+        goal = goalScope?.enduranceGoal(zones: reading.zones)
     }
 
     private func save() {

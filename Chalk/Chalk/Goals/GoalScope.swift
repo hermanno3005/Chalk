@@ -3,7 +3,9 @@ import Foundation
 /// Where a goal lives, and the one place its raw fields are read or written
 /// (ADR-0004): **the exercise for a free-weight exercise, one machine for a gym-bound
 /// one**. Screens ask this for a `Goal` and never touch `goalReps`, `goalWeight` or
-/// `goalSetAt` themselves, so a partly filled set can never be read as a goal.
+/// `goalSetAt` themselves, so a partly filled set can never be read as a goal. **An erg's
+/// scope works the same way** — the erg while transferable, one machine while gym-bound —
+/// for an `EnduranceGoal` over the four endurance fields (ADR-0007).
 ///
 /// Saving is the caller's: this changes the model objects and nothing else.
 enum GoalScope {
@@ -45,6 +47,62 @@ enum GoalScope {
             Goal(reps: machine.goalReps, weight: machine.goalWeight, setAt: machine.goalSetAt, entries: entries)
         }
     }
+
+    // MARK: - Endurance (ADR-0007)
+
+    /// The erg this scope belongs to's unit — what an endurance goal here is written in.
+    /// Nil on a lift's scope, which holds no endurance goal.
+    var unit: ErgUnit? {
+        switch self {
+        case .exercise(let exercise): exercise.ergUnit
+        case .machine(let machine): machine.exercise?.ergUnit
+        }
+    }
+
+    /// The endurance goal set here, judged against this scope's entries and `zones`, read
+    /// live by the caller. **Nil on a lift**, and unless every field is set — a speed goal
+    /// with its incline.
+    func enduranceGoal(zones: HeartRateZones?, calendar: Calendar = .current) -> EnduranceGoal? {
+        guard let unit else { return nil }
+        let fields: (Int?, Int?, Double?, Double?, Date?) = switch self {
+        case .exercise(let e): (e.goalZone, e.goalDuration, e.goalIntensity, e.goalIncline, e.goalSetAt)
+        case .machine(let m): (m.goalZone, m.goalDuration, m.goalIntensity, m.goalIncline, m.goalSetAt)
+        }
+        return EnduranceGoal(
+            zone: fields.0,
+            duration: fields.1,
+            intensity: fields.2,
+            incline: fields.3,
+            setAt: fields.4,
+            entries: entries,
+            zones: zones,
+            unit: unit,
+            calendar: calendar
+        )
+    }
+
+    /// **Setting an endurance goal**: writes its four fields and stamps the moment,
+    /// replacing whatever goal was here. The incline is kept on a speed erg only; every
+    /// other unit stores none.
+    func set(zone: Int, duration: Int, intensity: Double, incline: Double?, at date: Date = .now) {
+        let incline = unit == .speed ? incline : nil
+        switch self {
+        case .exercise(let exercise):
+            exercise.goalZone = zone
+            exercise.goalDuration = duration
+            exercise.goalIntensity = intensity
+            exercise.goalIncline = incline
+            exercise.goalSetAt = date
+        case .machine(let machine):
+            machine.goalZone = zone
+            machine.goalDuration = duration
+            machine.goalIntensity = intensity
+            machine.goalIncline = incline
+            machine.goalSetAt = date
+        }
+    }
+
+    // MARK: - Strength (ADR-0004)
 
     /// **Setting a goal**: writes all three fields and stamps the moment, which replaces
     /// whatever goal was here and restarts the ring from where you stand now.
