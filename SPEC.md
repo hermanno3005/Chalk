@@ -1590,7 +1590,9 @@ batch* holds for strength only.
 - **One keypad, always up. No steppers** — with no pattern from one interval to the next, every
   number is a jump, and a jump is keypad distance (§6.2).
 - ***Next* walks the cells left to right**, and becomes ***New row*** at the end of the last row.
-  **A heart rate's third digit and a speed's tenth move on by themselves.**
+  **A heart rate's last digit and a speed's tenth move on by themselves.** A heart rate's last
+  digit is its third, or its second when the first is 4–9: every heart rate from 40 to 99 is two
+  digits, and none from 100 to 230 starts with 4–9.
 - **Typing in a cell replaces its seed**; you never delete a seeded number first.
 - **Times fill from the right**, as on a microwave: `6`, `60`, `600` → `6:00`; `h:mm:ss` from an
   hour. **Typed to the second and never snapped**: a `6:00` rep is `6:00` because you typed it,
