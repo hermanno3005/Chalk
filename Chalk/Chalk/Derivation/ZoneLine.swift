@@ -1,14 +1,5 @@
 import Foundation
 
-/// Which of the five zones a heart rate falls in, 1…5, **with a heart rate exactly on a
-/// boundary in the upper zone** (SPEC §13.3).
-///
-/// The seam `ZoneLine` reads the zones through, so the derivation never needs to know
-/// where they are held. `HeartRateZones` is the one conformer in the app.
-protocol ZoneMembership {
-    func zone(of heartRate: Int) -> Int
-}
-
 /// The zone line for one zone on one scope at one incline, derived from its entries and
 /// never stored (SPEC §13.4, ADR-0006).
 ///
@@ -16,6 +7,8 @@ protocol ZoneMembership {
 /// the `Entry` type itself, nothing cached (ADR-0002). **Scoping is the caller's job**,
 /// as it is for `RepMaxCurve`: every entry for a transferable erg, one machine's entries
 /// for a gym-bound one. Hints never enter it.
+///
+/// The zones are passed in, never read here: `nil` — not yet set — gives no line.
 struct ZoneLine {
 
     /// How many visits a point's window holds.
@@ -55,7 +48,7 @@ struct ZoneLine {
 
     init(
         entries: [Entry],
-        zones: (any ZoneMembership)?,
+        zones: HeartRateZones?,
         unit: ErgUnit,
         zone: Int,
         incline: Double,
@@ -112,7 +105,7 @@ struct ZoneLine {
     /// zone buttons dim by and the no-line quotes read. Every line is empty without zones.
     static func lines(
         entries: [Entry],
-        zones: (any ZoneMembership)?,
+        zones: HeartRateZones?,
         unit: ErgUnit,
         incline: Double,
         calendar: Calendar = .current

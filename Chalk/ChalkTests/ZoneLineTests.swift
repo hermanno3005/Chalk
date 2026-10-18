@@ -18,7 +18,7 @@ import Testing
 struct ZoneLineTests {
 
     /// Z2 from 120, Z3 from 140, Z4 from 158, Z5 from 170.
-    private let zones = Bounds(z2: 120, z3: 140, z4: 158, z5: 170)
+    private let zones = HeartRateZones(lowerBounds: [120, 140, 158, 170])!
 
     // MARK: - Membership
 
@@ -351,14 +351,5 @@ struct ZoneLineTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
         return calendar
-    }
-}
-
-/// Four lower bounds, Z2 to Z5, read as `HeartRateZones` reads them: on a boundary is up.
-private struct Bounds: ZoneMembership {
-    let z2: Int, z3: Int, z4: Int, z5: Int
-
-    func zone(of heartRate: Int) -> Int {
-        1 + [z2, z3, z4, z5].filter { heartRate >= $0 }.count
     }
 }
