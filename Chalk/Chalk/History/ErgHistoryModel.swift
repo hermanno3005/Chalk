@@ -113,7 +113,7 @@ final class ErgHistoryModel: Identifiable {
         case .point(let duration): "\(EnduranceText.clock(duration)) in Z\(zone)"
         case .overTheAxis: "Over \(EnduranceText.clock(ZoneLine.axisEnd)) in Z\(zone)"
         }
-        if erg.ergUnit == .speed { title += " · \(EnduranceText.incline(incline)) %" }
+        if erg.ergUnit?.hasIncline == true { title += " · \(EnduranceText.incline(incline)) %" }
         return title
     }
 

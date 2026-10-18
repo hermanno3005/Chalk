@@ -51,12 +51,12 @@ struct EnduranceGoal: Equatable {
         calendar: Calendar = .current
     ) {
         guard let zone, let duration, let intensity, let setAt else { return nil }
-        guard unit != .speed || incline != nil else { return nil }
+        guard !unit.hasIncline || incline != nil else { return nil }
         self.unit = unit
         self.zone = zone
         self.duration = duration
         self.intensity = intensity
-        self.incline = unit == .speed ? incline : nil
+        self.incline = unit.hasIncline ? incline : nil
         self.setAt = setAt
         let point = { (entries: [Entry]) in
             ZoneLine(entries: entries, zones: zones, unit: unit, zone: zone, incline: incline ?? 0, calendar: calendar)
@@ -91,10 +91,7 @@ struct EnduranceGoal: Equatable {
     /// zero.
     var gap: Int? {
         guard let current else { return nil }
-        let left = unit == .split
-            ? unit.steps(current) - unit.steps(intensity)
-            : unit.steps(intensity) - unit.steps(current)
-        return max(0, left)
+        return max(0, unit.hardness(intensity) - unit.hardness(current))
     }
 
     /// How much of the way from the origin to the goal the point has come, in steps and
@@ -103,9 +100,8 @@ struct EnduranceGoal: Equatable {
     var progress: Double {
         guard !isReached else { return 1 }
         guard let current, let origin else { return 0 }
-        let (done, span) = unit == .split
-            ? (unit.steps(origin) - unit.steps(current), unit.steps(origin) - unit.steps(intensity))
-            : (unit.steps(current) - unit.steps(origin), unit.steps(intensity) - unit.steps(origin))
+        let done = unit.hardness(current) - unit.hardness(origin)
+        let span = unit.hardness(intensity) - unit.hardness(origin)
         // An origin already past the goal, with the point since fallen short of it, has
         // no way left to measure: the ring is as empty as it is below the origin.
         guard span > 0 else { return 0 }
@@ -114,9 +110,10 @@ struct EnduranceGoal: Equatable {
 
     // MARK: - Words
 
-    /// `15.5 km/h · 6:00 in Z4 · 1 %` — the goal as every surface names it.
+    /// `15.5 km/h · 6:00 in Z4 · 1 %`, `L12 · 10:00 in Z3` — the goal as every surface
+    /// names it: its goal line, the unit change's notice and the lost-goal clause.
     var text: String {
-        "\(EnduranceText.intensity(intensity, unit, pace: false)) · \(pointText)"
+        "\(EnduranceText.goalIntensity(intensity, unit)) · \(pointText)"
     }
 
     /// What follows the goal on its line: `0.4 km/h to go`, `reached`, or `not held yet`.

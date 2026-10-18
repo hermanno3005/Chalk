@@ -25,16 +25,6 @@ final class ExerciseDetailModel {
         let entriesBehind: Int
     }
 
-    /// The one line a goal gets on this screen, under the readout's subhead:
-    /// `Goal 140 × 5 · 40 kg to go`, led by a donut filled to `progress`. **It stays once
-    /// reached**, greyed and reading `· reached` — no celebration, and no vanishing.
-    struct GoalLine: Equatable {
-        let text: String
-        let isReached: Bool
-        /// The donut's fill, 0…1.
-        let progress: Double
-    }
-
     let exercise: Exercise
 
     private(set) var curve = RepMaxCurve(entries: [])

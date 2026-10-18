@@ -40,8 +40,8 @@ struct ErgMachineHint: Equatable {
 
         var text = "\(EnduranceText.clock(point.duration)) in Z\(zone) at \(EnduranceText.intensity(point.intensity, unit, pace: false))"
         // As the written form: incline on a speed erg only, and left out at 0 % (SPEC §13.2).
-        let incline = (latest.incline * 2).rounded() / 2
-        if unit == .speed, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
+        let incline = ErgUnit.roundedIncline(latest.incline)
+        if unit.hasIncline, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
         text += " on \(sibling.caption)"
         return ErgMachineHint(text: text)
     }

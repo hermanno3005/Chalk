@@ -76,7 +76,7 @@ struct ZoneLine {
         let members = entries.filter {
             $0.isAnInterval
                 && zones.zone(of: $0.averageHeartRate) == zone
-                && (unit != .speed || Self.inclineSteps($0.incline) == Self.inclineSteps(incline))
+                && (!unit.hasIncline || ErgUnit.inclineSteps($0.incline) == ErgUnit.inclineSteps(incline))
         }
         self.members = members
         entriesOverTheAxis = members
@@ -141,12 +141,6 @@ struct ZoneLine {
         Dictionary(uniqueKeysWithValues: Self.zones.map { zone in
             (zone, ZoneLine(entries: entries, zones: zones, unit: unit, zone: zone, incline: incline, calendar: calendar))
         })
-    }
-
-    /// An incline as a whole number of the log's 0.5 % steps, so two inclines compare as
-    /// the values you could set rather than their binary approximations.
-    private static func inclineSteps(_ incline: Double) -> Int {
-        Int((incline * 2).rounded())
     }
 
     /// The unit's own mean, rounded to its step, nearest: speed, watts and level as they

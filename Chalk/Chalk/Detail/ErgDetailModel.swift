@@ -289,7 +289,7 @@ final class ErgDetailModel {
     }
 
     /// The line under the readout, whatever zone is selected; nil without a goal.
-    var goalLine: ExerciseDetailModel.GoalLine? { goal.map(ExerciseDetailModel.GoalLine.init(endurance:)) }
+    var goalLine: GoalLine? { goal.map(GoalLine.init(endurance:)) }
 
     /// The goal sheet over the scope in view, seeded from where the screen is scrubbed,
     /// wired to put this screen — and the resume card's ring behind it — back in step

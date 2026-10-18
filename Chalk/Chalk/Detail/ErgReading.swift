@@ -68,8 +68,8 @@ struct ErgReading {
         self.zones = zones
         intervals = entries.filter(\.isAnInterval)
         isEmpty = intervals.isEmpty
-        inclines = unit == .speed
-            ? Set(intervals.map { Self.onStep($0.incline) }).sorted()
+        inclines = unit?.hasIncline == true
+            ? Set(intervals.map { ErgUnit.roundedIncline($0.incline) }).sorted()
             : []
 
         guard let zones, let unit, let latest = LastInterval.latestEntry(in: intervals) else {
@@ -79,11 +79,11 @@ struct ErgReading {
         var selection = previous ?? Selection(
             zone: zones.zone(of: latest.averageHeartRate),
             duration: latest.duration,
-            incline: unit == .speed ? Self.onStep(latest.incline) : 0
+            incline: unit.hasIncline ? ErgUnit.roundedIncline(latest.incline) : 0
         )
         // Another machine may never have been run at this incline: read the nearest one
         // it has rather than an incline with no lines at all.
-        if unit == .speed, !inclines.contains(selection.incline) {
+        if unit.hasIncline, !inclines.contains(selection.incline) {
             selection.incline = Self.nearest(to: selection.incline, in: inclines)
         }
         self.selection = selection
@@ -148,7 +148,7 @@ struct ErgReading {
 
     /// The incline menu, speed ergs only: every line is re-read at the new incline.
     mutating func select(incline: Double) {
-        let incline = Self.onStep(incline)
+        let incline = ErgUnit.roundedIncline(incline)
         guard selection != nil, inclines.contains(incline) else { return }
         selection?.incline = incline
         derive()
@@ -168,10 +168,6 @@ struct ErgReading {
         guard let selection, let points = line?.points, !points.isEmpty else { return }
         let nearest = points.min { abs($0.duration - selection.duration) < abs($1.duration - selection.duration) }!
         self.selection?.duration = nearest.duration
-    }
-
-    private static func onStep(_ incline: Double) -> Double {
-        (incline * 2).rounded() / 2
     }
 
     /// The lower of two equally near.
