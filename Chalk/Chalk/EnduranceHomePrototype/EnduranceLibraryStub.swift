@@ -42,10 +42,22 @@ struct EnduranceLibraryStub: View {
         }
     }
 
-    /// No Arrange, no Edit groups — the endurance side has no groups. The Gym menu is the
+    /// Round two: groups in your order, Ungrouped last, tiles by recency within each —
+    /// §7.1 exactly. Empty groups have no section.
+    private var sections: [(title: String, ergs: [ProtoErg])] {
+        let filed = ErgGroups.suggested.map { name in (title: name, ergs: ergs.filter { $0.group == name }) }
+        let ungrouped = (title: "Ungrouped", ergs: ergs.filter { $0.group == nil })
+        return (filed + [ungrouped]).filter { !$0.ergs.isEmpty }
+    }
+
+    /// Arrange and Edit groups, exactly as strength's, over the endurance set. The Gym menu is the
     /// **same** menu over the **same** gyms: current gym is shared by both halves (#93).
     private var overflow: some View {
         Menu {
+            Section {
+                Button("Arrange", systemImage: "square.grid.2x2") {}
+                Button("Edit groups…", systemImage: "folder") {}
+            }
             GymMenu(gyms: gyms, onNewGym: {}, onManageGyms: {})
             Section { SettingsRow() }
         } label: {
@@ -78,7 +90,17 @@ struct EnduranceLibraryStub: View {
                             logging = last
                         }
                     }
-                    ErgGrid(ergs: ergs) { opened.append($0) }
+                    ForEach(sections, id: \.title) { section in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text(section.title).font(.footnote.weight(.semibold))
+                                Spacer()
+                                Text("\(section.ergs.count)").font(.caption2).foregroundStyle(.tertiary)
+                            }
+                            .foregroundStyle(section.title == "Ungrouped" ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+                            ErgGrid(ergs: section.ergs) { opened.append($0) }
+                        }
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.top, 4)

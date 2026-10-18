@@ -25,6 +25,13 @@ enum ProtoDataset: String, CaseIterable {
     var strengthCount: Int { self == .fresh ? 0 : 18 }
 }
 
+/// The endurance side's suggested groups, seeded as strength's are (§7.2). There is no
+/// *Other*: Ungrouped is the catch-all in both halves. Not *Ergs* either — every
+/// endurance machine is an erg, so a group of that name would read as all of them.
+enum ErgGroups {
+    static let suggested = ["Treadmills", "Rowing & Ski", "Bikes"]
+}
+
 /// One interval, as #94 writes it: `6:00 at 15.0 km/h · 168/174 bpm`.
 struct ProtoInterval {
     let duration: String
@@ -60,6 +67,9 @@ struct ProtoErg: Identifiable, Hashable {
     let unit: String
     let machines: [String]
     let last: ProtoInterval?
+    /// Round two: the endurance side has groups after all — §7.2's mechanics, its own
+    /// set. `nil` is Ungrouped.
+    var group: String? = nil
 
     var isTransferable: Bool { machines.isEmpty }
 
@@ -162,19 +172,19 @@ final class ProtoStore {
                     "Urban Sports · Woodway", "Hotel Lisbon · Matrix T7",
                 ],
                 last: ProtoInterval(duration: "6:00", intensity: "15.0 km/h", average: 168, peak: 174, date: at(0))
-            ),
+            , group: "Treadmills"),
             ProtoErg(
                 name: "Rower", unit: "/500 m", machines: [],
                 last: ProtoInterval(duration: "4:00", intensity: "1:52 /500 m", average: 171, peak: 178, date: at(2))
-            ),
+            , group: "Rowing & Ski"),
             ProtoErg(
                 name: "SkiErg", unit: "/500 m", machines: [],
                 last: ProtoInterval(duration: "2:00", intensity: "1:58 /500 m", average: 165, peak: 172, date: at(5))
-            ),
+            , group: "Rowing & Ski"),
             ProtoErg(
                 name: "Bike Erg", unit: "W", machines: [],
                 last: ProtoInterval(duration: "8:00", intensity: "210 W", average: 158, peak: 164, date: at(4))
-            ),
+            , group: "Bikes"),
             ProtoErg(
                 name: "Stairmaster", unit: "level",
                 machines: ["FitX Mitte · StairMaster 8G", "McFit Ost · Matrix C5x"],
@@ -183,15 +193,15 @@ final class ProtoStore {
             ProtoErg(
                 name: "AssaultBike", unit: "W", machines: ["Urban Sports · Assault AirBike"],
                 last: ProtoInterval(duration: "0:45", intensity: "520 W", average: 172, peak: 181, date: at(9))
-            ),
+            , group: "Bikes"),
             ProtoErg(
                 name: "EchoBike", unit: "W", machines: ["FitX Mitte · Rogue Echo"],
                 last: ProtoInterval(duration: "1:00", intensity: "450 W", average: 170, peak: 179, date: at(12))
-            ),
+            , group: "Bikes"),
             ProtoErg(
                 name: "Curved Treadmill", unit: "km/h", machines: ["Urban Sports · Woodway Curve"],
                 last: ProtoInterval(duration: "1:00", intensity: "18.0 km/h", average: 174, peak: 182, date: at(15))
-            ),
+            , group: "Treadmills"),
             ProtoErg(name: "VersaClimber", unit: "level", machines: ["McFit Ost · VersaClimber"], last: nil),
         ]
     }
@@ -201,11 +211,11 @@ final class ProtoStore {
             name: "Treadmill", unit: "km/h",
             machines: ["FitX Mitte · Technogym Run", "McFit Ost · Life Fitness 95T"],
             last: ProtoInterval(duration: "6:00", intensity: "15.0 km/h", average: 168, peak: 174, date: daysAgo(0))
-        ),
+        , group: "Treadmills"),
         ProtoErg(
             name: "Rower", unit: "/500 m", machines: [],
             last: ProtoInterval(duration: "4:00", intensity: "1:52 /500 m", average: 171, peak: 178, date: daysAgo(2))
-        ),
+        , group: "Rowing & Ski"),
         ProtoErg(
             name: "Stairmaster", unit: "level", machines: ["FitX Mitte · StairMaster 8G"],
             last: ProtoInterval(duration: "10:00", intensity: "level 9", average: 152, peak: 160, date: daysAgo(6))
