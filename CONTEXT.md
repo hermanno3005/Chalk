@@ -212,6 +212,7 @@ machine, not a particular one: that is a machine. It speaks one unit. Either tra
 or gym-bound, and which is your call: Chalk knows no brands, so a *Concept2 RowErg* is simply an erg you
 named that way.
 _Avoid_: Cardio machine, equipment, exercise
+_Note_: the Swift type for both exercises and ergs is `Exercise`; an erg is an `Exercise` with a unit.
 
 **Free-weight**:
 An exercise whose load transfers between gyms. 60 kg is 60 kg wherever you lift it,

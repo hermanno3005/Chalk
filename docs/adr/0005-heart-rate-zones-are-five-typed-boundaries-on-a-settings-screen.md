@@ -32,5 +32,7 @@ screen's overflow in both halves, and for now it holds the zones and nothing els
   further setting is its own decision, never a row added in passing.
 - Zones are read live. No entry stores a zone, nothing caches a boundary, and moving one
   recomputes everything on the next read — nothing migrates.
+- Zones are held per device, beside the store rather than in it (ADR-0008), so *one set*
+  is one set across every erg on this device; once sync exists, a second device starts gated.
 - Zones are edited, never cleared, and a save needs all four numbers. Before the first save,
   logging works as normal and only the lookup is gated, by a row that opens Settings.
