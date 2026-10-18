@@ -16,22 +16,25 @@ enum GymNameMatch {
     /// with the branch appended. It is deliberately **not** loose on short names, where
     /// a single letter is the whole difference between *RSG* and *PSG*.
     static func nearMatch(for name: String, among gyms: [Gym]) -> Gym? {
-        let typed = normalised(name)
-        guard !typed.isEmpty else { return nil }
+        gyms.first { looksAlike(name, $0.name) }
+    }
 
-        return gyms.first { gym in
-            let existing = normalised(gym.name)
-            guard !existing.isEmpty else { return false }
-            if existing == typed { return true }
-            // The same gym with a branch or a district appended, either way round.
-            if typed.count >= minimumStemLength || existing.count >= minimumStemLength,
-               typed.hasPrefix(existing) || existing.hasPrefix(typed) {
-                return true
-            }
-            // One letter off — but only where a letter is not the whole name.
-            guard min(typed.count, existing.count) >= minimumTypoLength else { return false }
-            return editDistance(typed, existing) <= 1
+    /// Whether two typed names look like one name typed twice — the rule above, on its own,
+    /// so the erg machine near-name check (`ErgModelMatch`, SPEC §13.11) reuses gym
+    /// creation's matching rather than growing a second one.
+    static func looksAlike(_ name: String, _ other: String) -> Bool {
+        let typed = normalised(name)
+        let existing = normalised(other)
+        guard !typed.isEmpty, !existing.isEmpty else { return false }
+        if existing == typed { return true }
+        // The same gym with a branch or a district appended, either way round.
+        if typed.count >= minimumStemLength || existing.count >= minimumStemLength,
+           typed.hasPrefix(existing) || existing.hasPrefix(typed) {
+            return true
         }
+        // One letter off — but only where a letter is not the whole name.
+        guard min(typed.count, existing.count) >= minimumTypoLength else { return false }
+        return editDistance(typed, existing) <= 1
     }
 
     /// Lowercased, accent-folded, punctuation-free, with runs of whitespace collapsed:

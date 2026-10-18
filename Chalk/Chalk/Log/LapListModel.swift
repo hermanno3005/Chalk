@@ -320,8 +320,19 @@ final class LapListModel: Identifiable {
 
     /// `New machine here` in the caption's menu: the gym is implied by its section, and
     /// **the sheet resolves to the new machine** with no second decision (SPEC §6.4).
+    ///
+    /// A name that looks like this erg's machine at the same gym lands on that machine
+    /// (SPEC §13.11) — a pick, so an untouched sheet re-seeds from it as from any pick.
     func createMachine(at gym: Gym, named name: String?) {
-        caption.createMachine(at: gym, named: name)
+        guard caption.createMachine(at: gym, named: name), !isTouched, let machine else { return }
+        rows = [row(seededFrom: Self.seed(erg, on: machine))]
+        focus = Cell(row: 0, field: columns[0])
+    }
+
+    /// The near-name warning `New machine here` puts first (SPEC §13.11) — see
+    /// `MachineCaption.nearModel(named:at:)`.
+    func nearModel(named name: String?, at gym: Gym) -> ErgModelMatch? {
+        caption.nearModel(named: name, at: gym)
     }
 
     /// `New gym…` came back with one: its section joins the menu, to make the machine in.

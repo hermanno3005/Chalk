@@ -205,6 +205,27 @@ struct ManageGymsTests {
         #expect(reloaded.goalSetAt == setAt)
     }
 
+    @Test("Moving an erg machine repoints it, and its intervals follow with their incline")
+    func movingAnErgMachineTakesItsIntervals() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let wrong = fixture.gym("FitX")
+        let right = fixture.gym("Urban Gym")
+        let machine = fixture.machine(for: treadmill, at: wrong, label: "Technogym Excite")
+        fixture.interval(treadmill, machine: machine, incline: 1.5, on: .days(ago: 2))
+        fixture.interval(treadmill, machine: machine, incline: 3, on: .days(ago: 1))
+
+        fixture.gymsModel().move(machine, to: right)
+
+        let reopened = try fixture.afterRelaunch()
+        let reloaded = try #require(try reopened.fetch(FetchDescriptor<Machine>()).first)
+        #expect(reloaded.caption == "Technogym Excite · Urban Gym")
+        #expect(reloaded.entries?.compactMap(\.incline).sorted() == [1.5, 3])
+        // A gym's recency counts valid intervals (SPEC §13.12), so it moves too.
+        #expect(right.lastLogged != nil)
+        #expect(wrong.lastLogged == nil)
+    }
+
     @Test("Move targets are every other gym, the ones you use first and archived after")
     func moveTargetsAreEveryOtherGym() throws {
         let fixture = try LibraryFixture()
@@ -260,5 +281,115 @@ struct ManageGymsTests {
         model.select(old)
 
         #expect(ManageGymsList(gyms: model.allGyms).inUse.map(\.name) == ["Fitness X", "Old Barn"])
+    }
+
+    // MARK: - Rename… on a machine (SPEC §7.5, §13.11)
+
+    @Test("Renaming a machine is cosmetic, in either half: its entries and goal stay put")
+    func renamingAMachineIsCosmetic() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let treadmill = fixture.erg("Treadmill")
+        let gym = fixture.gym("FitX")
+        let green = fixture.machine(for: legPress, at: gym, label: "Green")
+        let excite = fixture.machine(for: treadmill, at: gym)
+        fixture.log(green, reps: 5, weight: 100)
+        fixture.interval(treadmill, machine: excite, incline: 1)
+        let setAt = Date.days(ago: 2)
+        GoalScope.machine(green).set(reps: 5, weight: 140, at: setAt)
+        let model = fixture.gymsModel()
+
+        model.rename(green, to: "  Hammer Strength ")
+        model.rename(excite, to: "Technogym Excite")
+
+        let reopened = try fixture.afterRelaunch()
+        let machines = try reopened.fetch(FetchDescriptor<Machine>())
+        let lift = try #require(machines.first { $0.id == green.id })
+        let erg = try #require(machines.first { $0.id == excite.id })
+        #expect(lift.name == "Hammer Strength")
+        #expect(lift.entries?.count == 1)
+        #expect(lift.goalSetAt == setAt)
+        #expect(erg.name == "Technogym Excite")
+        #expect(erg.entries?.first?.incline == 1)
+    }
+
+    @Test("A blank machine name leaves the label unchanged")
+    func aBlankMachineNameChangesNothing() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("FitX")
+        let excite = fixture.machine(for: treadmill, at: gym, label: "Technogym Excite")
+        let unlabelled = fixture.machine(for: legPress, at: gym)
+        let model = fixture.gymsModel()
+
+        model.rename(excite, to: "   ")
+        model.rename(unlabelled, to: "")
+
+        #expect(excite.label == "Technogym Excite")
+        #expect(unlabelled.label == nil)
+        #expect(unlabelled.name == "Unlabelled")
+    }
+
+    // MARK: - A gym's machines, in both halves (SPEC §13.11)
+
+    @Test("A gym's machines sit in Strength and Endurance sections, each most recently used first")
+    func aGymsMachinesSitInTwoSections() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let treadmill = fixture.erg("Treadmill")
+        let rower = fixture.erg("Rower", unit: .split)
+        let gym = fixture.gym("FitX")
+        let green = fixture.machine(for: legPress, at: gym, label: "Green")
+        let hammer = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
+        let excite = fixture.machine(for: treadmill, at: gym, label: "Technogym Excite")
+        let concept = fixture.machine(for: rower, at: gym, label: "Concept2")
+        fixture.log(green, reps: 5, weight: 100, on: .days(ago: 9))
+        fixture.log(hammer, reps: 5, weight: 100, on: .days(ago: 2))
+        fixture.interval(treadmill, machine: excite, on: .days(ago: 7))
+        fixture.interval(rower, machine: concept, intensity: 105, on: .days(ago: 1))
+
+        let list = GymMachinesList(gym: gym)
+
+        #expect(list.strength.map(\.name) == ["Hammer Strength", "Green"])
+        #expect(list.endurance.map(\.name) == ["Concept2", "Technogym Excite"])
+    }
+
+    @Test("An empty section is hidden, and the screen is never filtered by the half you came from")
+    func anEmptySectionIsHidden() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let ergsOnly = fixture.gym("FitX")
+        let liftsOnly = fixture.gym("Old Barn")
+        let both = fixture.gym("Urban Gym")
+        fixture.machine(for: treadmill, at: ergsOnly, label: "Technogym Excite")
+        fixture.machine(for: legPress, at: liftsOnly, label: "Green")
+        fixture.machine(for: treadmill, at: both, label: "Matrix T7")
+        fixture.machine(for: legPress, at: both, label: "Cybex")
+
+        #expect(GymMachinesList(gym: ergsOnly).sections == [.endurance])
+        #expect(GymMachinesList(gym: liftsOnly).sections == [.strength])
+        // There is no half to filter by: the screen takes a gym and nothing else.
+        #expect(GymMachinesList(gym: both).sections == [.strength, .endurance])
+        #expect(GymMachinesList(gym: fixture.gym("Typo Gym")).sections.isEmpty)
+    }
+
+    @Test("A gym's machine count covers both halves, so an erg machine alone blocks the hard delete")
+    func anErgMachineBlocksTheHardDelete() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let gym = fixture.gym("FitX")
+        fixture.machine(for: treadmill, at: gym, label: "Technogym Excite")
+        fixture.machine(for: legPress, at: gym, label: "Green")
+        let ergOnly = fixture.gym("Old Barn")
+        fixture.machine(for: treadmill, at: ergOnly)
+        let model = fixture.gymsModel()
+
+        #expect(GymMachinesList(gym: gym).count == 2)
+        #expect(model.canDelete(ergOnly) == false)
+        model.delete(ergOnly)
+        #expect(model.allGyms.contains { $0 === ergOnly })
     }
 }

@@ -405,4 +405,48 @@ struct MachineMergeTests {
         #expect(try fixture.afterRelaunch().fetchCount(FetchDescriptor<Entry>()) == 1)
         #expect(try fixture.afterRelaunch().fetchCount(FetchDescriptor<Machine>()) == 2)
     }
+
+    // MARK: - Erg machines (SPEC §13.11)
+
+    @Test("An erg machine's targets are its same-gym siblings for that erg, as a lift's are")
+    func anErgMachinesTargetsAreItsSiblings() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let bike = fixture.erg("Bike", unit: .watts)
+        let gym = fixture.gym("FitX")
+        let unlabelled = fixture.machine(for: treadmill, at: gym)
+        fixture.machine(for: treadmill, at: gym, label: "Technogym Excite")
+        fixture.machine(for: treadmill, at: fixture.gym("Urban Gym"), label: "Matrix T7")
+        fixture.machine(for: bike, at: gym, label: "Wattbike")
+
+        #expect(MachineMerge.targets(for: unlabelled).map(\.name) == ["Technogym Excite"])
+    }
+
+    @Test("Merging an erg machine moves every interval, incline and all, then deletes the loser")
+    func mergingAnErgMachineMovesEveryInterval() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let gym = fixture.gym("FitX")
+        let unlabelled = fixture.machine(for: treadmill, at: gym)
+        let excite = fixture.machine(for: treadmill, at: gym, label: "Technogym Excite")
+        fixture.interval(treadmill, machine: unlabelled, incline: 1, on: .days(ago: 9))
+        fixture.interval(treadmill, machine: unlabelled, incline: 2.5, on: .days(ago: 8))
+        // All or nothing: a row that is not a valid interval travels too.
+        fixture.interval(treadmill, machine: unlabelled, average: 0, on: .days(ago: 7))
+        fixture.interval(treadmill, machine: excite, incline: 0, on: .days(ago: 1))
+        try fixture.save()
+
+        let merge = MachineMerge(loser: unlabelled, sibling: excite)
+        #expect(merge.question == "Move 3 entries to Technogym Excite and delete Unlabelled?")
+        #expect(merge.detail == "Technogym Excite holds 4 entries afterwards. This cannot be undone.")
+        fixture.gymsModel().merge(unlabelled, into: excite)
+
+        let reopened = try fixture.afterRelaunch()
+        let machines = try reopened.fetch(FetchDescriptor<Machine>())
+        #expect(machines.map(\.name) == ["Technogym Excite"])
+        let entries = try reopened.fetch(FetchDescriptor<Entry>())
+        #expect(entries.count == 4)
+        #expect(entries.allSatisfy { $0.machine?.name == "Technogym Excite" && $0.exercise?.name == "Treadmill" })
+        #expect(entries.compactMap(\.incline).sorted() == [0, 0, 1, 2.5])
+    }
 }

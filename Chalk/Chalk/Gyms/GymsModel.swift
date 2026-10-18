@@ -145,6 +145,35 @@ final class GymsModel {
         save()
     }
 
+    /// Move's **Merge** answer on an erg machine (SPEC §13.11): the target gym already
+    /// holds a passing machine for this erg, so instead of a second one landing beside
+    /// it, the machine moves there and merges into it — Merge's write, with Merge's
+    /// guard, once the two are siblings. Asked for after Merge's confirmation, never
+    /// instead of it.
+    ///
+    /// Refused unless `sibling` is a machine of the same exercise at a gym.
+    func move(_ machine: Machine, mergingInto sibling: Machine) {
+        guard let gym = sibling.gym, sibling !== machine,
+              machine.exercise?.id == sibling.exercise?.id
+        else { return }
+        // Repointed in the context only: `merge` flushes it with the entries, before the
+        // delete, and refuses nothing a same-gym sibling would pass.
+        machine.gym = gym
+        merge(machine, into: sibling)
+    }
+
+    /// `Rename…` on a machine row (SPEC §7.5), in both halves. **Cosmetic**, as a gym's
+    /// rename is: identity is `Machine.id`, so no entry, curve or goal moves.
+    ///
+    /// **A blank name leaves the label unchanged** — clearing a label is not a rename
+    /// anyone meant. An erg machine's near-name check (`ErgModelMatch.onRename`) is put
+    /// to you before this is called, and never blocks it.
+    func rename(_ machine: Machine, to name: String) {
+        guard let label = Machine.label(from: name) else { return }
+        machine.label = label
+        save()
+    }
+
     /// `Merge into…` — re-points **every** entry from `loser` onto a sibling and then
     /// **hard-deletes** the loser (SPEC §7.5). All-or-nothing, and **no undo**: once the
     /// entries have moved, nothing records that they were ever separate.

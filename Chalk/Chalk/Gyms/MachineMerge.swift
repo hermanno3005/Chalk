@@ -67,11 +67,11 @@ struct MachineMerge {
     var question: String {
         let outcome: String
         if movingCount > 0 {
-            outcome = "Move \(entries(movingCount)) to \(sibling.name) and delete \(loser.name)?"
+            outcome = "Move \(entries(movingCount)) to \(siblingName) and delete \(loserName)?"
         } else if losersGoalIsKept, let kept = machineGoals.kept {
-            outcome = "Move your goal of \(kept.text) to \(sibling.name) and delete \(loser.name)?"
+            outcome = "Move your goal of \(kept.text) to \(siblingName) and delete \(loserName)?"
         } else {
-            outcome = "Delete \(loser.name)?"
+            outcome = "Delete \(loserName)?"
         }
         guard let clause = machineGoals.lostGoalClause else { return outcome }
         return "\(outcome) \(clause)"
@@ -81,10 +81,18 @@ struct MachineMerge {
     /// them back.
     var detail: String {
         guard movingCount > 0 else {
-            return "\(loser.name) holds no entries. \(sibling.name) keeps its \(entries(resultingCount)). This cannot be undone."
+            return "\(loserName) holds no entries. \(siblingName) keeps its \(entries(resultingCount)). This cannot be undone."
         }
-        return "\(sibling.name) holds \(entries(resultingCount)) afterwards. This cannot be undone."
+        return "\(siblingName) holds \(entries(resultingCount)) afterwards. This cannot be undone."
     }
+
+    /// The machines as the confirmation names them: by name between same-gym siblings,
+    /// and as `label · gym` on the one merge that crosses gyms — Move's *Merge into it?*
+    /// on an erg machine (SPEC §13.11), where the two near-named machines may well share
+    /// a name and only the gym tells the direction.
+    private var crossesGyms: Bool { loser.gym?.id != sibling.gym?.id }
+    private var loserName: String { crossesGyms ? loser.caption : loser.name }
+    private var siblingName: String { crossesGyms ? sibling.caption : sibling.name }
 
     private func entries(_ count: Int) -> String {
         count == 1 ? "1 entry" : "\(count) entries"

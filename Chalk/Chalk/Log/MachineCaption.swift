@@ -105,18 +105,28 @@ struct MachineCaption {
     /// `name` is the optional one-field alert's answer, `nil` where you skipped it. It is
     /// **always asked**, because you cannot know at creation time whether a second
     /// machine is coming.
+    ///
+    /// **On an erg, a name that looks like one of its machines at this gym picks that
+    /// machine** rather than making a twin (SPEC §13.11) — `Machine.made`, the one door
+    /// every new machine goes through. A near spelling at *another* gym is
+    /// `nearModel(named:at:)`'s warning, put to you before this is called.
     @discardableResult
     mutating func createMachine(at gym: Gym, named name: String?) -> Bool {
         guard exercise.isGymBound else { return false }
-        let machine = Machine(
-            label: Machine.label(from: name),
-            exercise: exercise,
-            gym: gym
-        )
-        context.insert(machine)
+        let machine = Machine.made(for: exercise, at: gym, named: name, in: context)
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
         return select(machine)
+    }
+
+    /// The warning `New machine here` puts to you before making the machine: **this
+    /// erg's machine at another gym** that the typed name looks like — *You have a
+    /// Technogym Excite at FitX — same model?* — offering its spelling (SPEC §13.11).
+    ///
+    /// `nil` on a lift, and `nil` for a same-gym match, which is not a warning:
+    /// `createMachine` picks that machine.
+    func nearModel(named name: String?, at gym: Gym) -> ErgModelMatch? {
+        ErgModelMatch.onCreate(name, for: exercise, at: gym)
     }
 
     /// `New gym…` came back with one. The picker gains its section — **and only its

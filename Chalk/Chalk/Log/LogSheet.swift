@@ -67,7 +67,7 @@ struct LogSheet: View {
             // One field, optional, with Skip — the machine is created at the gym its
             // row sat in and **the sheet resolves to it**, so there is no second
             // decision (SPEC §6.4).
-            .namingMachine(at: $naming) { gym, name in
+            .namingMachine(at: $naming, check: { model.nearModel(named: $1, at: $0) }) { gym, name in
                 model.createMachine(at: gym, named: name)
             }
             // `New gym…`: standing in an unfamiliar gym is exactly when you need one.
