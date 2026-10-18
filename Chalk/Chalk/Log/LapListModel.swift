@@ -74,9 +74,22 @@ final class LapListModel: Identifiable {
     /// closes without asking**; a touched one asks, and swipe-down is off.
     private(set) var isTouched = false
 
+    /// The machine every row is written onto, and the one caption above the grid that
+    /// says so and corrects it — strength's, shared (SPEC §13.7, §6.4).
+    private var caption: MachineCaption
+
     /// The machine every row is written onto — the caller's answer, never this sheet's.
     /// `nil` on a transferable erg, which carries no machine at all.
-    private(set) var machine: Machine?
+    var machine: Machine? { caption.machine }
+
+    /// The caption above the grid — **once, covering every row**: a block is logged on
+    /// one machine. `label · gym`, or `No machine` before any exists; `nil` on a
+    /// transferable erg, which carries no caption at all.
+    var machineCaption: String? { caption.text }
+
+    /// The rows the caption opens: the shared machine menu, with `New machine here` and
+    /// `New gym…`. Empty on a transferable erg.
+    var machineMenu: MachineMenu { caption.menu }
 
     @ObservationIgnored private let context: ModelContext
     /// The gyms, shared with the library.
@@ -98,17 +111,22 @@ final class LapListModel: Identifiable {
         self.erg = erg
         self.unit = unit
         self.columns = EnduranceField.columns(for: unit)
-        self.machine = machine
+        self.caption = MachineCaption(exercise: erg, machine: machine, context: context, gyms: gyms)
         self.context = context
         self.gyms = gyms
         self.defaults = defaults
         self.onSave = onSave
 
-        let last = LastInterval.latest(in: MachineScope.entries(of: erg, on: machine))
-        rows = [row(seededFrom: last.map(Self.values))]
+        rows = [row(seededFrom: Self.seed(erg, on: machine))]
     }
 
     // MARK: - Seeding
+
+    /// The first row's values: the scope's most recent valid interval — the erg's when
+    /// transferable, **this machine's** when gym-bound, never a sibling's (SPEC §13.7).
+    private static func seed(_ erg: Exercise, on machine: Machine?) -> [EnduranceField: Double]? {
+        LastInterval.latest(in: MachineScope.entries(of: erg, on: machine)).map(values)
+    }
 
     private static func values(_ last: LastInterval) -> [EnduranceField: Double] {
         var values: [EnduranceField: Double] = [
@@ -176,7 +194,7 @@ final class LapListModel: Identifiable {
 
     /// Every row complete and valid — and, on a gym-bound erg, a machine to write onto.
     var canSave: Bool {
-        rows.allSatisfy(isValid) && (machine != nil || !erg.isGymBound)
+        rows.allSatisfy(isValid) && caption.resolves
     }
 
     /// A red minus on every row **but the last remaining one** — Cancel is how you log
@@ -285,6 +303,32 @@ final class LapListModel: Identifiable {
         return nil
     }
 
+    // MARK: - The machine
+
+    /// Corrects the machine from the caption's menu — for every row, since a block is
+    /// logged on one machine. **Picking another gym's machine moves the current gym at
+    /// the pick** (SPEC §6.4); an archived gym's waits for the Save.
+    ///
+    /// An untouched sheet re-seeds from the machine you picked — the seed is a number
+    /// held *there* (SPEC §13.7) — but a block already typed stays as typed: it is what
+    /// you did, and the caption only corrects where you did it.
+    func select(_ machine: Machine) {
+        guard caption.select(machine), !isTouched else { return }
+        rows = [row(seededFrom: Self.seed(erg, on: machine))]
+        focus = Cell(row: 0, field: columns[0])
+    }
+
+    /// `New machine here` in the caption's menu: the gym is implied by its section, and
+    /// **the sheet resolves to the new machine** with no second decision (SPEC §6.4).
+    func createMachine(at gym: Gym, named name: String?) {
+        caption.createMachine(at: gym, named: name)
+    }
+
+    /// `New gym…` came back with one: its section joins the menu, to make the machine in.
+    func gymCreated(_ gym: Gym) {
+        caption.gymCreated(gym)
+    }
+
     // MARK: - Commit
 
     /// Writes **one entry per row**, with the typed values, onto the sheet's machine. The
@@ -308,6 +352,8 @@ final class LapListModel: Identifiable {
                 machine: machine
             ))
         }
+        // Once per Save, not once per row: one block is one visit (SPEC §13.7).
+        caption.logged()
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
         onSave()

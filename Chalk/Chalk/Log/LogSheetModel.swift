@@ -56,19 +56,24 @@ final class LogSheetModel: Identifiable {
 
     let exercise: Exercise
 
+    /// The machine the entry is written onto and the caption that corrects it — shared
+    /// with the endurance log sheet, so the two halves resolve, move the current gym and
+    /// un-archive by one rule (SPEC §6.4, §13.7).
+    private var caption: MachineCaption
+
     /// The machine the entry is written onto — **the caller's answer, never this
     /// sheet's** (SPEC §6.4). `nil` for a free-weight exercise, which has no machine to
     /// carry, and for the one gym-bound case no caller *can* answer: the first log at a
     /// gym with no machine for this exercise, which `New machine here` closes. An entry
     /// with no machine is still not producible (SPEC §3, invariant 4) — `canSave`
     /// refuses one.
-    private(set) var machine: Machine?
+    var machine: Machine? { caption.machine }
 
     /// The rows the caption opens: the same flat menu the detail screen's qualifier
     /// draws (SPEC §5.3), plus a section for every gym holding no machine for this
     /// exercise yet, so `New machine here` is reachable at the gym you are standing in.
     /// Empty for a free-weight exercise, which carries no machine row at all.
-    private(set) var machineMenu = MachineMenu(machines: [])
+    var machineMenu: MachineMenu { caption.menu }
 
     /// The entry being corrected, or nil for a new one. **The only difference between
     /// the two presentations** — everything below this line is the same sheet.
@@ -78,10 +83,6 @@ final class LogSheetModel: Identifiable {
     /// sheet and carrying none of this sheet's meaning** (#73). Everything below reads
     /// it; only the seeding rules decide what goes into it.
     var number = TwoStageNumber(reps: nil, weight: nil)
-
-    /// The gyms made from this sheet's own `New gym…`, which hold no machine for this
-    /// exercise yet and still need a section to make one in.
-    @ObservationIgnored private var addedHere: [Gym] = []
 
     @ObservationIgnored private let context: ModelContext
     /// The gyms, for the three things the sheet does with them: sectioning the picker,
@@ -117,7 +118,13 @@ final class LogSheetModel: Identifiable {
         onSave: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
-        self.machine = machine
+        self.caption = MachineCaption(
+            exercise: exercise,
+            machine: machine,
+            isEditing: editing != nil,
+            context: context,
+            gyms: gyms
+        )
         self.editing = editing
         self.context = context
         self.gyms = gyms
@@ -137,7 +144,6 @@ final class LogSheetModel: Identifiable {
                 weight: LastEntry.latest(in: entries)?.weight
             )
         }
-        refreshMenu()
     }
 
     /// The entries the seed and the verdict are read from: the scope the screen behind
@@ -176,14 +182,7 @@ final class LogSheetModel: Identifiable {
     /// It is never hidden "unless something is odd" — a strip that comes and goes shifts
     /// the layout and stops being trusted. A gym-bound sheet with nothing resolved yet
     /// says so, which is the state the first log at a new gym opens in.
-    var machineCaption: String? {
-        guard exercise.isGymBound else { return nil }
-        return machine?.caption ?? Self.noMachineCaption
-    }
-
-    /// What the caption reads before any machine exists — the one case no caller can
-    /// resolve, closed by `New machine here` inside the picker (SPEC §6.4).
-    static let noMachineCaption = "No machine"
+    var machineCaption: String? { caption.text }
 
     // The number's own readings and verbs, forwarded so the sheet's tests read the same
     // as before the number was shared (#73). The view binds `number` directly.
@@ -241,7 +240,7 @@ final class LogSheetModel: Identifiable {
     /// the derivation forever. The sheet can open in that state — the first log at a new
     /// gym — and this is what holds Save shut until the caption's `New machine here`
     /// resolves one.
-    var canSave: Bool { canAdvance && (weight ?? 0) > 0 && (machine != nil || !exercise.isGymBound) }
+    var canSave: Bool { canAdvance && (weight ?? 0) > 0 && caption.resolves }
 
     // MARK: - The machine
 
@@ -257,26 +256,9 @@ final class LogSheetModel: Identifiable {
     /// never does**: fixing a three-week-old entry from your couch must not relabel what
     /// you log next (SPEC §6.4).
     func select(_ machine: Machine) {
-        // `entry.machine?.exercise == entry.exercise`, held at every write (SPEC §3,
-        // invariant 1), so a machine from another exercise is not a correction.
-        guard exercise.isGymBound, machine.exercise?.id == exercise.id else { return }
-        // Before the identity check, not after: confirming the machine the caller
-        // resolved is exactly the mislabelled-by-stale-sticky-gym case the caption
-        // exists to catch, and it moves the current gym like any other pick.
-        moveCurrentGym(to: machine.gym)
         // Nothing left to re-seed for the machine already in scope.
-        guard machine !== self.machine else { return }
-        self.machine = machine
+        guard caption.select(machine) else { return }
         reseed()
-        refreshMenu()
-    }
-
-    /// The stickiness half of a pick. **An archived gym is not somewhere you are
-    /// standing** — it left the picker (SPEC §7.4), so it becomes the current gym when
-    /// the log lands and un-archives it, not when you tap its row.
-    private func moveCurrentGym(to gym: Gym?) {
-        guard !isEditing, let gym, !gym.isArchived, gym !== gyms.currentGym else { return }
-        gyms.select(gym)
     }
 
     /// `New machine here`: the gym is implied by the section the row sits in, so there is
@@ -287,24 +269,15 @@ final class LogSheetModel: Identifiable {
     /// **always asked**, because you cannot know at creation time whether a second
     /// machine is coming.
     func createMachine(at gym: Gym, named name: String?) {
-        guard exercise.isGymBound else { return }
-        let machine = Machine(
-            label: Machine.label(from: name),
-            exercise: exercise,
-            gym: gym
-        )
-        context.insert(machine)
-        // As elsewhere: v1 has no error state past §3's container failure.
-        try? context.save()
-        select(machine)
+        guard caption.createMachine(at: gym, named: name) else { return }
+        reseed()
     }
 
     /// `New gym…` came back with one. The picker gains its section — **and only its
     /// section**: the machine you are standing at is still the always-asked decision
     /// `New machine here` puts to you (SPEC §6.4).
     func gymCreated(_ gym: Gym) {
-        addedHere.append(gym)
-        refreshMenu()
+        caption.gymCreated(gym)
     }
 
     /// What a corrected machine changes: the seed and the verdict move to the machine
@@ -317,34 +290,6 @@ final class LogSheetModel: Identifiable {
         // Where that weight is the number on screen, the weight stage reopens over it —
         // blank with the keypad up, if nothing was lifted on the machine you picked.
         number.seedWeight(LastEntry.latest(in: entries)?.weight)
-    }
-
-    /// The picker's rows, rebuilt whenever a machine is made. Sectioned by gym, with the
-    /// gyms holding no machine for this exercise yet included: `New machine here` lives
-    /// in a gym section, and the gym you are standing in has to have one.
-    private func refreshMenu() {
-        guard exercise.isGymBound else {
-            machineMenu = MachineMenu(machines: [])
-            return
-        }
-        machineMenu = MachineMenu(
-            machines: exercise.machines ?? [],
-            currentGym: gyms.currentGym,
-            including: gymsNeedingASection
-        )
-    }
-
-    /// The gyms that get a section of their own without holding a machine for this
-    /// exercise — **the two `New machine here` has to be reachable in, and no more**.
-    /// A section per gym you own would turn a flat one-decision picker into a list to
-    /// walk down on the two-tap log path (SPEC §5.3).
-    ///
-    /// The gym you are standing in is the hole §6.4 names: the first gym-bound log at a
-    /// gym with no machine for this exercise. A gym made from this sheet's own
-    /// `New gym…` is the same hole one step later, and would otherwise be a door onto
-    /// nothing.
-    private var gymsNeedingASection: [Gym] {
-        [gyms.currentGym].compactMap { $0 } + addedHere
     }
 
     // MARK: - Staging and input
@@ -384,17 +329,10 @@ final class LogSheetModel: Identifiable {
                 exercise: exercise,
                 machine: machine
             ))
-            // **Logging at an archived gym un-archives it** (SPEC §7.4). There is
-            // deliberately no `restore` verb: the one moment you need a gym back is the
-            // moment you are standing in it. An *edit* does not do this — correcting a
-            // three-week-old entry from your couch is not a visit.
-            if let gym = machine?.gym, gym.isArchived {
-                gym.isArchived = false
-                // And it is now where you are standing, which `select` would not do
-                // while the gym was still archived — an archived gym is not somewhere
-                // you are (SPEC §7.4), right up until the log that says otherwise.
-                gyms.select(gym)
-            }
+            // **Logging at an archived gym un-archives it** and makes it current
+            // (SPEC §7.4). An *edit* does not do this — correcting a three-week-old
+            // entry from your couch is not a visit.
+            caption.logged()
         }
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
