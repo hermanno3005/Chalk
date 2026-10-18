@@ -290,7 +290,7 @@ struct LibraryModelTests {
 
         let resume = try #require(model.resume)
         #expect(resume.exercise === squat)
-        #expect(resume.lastEntry.text() == "5 × 60 kg · today")
+        #expect(resume.text() == "5 × 60 kg · today")
         // The tile that was logged has both the subtitle and the front of its section.
         guard case .grid(let sections) = model.content else {
             Issue.record("Expected the grid, got \(model.content.drawn)")
@@ -321,7 +321,7 @@ struct LibraryModelTests {
         // behind the back button all have to have moved with it.
         #expect(detail.entryCount == 1)
         #expect(model.resume?.exercise === squat)
-        #expect(model.resume?.lastEntry.text() == "5 × 60 kg · today")
+        #expect(model.resume?.text() == "5 × 60 kg · today")
         #expect(model.content.drawn == "grid Ungrouped[Squat, Bench Press]")
     }
 

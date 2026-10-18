@@ -128,7 +128,7 @@ struct LibraryLayoutTests {
         let resume = try #require(try layout(fixture).resume)
 
         #expect(resume.exercise.name == "Bench Press")
-        #expect(resume.lastEntry.text(asOf: now) == "8 × \(52.5.kilogramsText) kg · today")
+        #expect(resume.text(asOf: now) == "8 × \(52.5.kilogramsText) kg · today")
     }
 
     @Test("A library with nothing logged has no resume card")

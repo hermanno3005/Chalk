@@ -39,8 +39,8 @@ struct ExerciseTile: View {
 
             // An exercise with nothing logged says nothing — a placeholder line here
             // would be a number that does not exist (SPEC §4).
-            if let lastEntry = tile.lastEntry {
-                Text(lastEntry.text())
+            if let subtitle = tile.subtitle() {
+                Text(subtitle)
                     .font(.caption)
                     .lineLimit(1)
                     .foregroundStyle(.secondary)

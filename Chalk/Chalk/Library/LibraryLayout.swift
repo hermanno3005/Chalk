@@ -5,8 +5,11 @@ import Foundation
 /// behind `var body` faults an entries relationship back in.
 struct LibraryTile: Identifiable {
     let exercise: Exercise
-    /// `nil` for an exercise with nothing logged — that tile shows no subtitle at all.
+    /// A lift's last entry; `nil` for an exercise with nothing logged, and on every erg.
     let lastEntry: LastEntry?
+    /// An erg's last valid interval; `nil` for an erg with nothing logged, and on every
+    /// lift.
+    let lastInterval: LastInterval?
     /// Where this tile is filed, `nil` for Ungrouped. Read here with everything else so
     /// Arrange mode's group picker can tick the current group without faulting the
     /// relationship back in behind `var body`.
@@ -15,10 +18,32 @@ struct LibraryTile: Identifiable {
     var id: UUID { exercise.id }
     var name: String { exercise.name }
 
-    init(exercise: Exercise, lastEntry: LastEntry?) {
+    init(exercise: Exercise, lastEntry: LastEntry?, lastInterval: LastInterval? = nil) {
         self.exercise = exercise
         self.lastEntry = lastEntry
+        self.lastInterval = lastInterval
         self.groupID = exercise.group?.id
+    }
+
+    /// The tile for `exercise`, with its last entry read off the store: a lift's for a
+    /// lift, a valid interval's for an erg.
+    init(exercise: Exercise) {
+        let entries = exercise.entries ?? []
+        self.init(
+            exercise: exercise,
+            lastEntry: exercise.isErg ? nil : LastEntry.latest(in: entries),
+            lastInterval: exercise.isErg ? LastInterval.latest(in: entries) : nil
+        )
+    }
+
+    /// When you last did it — what the tile's recency is read by.
+    var lastDate: Date? { lastEntry?.date ?? lastInterval?.date }
+
+    /// The line under the name: `8 × 52.5 kg · today`, or `6:00 at 15.0 km/h · today` —
+    /// an erg's without its heart rates (SPEC §13.5). `nil` with nothing logged: that
+    /// tile shows no subtitle at all.
+    func subtitle(asOf now: Date = .now) -> String? {
+        lastEntry?.text(asOf: now) ?? lastInterval?.tileText(asOf: now)
     }
 }
 
@@ -55,7 +80,10 @@ enum LibraryDropTarget: Hashable {
 /// of the screen shows (SPEC §7.1). Absent when nothing has been logged at all.
 struct LibraryResume {
     let exercise: Exercise
-    let lastEntry: LastEntry
+    /// The resumed lift, on strength's card.
+    let lastEntry: LastEntry?
+    /// The resumed interval, on endurance's card.
+    let lastInterval: LastInterval?
     /// The goal at **the resumed entry's own scope** — that entry's machine for a
     /// gym-bound exercise, the exercise for a free-weight one — which the card draws as a
     /// ring with no words. Nil where that scope holds no goal: **a sibling machine's goal
@@ -65,11 +93,31 @@ struct LibraryResume {
     init(exercise: Exercise, lastEntry: LastEntry, goal: Goal?) {
         self.exercise = exercise
         self.lastEntry = lastEntry
+        self.lastInterval = nil
         self.goal = goal
     }
 
-    /// The card for `exercise`, or nil when it has no lift to resume.
+    /// An erg's card. **No goal ring yet**: the endurance goal joins it with goals.
+    init(exercise: Exercise, lastInterval: LastInterval) {
+        self.exercise = exercise
+        self.lastEntry = nil
+        self.lastInterval = lastInterval
+        self.goal = nil
+    }
+
+    /// The card's line: `8 × 52.5 kg · today`, or an erg's last entry in the written form
+    /// with its heart rates — `6:00 at 15.0 km/h (4:00 /km) · 1 % · 168/174 bpm · today`.
+    func text(asOf now: Date = .now) -> String {
+        lastEntry?.text(asOf: now) ?? lastInterval?.text(asOf: now) ?? ""
+    }
+
+    /// The card for `exercise`, or nil when it has nothing to resume.
     init?(exercise: Exercise) {
+        if exercise.isErg {
+            guard let lastInterval = LastInterval.latest(in: exercise.entries ?? []) else { return nil }
+            self.init(exercise: exercise, lastInterval: lastInterval)
+            return
+        }
         guard let entry = LastEntry.latestEntry(in: exercise.entries ?? []),
               let lastEntry = LastEntry(entry)
         else { return nil }
@@ -164,12 +212,13 @@ struct LibraryLayout {
     /// inside the comparator, which runs O(n log n) times and would fault the whole
     /// entries relationship back in on every call.
     ///
-    /// Recency is the last *lift*, the same value the subtitle draws: a zeroed row is not
-    /// something you did (SPEC §3), so it neither writes a subtitle nor floats a tile.
+    /// Recency is the last *lift* — on an erg, the last *valid interval* — the same value
+    /// the subtitle draws: a zeroed row is not something you did (SPEC §3), so it neither
+    /// writes a subtitle nor floats a tile.
     private static func byRecency(_ exercises: [Exercise]) -> [LibraryTile] {
         Recency.order(
-            exercises.map { LibraryTile(exercise: $0, lastEntry: LastEntry.latest(in: $0.entries ?? [])) },
-            lastUsed: { $0.lastEntry?.date },
+            exercises.map(LibraryTile.init(exercise:)),
+            lastUsed: \.lastDate,
             name: \.name
         )
     }
