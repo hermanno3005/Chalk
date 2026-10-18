@@ -8,6 +8,8 @@ import SwiftUI
 /// on every tile.
 struct LibraryView: View {
     let model: LibraryModel
+    /// PROTOTYPE (#96) — what the endurance-home variants inject into the real screen.
+    var hooks = LibraryPrototypeHooks()
 
     @State private var creating: CreateRequest?
     /// What is pushed on top of the library. A path of its own rather than
@@ -61,9 +63,13 @@ struct LibraryView: View {
                     searchFocused = false
                     model.endSearch()
                 }
-                .navigationTitle("Chalk")
+                .navigationTitle(hooks.title)
                 .navigationBarTitleDisplayMode(.inline)
+                .modifier(PrototypeTitleMenu(menu: hooks.titleMenu))
                 .toolbar {
+                    if let principal = hooks.principal {
+                        ToolbarItem(placement: .principal) { principal }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("New exercise", systemImage: "plus") {
                             creating = CreateRequest(name: "")
@@ -97,7 +103,8 @@ struct LibraryView: View {
                                 model.search(typed)
                             }
                         ),
-                        isFocused: $searchFocused
+                        isFocused: $searchFocused,
+                        prompt: hooks.searchPrompt
                     )
                 }
                 .sheet(item: $loggingAgain) { request in
@@ -157,6 +164,9 @@ struct LibraryView: View {
             // The current-gym picker. *Manage gyms…* joins it at the foot of this menu,
             // a direct sibling of *Edit groups* (§7.4, #31).
             GymMenu(gyms: model.gyms, onNewGym: { creatingGym = true }, onManageGyms: { managingGyms = true })
+            if let extras = hooks.overflowExtras {
+                Section { extras }
+            }
         } label: {
             Label("More", systemImage: "ellipsis.circle")
         }
@@ -207,12 +217,17 @@ struct LibraryView: View {
                 // Absent altogether when nothing has been logged — and while arranging,
                 // because it is the one thing on this screen that is not a tile you can
                 // file, and it holds the biggest target on it.
-                if let resume = model.resume, !arranging {
+                if let override = hooks.resumeOverride, !arranging {
+                    override
+                } else if let resume = model.resume, !arranging {
                     ResumeCard(
                         resume: resume,
                         onOpen: { opened.append(resume.exercise) },
                         onLogAgain: { loggingAgain = LoggingRequest(exercise: resume.exercise) }
                     )
+                }
+                if let leading = hooks.leadingSections {
+                    leading
                 }
                 ForEach(sections) { section in
                     self.section(section)
@@ -306,6 +321,9 @@ struct LibraryView: View {
                 }
                 .buttonStyle(.plain)
             }
+            if let extraResults = hooks.extraResults {
+                extraResults(model.query)
+            }
             if let createSuggestion {
                 Button {
                     creating = CreateRequest(name: createSuggestion)
@@ -316,6 +334,37 @@ struct LibraryView: View {
             }
         }
         .listStyle(.plain)
+    }
+}
+
+/// PROTOTYPE (#96) — slots the endurance-home variants fill on the real library. Every
+/// default reproduces the shipped screen exactly.
+struct LibraryPrototypeHooks {
+    var title = "Chalk"
+    /// Replaces the title with a control — variant A's segmented picker.
+    var principal: AnyView?
+    /// Turns the title into a menu — variant C.
+    var titleMenu: AnyView?
+    /// Appended to the overflow, after the Gym menu — `Settings…` (#92).
+    var overflowExtras: AnyView?
+    /// Drawn instead of the strength resume card — variant D's "last anything".
+    var resumeOverride: AnyView?
+    /// Drawn between the resume card and the first group — variant D's ergs.
+    var leadingSections: AnyView?
+    /// Rows appended to search results — variant D searches both halves.
+    var extraResults: ((String) -> AnyView)?
+    var searchPrompt = "Search or add an exercise"
+}
+
+private struct PrototypeTitleMenu: ViewModifier {
+    let menu: AnyView?
+
+    func body(content: Content) -> some View {
+        if let menu {
+            content.toolbarTitleMenu { menu }
+        } else {
+            content
+        }
     }
 }
 
