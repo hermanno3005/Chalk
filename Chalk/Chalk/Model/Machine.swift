@@ -62,9 +62,11 @@ final class Machine {
         return "\(name) · \(gymName)"
     }
 
-    /// When you last lifted on this machine, `nil` for one you have never logged on.
+    /// When you last logged on this machine, `nil` for one you have never logged on: its
+    /// latest lift, or on an erg's machine its latest valid interval — its own half's by
+    /// construction (SPEC §13.12).
     var lastLogged: Date? {
-        (entries ?? []).filter(\.isALift).map(\.date).max()
+        (entries ?? []).filter { $0.isALift || $0.isAnInterval }.map(\.date).max()
     }
 
     static let unlabelled = "Unlabelled"

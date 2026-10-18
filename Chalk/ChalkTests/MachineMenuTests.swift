@@ -45,6 +45,24 @@ struct MachineMenuTests {
         #expect(menu.sections.first?.machines.map(\.name) == ["Hammer Strength", "Plate loaded"])
     }
 
+    @Test("An erg's machines order by their latest valid interval")
+    func ergMachinesOrderByTheirLatestValidInterval() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill")
+        let gym = fixture.gym("Fitness X")
+        let older = fixture.machine(for: treadmill, at: gym, label: "Technogym Run")
+        let newer = fixture.machine(for: treadmill, at: gym, label: "Matrix T7")
+        let unproven = fixture.machine(for: treadmill, at: gym, label: "Life Fitness")
+        fixture.interval(treadmill, machine: older, on: .days(ago: 10))
+        fixture.interval(treadmill, machine: newer, on: .days(ago: 2))
+        // Newest of all, but no average heart rate: not a valid interval (SPEC §13.12).
+        fixture.interval(treadmill, machine: unproven, average: 0, on: .days(ago: 1))
+
+        let menu = MachineMenu(machines: [older, newer, unproven])
+
+        #expect(menu.sections.first?.machines.map(\.name) == ["Matrix T7", "Technogym Run", "Life Fitness"])
+    }
+
     @Test("Archived gyms keep one section at the very end")
     func archivedGymsCloseTheMenu() throws {
         let fixture = try LibraryFixture()
