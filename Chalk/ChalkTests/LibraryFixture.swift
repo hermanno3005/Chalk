@@ -34,6 +34,21 @@ final class LibraryFixture {
         return exercise
     }
 
+    /// An erg: an exercise that speaks a unit (ADR-0008). Gym-bound unless asked
+    /// otherwise, as the create-erg sheet starts (SPEC §13.6) — `.freeWeight` is
+    /// transferable on an erg.
+    @discardableResult
+    func erg(
+        _ name: String,
+        unit: ErgUnit = .speed,
+        kind: ExerciseKind = .gymBound,
+        group: ExerciseGroup? = nil
+    ) -> Exercise {
+        let erg = Exercise(name: name, kind: kind, group: group, unit: unit)
+        context.insert(erg)
+        return erg
+    }
+
     /// A gym on this store. Gyms are held explicitly, never derived from the machines
     /// that happen to exist (SPEC §3).
     @discardableResult
@@ -62,10 +77,17 @@ final class LibraryFixture {
     }
 
     @discardableResult
-    func group(_ name: String, sortIndex: Int) -> ExerciseGroup {
-        let group = ExerciseGroup(name: name, sortIndex: sortIndex)
+    func group(_ name: String, sortIndex: Int, half: Half = .strength) -> ExerciseGroup {
+        let group = ExerciseGroup(name: name, sortIndex: sortIndex, half: half)
         context.insert(group)
         return group
+    }
+
+    /// An endurance group — the only kind of group an erg may sit in (SPEC §3,
+    /// invariant 10).
+    @discardableResult
+    func enduranceGroup(_ name: String, sortIndex: Int) -> ExerciseGroup {
+        group(name, sortIndex: sortIndex, half: .endurance)
     }
 
     func log(_ exercise: Exercise, on date: Date) {
@@ -88,6 +110,34 @@ final class LibraryFixture {
         ))
     }
 
+    /// One interval on an erg — a valid one unless a field is zeroed on purpose. On a
+    /// gym-bound erg, pass the machine; the erg comes off it, as every write holds
+    /// (SPEC §3).
+    @discardableResult
+    func interval(
+        _ erg: Exercise,
+        machine: Machine? = nil,
+        duration: Int = 360,
+        intensity: Double = 15.0,
+        incline: Double = 0,
+        average: Int = 164,
+        peak: Int = 170,
+        on date: Date = .now
+    ) -> Entry {
+        let entry = Entry(
+            duration: duration,
+            intensity: intensity,
+            incline: incline,
+            averageHeartRate: average,
+            peakHeartRate: peak,
+            date: date,
+            exercise: machine?.exercise ?? erg,
+            machine: machine
+        )
+        context.insert(entry)
+        return entry
+    }
+
     func save() throws {
         try context.save()
     }
@@ -98,6 +148,11 @@ final class LibraryFixture {
 
     func allGroups() throws -> [ExerciseGroup] {
         try context.fetch(FetchDescriptor<ExerciseGroup>())
+    }
+
+    /// One half's groups, in the user's order.
+    func allGroups(_ half: Half) throws -> [ExerciseGroup] {
+        GroupOrder.inOrder(try allGroups().filter { $0.half == half.rawValue })
     }
 
     /// A model over this store's context, seeded against this fixture's own defaults.
@@ -127,6 +182,20 @@ final class LibraryFixture {
     ) -> ExerciseDetailModel {
         ExerciseDetailModel(
             exercise: exercise,
+            context: context,
+            gyms: gyms ?? gymsModel()
+        ) { library?.refresh() }
+    }
+
+    /// An erg detail model over this store's context. `refreshing` stands in for the
+    /// library behind the screen, as `detailModel(for:)`'s does.
+    func ergDetailModel(
+        for erg: Exercise,
+        gyms: GymsModel? = nil,
+        refreshing library: LibraryModel? = nil
+    ) -> ErgDetailModel {
+        ErgDetailModel(
+            erg: erg,
             context: context,
             gyms: gyms ?? gymsModel()
         ) { library?.refresh() }
