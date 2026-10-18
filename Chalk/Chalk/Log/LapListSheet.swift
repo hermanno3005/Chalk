@@ -34,16 +34,19 @@ struct LapListSheet: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         grid
-                        Button {
-                            withAnimation(.snappy) { model.addRow() }
-                        } label: {
-                            Label("Add an entry", systemImage: "plus")
-                                .font(.subheadline.weight(.medium))
-                                .frame(maxWidth: .infinity, minHeight: 40)
+                        // An edit is one entry: no new row (SPEC §13.9).
+                        if model.canAddRows {
+                            Button {
+                                withAnimation(.snappy) { model.addRow() }
+                            } label: {
+                                Label("Add an entry", systemImage: "plus")
+                                    .font(.subheadline.weight(.medium))
+                                    .frame(maxWidth: .infinity, minHeight: 40)
+                            }
+                            .buttonStyle(.bordered)
+                            .padding(.top, 6)
+                            .id(Self.addRowID)
                         }
-                        .buttonStyle(.bordered)
-                        .padding(.top, 6)
-                        .id(Self.addRowID)
                     }
                     .onChange(of: model.rows.count) { proxy.scrollTo(Self.addRowID) }
                 }
@@ -57,7 +60,8 @@ struct LapListSheet: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
-            .navigationTitle(model.erg.name)
+            // The erg while logging; the entry's date, not editable, on an edit.
+            .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
             // A stray swipe must not lose a block once anything is typed.
             .interactiveDismissDisabled(model.isTouched)
@@ -72,7 +76,7 @@ struct LapListSheet: View {
                         isPresented: $confirmingDiscard,
                         titleVisibility: .visible
                     ) {
-                        Button(model.rows.count == 1 ? "Discard Entry" : "Discard \(model.rows.count) Entries", role: .destructive) {
+                        Button(discardTitle, role: .destructive) {
                             dismiss()
                         }
                         Button("Keep Typing", role: .cancel) {}
@@ -97,6 +101,11 @@ struct LapListSheet: View {
     }
 
     private static let addRowID = "add-row"
+
+    private var discardTitle: String {
+        if !model.canAddRows { return "Discard Changes" }
+        return model.rows.count == 1 ? "Discard Entry" : "Discard \(model.rows.count) Entries"
+    }
 
     private var grid: some View {
         Grid(horizontalSpacing: 5, verticalSpacing: 6) {

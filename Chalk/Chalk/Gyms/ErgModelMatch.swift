@@ -125,7 +125,7 @@ struct ErgModelMatch {
 
     /// What a machine's model is called: its label, or its make where it has no label —
     /// the name it shows, **without** the `Unlabelled` fallback, which is no model at all.
-    private static func model(of machine: Machine) -> String? {
+    static func model(of machine: Machine) -> String? {
         Machine.label(from: machine.label) ?? Machine.label(from: machine.manufacturer)
     }
 

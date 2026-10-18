@@ -53,6 +53,11 @@ final class ErgDetailModel {
     /// in Z3 is cleared.* — shown once, then dismissed. Nil when it cleared none.
     var clearedGoalNotice: String?
 
+    /// On a gym-bound erg whose machine in scope has no entries: one dimmed line quoting a
+    /// sibling machine's line, under the empty state's text (SPEC §13.8). Never part of
+    /// any line.
+    private(set) var hint: ErgMachineHint?
+
     @ObservationIgnored private let context: ModelContext
     /// The gyms, shared with the library — the machine qualifier and the log sheet read
     /// the current gym through it.
@@ -133,6 +138,47 @@ final class ErgDetailModel {
         return true
     }
 
+    // MARK: - Change kind (SPEC §8, §13.11)
+
+    /// `Change kind` over this erg — the words the confirmation and *Which machine is
+    /// this on?* say. **Only the scope changes**: unit and incline are untouched.
+    var kindChange: KindChange { KindChange(exercise: erg) }
+
+    /// **Transferable → gym-bound**: every entry moves to one new machine at `gym`, and
+    /// the screen opens on it — the only one there is.
+    ///
+    /// The erg's goal is not moved yet (#121).
+    func makeGymBound(at gym: Gym, named name: String?) {
+        guard erg.isErg, !erg.isGymBound else { return }
+        let machine = kindChange.placeEntries(at: gym, named: name, in: context)
+        save()
+        self.machine = machine
+        refresh()
+        onLibraryChange()
+    }
+
+    /// **Transferable → gym-bound with nothing to place**: the empty state a gym-bound
+    /// erg already has, until the first block makes a machine (SPEC §5.3).
+    func makeGymBound() {
+        guard erg.isErg, !erg.isGymBound, !kindChange.needsAMachine else { return }
+        erg.kind = ExerciseKind.gymBound.rawValue
+        save()
+        refresh()
+        onLibraryChange()
+    }
+
+    /// **Gym-bound → transferable**: every machine pooled, the machines deleted, and no
+    /// interval lost to the cascade — reassigned and flushed first (ADR-0002).
+    func makeTransferable() {
+        guard erg.isErg, erg.isGymBound else { return }
+        guard kindChange.pool(in: context) else {
+            refresh()
+            return
+        }
+        refresh()
+        onLibraryChange()
+    }
+
     /// Re-scopes the screen to another machine (SPEC §5.3). Nothing is cached, so this
     /// is a re-read and not an invalidation.
     func select(_ machine: Machine) {
@@ -164,6 +210,10 @@ final class ErgDetailModel {
     /// The dimmed `2 entries over 20:00` caption under the line; nil without one.
     var overTheAxisCaption: String? { reading.overTheAxisCaption }
 
+    /// The text and quotes in place of the chart when the selected zone has no line here;
+    /// nil when it has one, or there is nothing to select.
+    var noLine: ErgNoLine? { ErgNoLine(reading, place: isGymBound ? "machine" : "erg") }
+
     /// Whether a zone has a line on this scope and incline. A zone without one is dimmed
     /// but still tappable.
     func hasLine(_ zone: Int) -> Bool { reading.hasLine(zone) }
@@ -176,6 +226,37 @@ final class ErgDetailModel {
 
     /// The incline menu, on a speed erg.
     func select(incline: Double) { reading.select(incline: incline) }
+
+    /// The point's sheet the readout's `12 entries ›` opens — **the chart's only door**
+    /// (SPEC §13.9) — at the selected duration, zone and incline on this scope. Nil
+    /// without a readout: zones not set, or a zone with no line here.
+    func historySheet() -> ErgHistoryModel? {
+        guard readout != nil, let selection else { return nil }
+        return history(.point(duration: selection.duration), selection)
+    }
+
+    /// The flat list the over-20:00 caption opens, for the selected zone and incline. Nil
+    /// where there is no caption.
+    func overTheAxisSheet() -> ErgHistoryModel? {
+        guard overTheAxisCaption != nil, let selection else { return nil }
+        return history(.overTheAxis, selection)
+    }
+
+    private func history(_ listing: ErgHistoryModel.Listing, _ selection: ErgReading.Selection) -> ErgHistoryModel {
+        ErgHistoryModel(
+            erg: erg,
+            machine: machine,
+            zone: selection.zone,
+            incline: selection.incline,
+            listing: listing,
+            context: context,
+            gyms: gyms,
+            defaults: defaults
+        ) { [weak self] in
+            self?.refresh()
+            self?.onLibraryChange()
+        }
+    }
 
     /// Settings, opened in place of the zone buttons while zones are not set. The screen
     /// re-reads when it closes: entries logged before the zones join the lines then.
@@ -298,6 +379,7 @@ final class ErgDetailModel {
             unit: unit,
             keeping: reading.selection
         )
+        hint = ErgMachineHint.lookUp(erg, scopedTo: machine, zones: reading.zones)
         goal = goalScope?.enduranceGoal(zones: reading.zones)
     }
 

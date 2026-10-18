@@ -13,8 +13,11 @@ struct ErgDetailView: View {
     @State private var renaming = false
     @State private var draftName = ""
     @State private var changingUnit = false
+    @State private var changingKind = false
     @State private var confirmingDelete = false
     @State private var logging: LapListModel?
+    /// The point's sheet or the over-20:00 list (SPEC §13.9).
+    @State private var history: ErgHistoryModel?
     /// The gym the qualifier's `New machine here` is naming a machine at.
     @State private var naming: Gym?
 
@@ -29,11 +32,12 @@ struct ErgDetailView: View {
             } else if !model.needsZones, let selection = model.selection {
                 zoneBar(selection)
                 if let readout = model.readout {
-                    // The `›` is inert until the point's sheet exists (SPEC §13.9).
                     readoutView(readout)
+                } else if let noLine = model.noLine {
+                    ErgNoLineView(noLine: noLine)
                 }
-                // Under the readout whatever zone is selected: it is the goal's point,
-                // not the screen's (SPEC §13.10).
+                // Under the readout, or the no-line text, whatever zone is selected: it
+                // is the goal's point, not the screen's (SPEC §13.10).
                 goalLine
                 if let points = model.reading.line?.points, !points.isEmpty {
                     ZoneLineChart(
@@ -44,9 +48,15 @@ struct ErgDetailView: View {
                     )
                 }
                 if let caption = model.overTheAxisCaption {
-                    Text(caption)
-                        .font(.footnote)
-                        .foregroundStyle(.tertiary)
+                    // A door to the flat over-20:00 list (SPEC §13.9).
+                    Button {
+                        history = model.overTheAxisSheet()
+                    } label: {
+                        Text("\(caption) ›")
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             // Zones not set: one row in place of the buttons, readout and line — under
@@ -64,6 +74,7 @@ struct ErgDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) { logBar }
         .sheet(item: $logging) { LapListSheet(model: $0) }
+        .sheet(item: $history) { ErgHistorySheet(model: $0) }
         // Entries logged before the zones join the lines the moment they are set.
         .sheet(item: $settings, onDismiss: model.refresh) { SettingsSheet(model: $0) }
         .sheet(item: $goalSheet) { EnduranceGoalSheet(model: $0) }
@@ -103,6 +114,8 @@ struct ErgDetailView: View {
                     if model.canChangeUnit {
                         Button("Change unit…", systemImage: "ruler") { changingUnit = true }
                     }
+                    // Transferable ↔ gym-bound (SPEC §13.11); `ErgChangeKind` asks the rest.
+                    Button("Change kind", systemImage: "arrow.left.arrow.right") { changingKind = true }
                     Button("Delete erg", systemImage: "trash", role: .destructive) {
                         confirmingDelete = true
                     }
@@ -111,6 +124,7 @@ struct ErgDetailView: View {
                 }
             }
         }
+        .changingKind(of: model, isRequested: $changingKind)
         .alert("Rename", isPresented: $renaming) {
             TextField("Name", text: $draftName)
             Button("Cancel", role: .cancel) {}
@@ -158,7 +172,8 @@ struct ErgDetailView: View {
         .disabled(model.machineMenu.isEmpty)
     }
 
-    /// §5.4: nothing logged on the scope — no chart, no axes, no readout, short text.
+    /// §5.4: nothing logged on the scope — no chart, no axes, no readout, short text, and
+    /// on a gym-bound erg's new machine the hint under it.
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
@@ -166,6 +181,13 @@ struct ErgDetailView: View {
             Text("Log a block and what you held in each zone starts here.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            // Another machine's numbers, as text and dimmed: never part of any line.
+            if let hint = model.hint {
+                Text(hint.emptyStateLine)
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 4)
+            }
         }
         .padding(.top, 8)
     }
@@ -262,14 +284,21 @@ struct ErgDetailView: View {
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
-            HStack(spacing: 4) {
-                Text(readout.detail)
-                Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.semibold))
+            // `12 entries ›`: **the chart's only door** to the point's entries (SPEC
+            // §13.9). Tapping a point on the line does nothing; scrubbing only selects.
+            Button {
+                history = model.historySheet()
+            } label: {
+                HStack(spacing: 4) {
+                    Text(readout.detail)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                }
+                .font(.subheadline)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
             }
-            .font(.subheadline)
-            .monospacedDigit()
-            .foregroundStyle(.secondary)
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)

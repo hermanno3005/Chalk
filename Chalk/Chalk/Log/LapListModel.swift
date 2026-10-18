@@ -72,7 +72,17 @@ final class LapListModel: Identifiable {
 
     /// Whether anything has been typed, or a row added or deleted. **An untouched sheet
     /// closes without asking**; a touched one asks, and swipe-down is off.
-    private(set) var isTouched = false
+    ///
+    /// **On an edit, whether anything changed** — a value or the machine — against the
+    /// entry as it was: typing a number back over itself is not a change (SPEC §13.9).
+    var isTouched: Bool {
+        guard let editing else { return hasTyped }
+        return caption.machine !== editing.machine
+            || columns.contains { rows[0].value($0) != original[$0] }
+    }
+
+    /// Whether a key has landed, or a row been added or deleted.
+    private var hasTyped = false
 
     /// The machine every row is written onto, and the one caption above the grid that
     /// says so and corrects it — strength's, shared (SPEC §13.7, §6.4).
@@ -98,10 +108,19 @@ final class LapListModel: Identifiable {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let onSave: () -> Void
 
+    /// The entry being corrected — **edit mode**, opened from a history row: one row
+    /// seeded from it, a fixed date, no *New row* or delete, a plain `Save` (SPEC §13.9).
+    /// `nil` while logging.
+    @ObservationIgnored private let editing: Entry?
+
+    /// The edited entry's values as they were — what `isTouched` compares the row with.
+    @ObservationIgnored private var original: [EnduranceField: Double] = [:]
+
     /// `nil` for an exercise that is not an erg: a lift has nothing to type here.
     init?(
         erg: Exercise,
         machine: Machine? = nil,
+        editing: Entry? = nil,
         context: ModelContext,
         gyms: GymsModel,
         defaults: UserDefaults,
@@ -111,13 +130,27 @@ final class LapListModel: Identifiable {
         self.erg = erg
         self.unit = unit
         self.columns = EnduranceField.columns(for: unit)
-        self.caption = MachineCaption(exercise: erg, machine: machine, context: context, gyms: gyms)
         self.context = context
         self.gyms = gyms
         self.defaults = defaults
         self.onSave = onSave
 
-        rows = [row(seededFrom: Self.seed(erg, on: machine))]
+        self.editing = editing
+        // An edit never moves the current gym or un-archives one: it is not a visit.
+        self.caption = MachineCaption(
+            exercise: erg,
+            machine: machine,
+            isEditing: editing != nil,
+            context: context,
+            gyms: gyms
+        )
+
+        if let editing {
+            original = Self.values(of: editing)
+            rows = [row(seededFrom: original)]
+        } else {
+            rows = [row(seededFrom: Self.seed(erg, on: machine))]
+        }
     }
 
     // MARK: - Seeding
@@ -126,6 +159,18 @@ final class LapListModel: Identifiable {
     /// transferable, **this machine's** when gym-bound, never a sibling's (SPEC §13.7).
     private static func seed(_ erg: Exercise, on machine: Machine?) -> [EnduranceField: Double]? {
         LastInterval.latest(in: MachineScope.entries(of: erg, on: machine)).map(values)
+    }
+
+    /// An entry's own values, the one row of an edit — whatever it holds, valid or not.
+    private static func values(of entry: Entry) -> [EnduranceField: Double] {
+        var values: [EnduranceField: Double] = [
+            .duration: Double(entry.duration),
+            .intensity: entry.intensity,
+            .incline: entry.incline,
+            .averageHeartRate: Double(entry.averageHeartRate),
+        ]
+        if entry.peakHeartRate > 0 { values[.peakHeartRate] = Double(entry.peakHeartRate) }
+        return values
     }
 
     private static func values(_ last: LastInterval) -> [EnduranceField: Double] {
@@ -157,9 +202,20 @@ final class LapListModel: Identifiable {
         "Row \(focus.row + 1) · \(focus.field.name(unit))"
     }
 
+    /// The sheet's title: the erg while logging; **the entry's date on an edit**, shown
+    /// and not editable — the sheet's one tell that it is correcting (SPEC §6.6).
+    var title: String {
+        guard let editing else { return erg.name }
+        let day = RelativeDay.text(for: editing.date, asOf: .now)
+        return day.prefix(1).uppercased() + day.dropFirst()
+    }
+
+    /// Whether *New row* exists. **An edit is one entry**, never a block.
+    var canAddRows: Bool { editing == nil }
+
     /// Whether *Next* is *New row*: the focus is on the last cell of the last row.
     var nextIsNewRow: Bool {
-        focus.row == rows.count - 1 && focus.field == columns.last
+        canAddRows && focus.row == rows.count - 1 && focus.field == columns.last
     }
 
     var decimalIsDead: Bool {
@@ -199,11 +255,12 @@ final class LapListModel: Identifiable {
 
     /// A red minus on every row **but the last remaining one** — Cancel is how you log
     /// nothing.
-    var canDeleteRows: Bool { rows.count > 1 }
+    var canDeleteRows: Bool { canAddRows && rows.count > 1 }
 
     /// Cancel's question once the sheet is touched: *Discard 5 entries?*
     var discardConfirmation: String {
-        rows.count == 1 ? "Discard this entry?" : "Discard \(rows.count) entries?"
+        if editing != nil { return "Discard changes?" }
+        return rows.count == 1 ? "Discard this entry?" : "Discard \(rows.count) entries?"
     }
 
     // MARK: - Validation
@@ -252,7 +309,7 @@ final class LapListModel: Identifiable {
     /// move on to the next cell by themselves — never into a new row.
     func type(_ key: TwoStageNumber.Key) {
         guard let outcome = rows[focus.row].inputs[focus.field]?.type(key) else { return }
-        if outcome != .refused { isTouched = true }
+        if outcome != .refused { hasTyped = true }
         guard outcome == .complete else { return }
         if let next = cell(after: focus) {
             select(next)
@@ -266,19 +323,22 @@ final class LapListModel: Identifiable {
     func next() {
         if let next = cell(after: focus) {
             select(next)
-        } else {
+        } else if canAddRows {
             addRow()
+        } else {
+            settle()
         }
     }
 
     /// A new row at the end, **seeded from the row above**, with the focus on its first
     /// cell.
     func addRow() {
+        guard canAddRows else { return }
         settle()
         let above = rows[rows.count - 1]
         rows.append(row(seededFrom: above.inputs.compactMapValues(\.value)))
         focus = Cell(row: rows.count - 1, field: columns[0])
-        isTouched = true
+        hasTyped = true
     }
 
     /// Deletes a row — never the last remaining one.
@@ -289,7 +349,7 @@ final class LapListModel: Identifiable {
         if focus.row > index || focus.row == rows.count {
             focus = Cell(row: focus.row - 1, field: focus.field)
         }
-        isTouched = true
+        hasTyped = true
     }
 
     private func settle() {
@@ -313,7 +373,9 @@ final class LapListModel: Identifiable {
     /// held *there* (SPEC §13.7) — but a block already typed stays as typed: it is what
     /// you did, and the caption only corrects where you did it.
     func select(_ machine: Machine) {
-        guard caption.select(machine), !isTouched else { return }
+        // On an edit the row is the entry being corrected, never a seed: the pick only
+        // moves it (SPEC §6.6).
+        guard caption.select(machine), editing == nil, !isTouched else { return }
         rows = [row(seededFrom: Self.seed(erg, on: machine))]
         focus = Cell(row: 0, field: columns[0])
     }
@@ -324,7 +386,7 @@ final class LapListModel: Identifiable {
     /// A name that looks like this erg's machine at the same gym lands on that machine
     /// (SPEC §13.11) — a pick, so an untouched sheet re-seeds from it as from any pick.
     func createMachine(at gym: Gym, named name: String?) {
-        guard caption.createMachine(at: gym, named: name), !isTouched, let machine else { return }
+        guard caption.createMachine(at: gym, named: name), editing == nil, !isTouched, let machine else { return }
         rows = [row(seededFrom: Self.seed(erg, on: machine))]
         focus = Cell(row: 0, field: columns[0])
     }
@@ -350,6 +412,10 @@ final class LapListModel: Identifiable {
     func save() {
         settle()
         guard canSave else { return }
+        if let editing {
+            write(onto: editing)
+            return
+        }
         let now = Date.now
         for (index, row) in rows.enumerated() {
             context.insert(Entry(
@@ -365,6 +431,23 @@ final class LapListModel: Identifiable {
         }
         // Once per Save, not once per row: one block is one visit (SPEC §13.7).
         caption.logged()
+        // As elsewhere: v1 has no error state past §3's container failure.
+        try? context.save()
+        onSave()
+    }
+
+    /// An edit: **in place, and the date stays where it was** (SPEC §6.6). A changed
+    /// machine moves the entry silently — its row leaving the sheet it was opened from is
+    /// the only word said — and a changed heart rate moves it onto another zone's line.
+    /// No un-archive and no current-gym move: an edit is not a visit.
+    private func write(onto entry: Entry) {
+        let row = rows[0]
+        entry.duration = Int(row.value(.duration) ?? 0)
+        entry.intensity = row.value(.intensity) ?? 0
+        entry.incline = unit == .speed ? row.value(.incline) ?? 0 : 0
+        entry.averageHeartRate = Int(row.value(.averageHeartRate) ?? 0)
+        entry.peakHeartRate = Int(row.value(.peakHeartRate) ?? 0)
+        entry.machine = machine
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
         onSave()
