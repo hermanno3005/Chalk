@@ -139,41 +139,60 @@ _Avoid_: Preferences, options, profile, configuration
 ### What you're heading toward
 
 **Goal**:
-A weight you have named at a rep count and have not lifted yet, held on one scope — at
-most one, replaced rather than added to. The only number Chalk stores that is not a lift
-you performed, and its job is motivation: it never tells you what to load.
+A number you have named and not yet held, on one scope — at most one, replaced rather than
+added to. In strength it is a weight at a rep count; in endurance it is a point on the zone
+line, an intensity at a duration in a zone, and at an incline on a speed erg. The only
+number Chalk stores that is not something you performed, and its job is motivation: it
+never tells you what to load or set. An endurance goal holds a zone, not a heart rate, so
+it follows your boundaries when you move them.
 _Avoid_: Target, PR, PB, milestone, aim, projection
 
 **Reached**:
-What a goal is once your best at its rep count meets it — `best[reps] >= weight`. Asked
-of the entries each time it is shown and never stored, so correcting an entry downward un-reaches a goal
-on its own, with nothing to repair.
+What a goal is once the number it is read against meets it — in strength your best at its
+rep count, `best[reps] >= weight`; in endurance the zone line's point at its zone,
+duration and incline, and only that point. Asked of the entries each time it is shown and
+never stored, so a goal can un-reach on its own: in strength when an entry is corrected
+downward, in endurance also when a slower visit pushes a faster one out of the window.
+Nothing needs repairing either way.
 _Avoid_: Achieved, hit, completed, retired, `reachedAt`
 
 **Gap**:
-The weight between your curve and your goal, `goal weight − best[reps]` — the number the
-whole feature exists to show. With nothing logged it is the entire weight; a reached goal
-has none.
+The distance between what you have and your goal, in the goal's own unit — the weight
+between your curve and your goal in strength, `goal weight − best[reps]`, and the
+intensity between the point and the goal in endurance, the other way round on a split.
+The number the whole feature exists to show; a reached goal has none. With nothing logged,
+a strength gap is the entire weight, and an endurance goal has no gap at all — it is not
+held yet.
 _Avoid_: Headroom, remainder, deficit, progress
 
+**Origin**:
+Where a goal's ring fills from: the number it was read against at the moment it was named,
+derived from the entries dated before then. In strength it is zero when there were none;
+in endurance it is the point as it stood after your first visit on it. An endurance point
+can fall back below its origin, which leaves the ring empty rather than negative.
+_Avoid_: Start, baseline, starting point, `bestWhenSet`
+
 **Setting a goal**:
-The one write a goal has: naming a `(reps, weight)` pair on a scope, which replaces
-whatever goal was there and records the moment it was named, which is where the ring
-counts from. Naming your first goal and replacing a reached one are the same act, which is
-why *change* is a word on a menu row rather than an operation.
+The one write a goal has: naming a `(reps, weight)` pair — or a zone, duration,
+intensity and incline — on a scope, which replaces whatever goal was there and records the
+moment it was named, which is where the ring counts from. Naming your first goal and
+replacing a reached one are the same act, which is why *change* is a word on a menu row
+rather than an operation.
 _Avoid_: Update, edit, amend, adjust, save
 
 **Clearing a goal**:
 Removing a goal without naming another — the only other way one leaves a scope. It sits at
-the foot of the goal sheet, not in the exercise's overflow, which carries lifetime
-operations only.
+the foot of the goal sheet, not in the exercise's or erg's overflow, which carries lifetime
+operations only. Changing an erg's unit clears its goal too, and says so.
 _Avoid_: Delete, remove, cancel, abandon, retire
 
 **Goal sheet**:
-Where a goal is named: the log sheet's two-stage giant number borrowed whole — reps, then
-weight — and nothing else of it. No machine row, because the scope comes from the caller;
-no seeded weight, because a goal is by definition one you have not lifted; and it commits
-with *Set goal*, never *Save*.
+Where a goal is named, borrowing the log sheet's input and nothing else of it. In strength
+it is the two-stage giant number — reps, then weight; in endurance a short form of zone,
+duration, incline and intensity, the first three taken from the point you scrubbed to. No
+machine row, because the scope comes from the caller; no seeded weight or intensity,
+because a goal is by definition one you have not held; and it commits with *Set goal*,
+never *Save*.
 _Avoid_: Goal editor, target sheet, goal modal
 
 ### The library
