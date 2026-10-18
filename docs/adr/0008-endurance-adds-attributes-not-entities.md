@@ -66,9 +66,10 @@ carries ergs and intervals with no change.
 - **Fetches filter by half; relationships do not need to.** The library and group fetches, and
   the groups' first-launch seed, filter to the half on screen. Traversals stay one half by
   construction. The lift-only readers of recency (`Machine.lastLogged`, `Gym.lastLogged`)
-  read nothing on an erg's machine, so each must say which entries it counts; which ones the
-  shared current-gym picker and the machine lists count is a policy this ADR leaves to
-  [#106](https://github.com/hermanno3005/Chalk/issues/106), not a storage decision.
+  read nothing on an erg's machine, so each counts **a lift or a valid interval** —
+  duration, intensity and average heart rate all set, the endurance twin of `isALift`
+  ([#106](https://github.com/hermanno3005/Chalk/issues/106)). A gym's recency is then
+  either half's latest on its machines, and a machine's is its own half's by construction.
 - **SPEC §3 gains three invariants:** an erg's `unit` is set at create, never cleared, and
   changed only while the erg has no entries; an exercise sits only in a group of its own half;
   a row's goal fields are its own half's, kept by `GoalScope.clear()` nilling all seven.
