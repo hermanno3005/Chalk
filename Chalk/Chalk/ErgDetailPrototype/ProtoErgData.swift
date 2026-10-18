@@ -47,9 +47,10 @@ enum ProtoDataset: String, CaseIterable {
 }
 
 enum ProtoAxis: String, CaseIterable {
+    case fixedLinear = "x: 0–20:00 linear"
+    case fixedSqrt = "x: 0–20:00 sqrt"
     case fixedLog = "x: 0:30–20:00 log"
-    case fixedLinear = "x: 0:30–20:00 linear"
-    case framed = "x: framed"
+    case framed = "x: framed, linear"
 }
 
 struct ProtoErg: Identifiable {
@@ -104,9 +105,11 @@ extension ProtoErg {
         typical: ProtoScope(
             lines: [
                 1: [
-                    5: [p(60, 18.5, 171, 4), p(180, 17.0, 173, 6), p(360, 16.0, 172, 3)],
-                    4: [p(180, 15.8, 164, 2), p(360, 15.0, 164, 12), p(600, 14.6, 162, 5)],
-                    3: [p(360, 13.8, 152, 2), p(600, 13.2, 150, 3), p(1200, 12.6, 151, 4)],
+                    5: [p(60, 18.5, 171, 4), p(240, 16.6, 172, 6), p(360, 16.0, 172, 3)],
+                    4: [p(240, 15.6, 163, 5), p(360, 15.0, 164, 12), p(480, 14.8, 163, 6),
+                        p(600, 14.6, 162, 5), p(900, 14.2, 164, 3)],
+                    3: [p(480, 13.9, 151, 2), p(600, 13.6, 150, 3), p(900, 13.2, 152, 4),
+                        p(1200, 12.6, 151, 4)],
                     // Out of order on purpose: drawn as it comes out (ADR-0006).
                     2: [p(600, 10.8, 139, 2), p(1200, 11.0, 137, 6)],
                 ],

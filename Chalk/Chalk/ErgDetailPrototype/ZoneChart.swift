@@ -76,7 +76,7 @@ struct ZoneChart: View {
         .chartXScale(
             domain: xDomain,
             range: .plotDimension(startPadding: 12, endPadding: 22),
-            type: axis == .fixedLinear ? .linear : .log
+            type: scaleType
         )
         .chartYScale(domain: yDomain)
         .chartXAxis {
@@ -122,20 +122,30 @@ struct ZoneChart: View {
 
     private var done: [Int] { lines.flatMap { $0.points.map(\.seconds) } }
 
+    private var scaleType: ScaleType {
+        switch axis {
+        case .fixedLinear, .framed: .linear
+        case .fixedSqrt: .squareRoot
+        case .fixedLog: .log
+        }
+    }
+
     private var xDomain: ClosedRange<Double> {
         switch axis {
-        case .fixedLog, .fixedLinear: return 30...1200
+        case .fixedLog: return 30...1200
+        case .fixedLinear, .fixedSqrt: return 0...1200
         case .framed:
             let low = Double(done.min() ?? 60), high = Double(done.max() ?? 600)
             let end = ghost ? high * 1.5 : high
-            return (low / 1.3)...(end * 1.3)
+            let pad = max((end - low) * 0.08, 30)
+            return max(0, low - pad)...(end + pad)
         }
     }
 
     private var xMarks: [Double] {
         switch axis {
         case .fixedLog: [30, 60, 120, 300, 600, 1200]
-        case .fixedLinear: [60, 300, 600, 900, 1200]
+        case .fixedLinear, .fixedSqrt: [60, 300, 600, 900, 1200]
         case .framed: Set(done).sorted().map(Double.init)
         }
     }

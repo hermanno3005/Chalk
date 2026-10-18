@@ -11,7 +11,7 @@ struct ErgDetailPrototypeRoot: View {
     @AppStorage("prototype.variant") private var variant = DetailVariant.a.rawValue
     @AppStorage("prototype.erg") private var ergID = ProtoErg.treadmill.id
     @AppStorage("prototype.dataset") private var dataset = ProtoDataset.typical.rawValue
-    @AppStorage("prototype.axis") private var axis = ProtoAxis.fixedLog.rawValue
+    @AppStorage("prototype.axis") private var axis = ProtoAxis.fixedLinear.rawValue
     @AppStorage("prototype.ghost") private var ghost = false
     private let startZone = UserDefaults.standard.integer(forKey: "prototype.zone")
 
