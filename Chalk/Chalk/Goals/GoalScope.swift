@@ -1,6 +1,6 @@
 import Foundation
 
-/// Where a goal lives, and the one place its three raw fields are read or written
+/// Where a goal lives, and the one place its raw fields are read or written
 /// (ADR-0004): **the exercise for a free-weight exercise, one machine for a gym-bound
 /// one**. Screens ask this for a `Goal` and never touch `goalReps`, `goalWeight` or
 /// `goalSetAt` themselves, so a partly filled set can never be read as a goal.
@@ -52,11 +52,25 @@ enum GoalScope {
         write(reps: reps, weight: weight, setAt: date)
     }
 
-    /// **Clearing a goal**: all three fields back to nil. Besides setting, the only
-    /// write a goal has — a kind change or a merge carries one across scopes with the two
-    /// together.
+    /// **Clearing a goal**: all seven goal fields back to nil, **both halves' alike**
+    /// (ADR-0008). A row is one half by construction, so clearing never asks which
+    /// half's goal it holds, and nothing of the other half's can outlive a clear. Besides
+    /// setting, the only write a goal has — a kind change or a merge carries one across
+    /// scopes with the two together, and a unit change clears through here.
     func clear() {
         write(reps: nil, weight: nil, setAt: nil)
+        switch self {
+        case .exercise(let exercise):
+            exercise.goalZone = nil
+            exercise.goalDuration = nil
+            exercise.goalIntensity = nil
+            exercise.goalIncline = nil
+        case .machine(let machine):
+            machine.goalZone = nil
+            machine.goalDuration = nil
+            machine.goalIntensity = nil
+            machine.goalIncline = nil
+        }
     }
 
     /// Moves the goal set at `source` here, **keeping its `goalSetAt`** — the goal is the

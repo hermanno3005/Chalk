@@ -6,10 +6,12 @@ import SwiftData
 ///
 /// **2.0.0 is bumped in place**, not frozen as a V1 copy beside a V2: goals added three
 /// optional fields to `Exercise` and `Machine` and nothing else, and SwiftData infers
-/// that additive migration with no stage listed (ADR-0004). `SchemaMigrationTests` is
-/// what proves it, against a copy of 1.0.0 as it shipped.
+/// that additive migration with no stage listed (ADR-0004). **3.0.0 is bumped in place
+/// the same way**: endurance adds fifteen optional or defaulted attributes to the five
+/// entities and no entity, relationship or delete rule (ADR-0008). `SchemaMigrationTests`
+/// is what proves both, against copies of 1.0.0 and 2.0.0 as the app wrote them.
 enum ChalkSchemaV1: VersionedSchema {
-    static let versionIdentifier = Schema.Version(2, 0, 0)
+    static let versionIdentifier = Schema.Version(3, 0, 0)
 
     static var models: [any PersistentModel.Type] {
         [Exercise.self, Entry.self, Gym.self, Machine.self, ExerciseGroup.self]
