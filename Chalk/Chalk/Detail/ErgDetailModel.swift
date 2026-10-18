@@ -173,6 +173,27 @@ final class ErgDetailModel {
         SettingsModel(defaults: defaults)
     }
 
+    // MARK: - Machines
+
+    /// The qualifier's `New machine here` (SPEC §13.11): the gym is implied by its
+    /// section, and the screen re-scopes to the machine. **A name that looks like this
+    /// erg's machine at the same gym lands on that machine** rather than a twin, through
+    /// the same door as the log sheet's caption (`Machine.made`).
+    func createMachine(at gym: Gym, named name: String?) {
+        guard isGymBound else { return }
+        let machine = Machine.made(for: erg, at: gym, named: name, in: context)
+        save()
+        self.machine = machine
+        refresh()
+    }
+
+    /// The near-name warning the qualifier's `New machine here` puts first — this erg's
+    /// machine at another gym the name looks like (SPEC §13.11). A same-gym match is not
+    /// a warning: `createMachine` picks it.
+    func nearModel(named name: String?, at gym: Gym) -> ErgModelMatch? {
+        ErgModelMatch.onCreate(name, for: erg, at: gym)
+    }
+
     /// Cosmetic; identity is the UUID (SPEC §5.5). A blank name is not a rename.
     func rename(to newName: String) {
         let newName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -214,7 +235,13 @@ final class ErgDetailModel {
             if machine == nil || !machines.contains(where: { $0 === machine }) {
                 machine = MachineScope.opening(machines: machines, currentGym: gyms.currentGym)
             }
-            machineMenu = MachineMenu(machines: machines, currentGym: gyms.currentGym)
+            // The gym you are standing in gets a section even before it holds a machine
+            // for this erg: the qualifier's `New machine here` lives in it (§13.11).
+            machineMenu = MachineMenu(
+                machines: machines,
+                currentGym: gyms.currentGym,
+                including: [gyms.currentGym].compactMap { $0 }
+            )
         } else {
             machine = nil
             machines = []

@@ -87,7 +87,7 @@ struct LapListSheet: View {
                     .disabled(!model.canSave)
                 }
             }
-            .namingMachine(at: $naming) { gym, name in
+            .namingMachine(at: $naming, check: { model.nearModel(named: $1, at: $0) }) { gym, name in
                 model.createMachine(at: gym, named: name)
             }
             .sheet(isPresented: $creatingGym) {

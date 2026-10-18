@@ -15,6 +15,8 @@ struct ErgDetailView: View {
     @State private var changingUnit = false
     @State private var confirmingDelete = false
     @State private var logging: LapListModel?
+    /// The gym the qualifier's `New machine here` is naming a machine at.
+    @State private var naming: Gym?
 
     @State private var settings: SettingsModel?
 
@@ -59,6 +61,11 @@ struct ErgDetailView: View {
         .sheet(item: $logging) { LapListSheet(model: $0) }
         // Entries logged before the zones join the lines the moment they are set.
         .sheet(item: $settings, onDismiss: model.refresh) { SettingsSheet(model: $0) }
+        // The qualifier's `New machine here` (SPEC §13.11), on the screen rather than the
+        // toolbar item so it outlives the menu that raised it.
+        .namingMachine(at: $naming, check: { model.nearModel(named: $1, at: $0) }) { gym, name in
+            model.createMachine(at: gym, named: name)
+        }
         .toolbar {
             if model.isGymBound {
                 ToolbarItem(placement: .topBarTrailing) { qualifier }
@@ -109,20 +116,23 @@ struct ErgDetailView: View {
 
     /// The machine qualifier — **gym-bound only**, as on a gym-bound exercise (SPEC §5.3,
     /// §13.8): the app's one machine picker, switching which machine the screen and its
-    /// Log bar are scoped to. Creating a machine belongs in the log sheet's caption,
-    /// where the hole is.
+    /// Log bar are scoped to — plus `New machine here` in each gym section (§13.11),
+    /// checked against this erg's models as the log sheet's caption is.
     private var qualifier: some View {
         Menu {
             MachinePicker(
                 menu: model.machineMenu,
                 selected: model.machine,
-                onSelect: model.select
+                onSelect: model.select,
+                onNewMachine: { naming = $0 }
             )
         } label: {
             // An erg with no machine yet says so rather than staying blank.
             Label(model.machine?.name ?? MachineCaption.noMachine, systemImage: "square.stack.3d.up")
         }
-        .disabled(model.machines.isEmpty)
+        // Nothing to pick and nowhere to make one: no gym is current and none holds a
+        // machine for this erg.
+        .disabled(model.machineMenu.isEmpty)
     }
 
     /// §5.4: nothing logged on the scope — no chart, no axes, no readout, short text.

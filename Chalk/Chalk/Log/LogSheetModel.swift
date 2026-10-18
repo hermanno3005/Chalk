@@ -273,6 +273,13 @@ final class LogSheetModel: Identifiable {
         reseed()
     }
 
+    /// The near-name warning `New machine here` puts first — always `nil` here, since
+    /// **strength machines get no near-name check** (SPEC §7.5); held so both sheets
+    /// answer the same question through the one caption.
+    func nearModel(named name: String?, at gym: Gym) -> ErgModelMatch? {
+        caption.nearModel(named: name, at: gym)
+    }
+
     /// `New gym…` came back with one. The picker gains its section — **and only its
     /// section**: the machine you are standing at is still the always-asked decision
     /// `New machine here` puts to you (SPEC §6.4).
