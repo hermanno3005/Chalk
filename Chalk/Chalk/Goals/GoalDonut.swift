@@ -44,7 +44,7 @@ extension Color {
 /// **No `›`**, unlike the readout's subhead above it: two stacked tappable rows are told
 /// apart by the chevron, and this one opens a sheet about the goal, not a list.
 struct GoalLineView: View {
-    let line: ExerciseDetailModel.GoalLine
+    let line: GoalLine
 
     var body: some View {
         HStack(spacing: 8) {
