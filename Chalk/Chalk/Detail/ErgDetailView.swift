@@ -22,11 +22,13 @@ struct ErgDetailView: View {
     @State private var naming: Gym?
 
     @State private var settings: SettingsModel?
+    @State private var goalSheet: EnduranceGoalSheetModel?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             if model.isEmpty {
                 empty
+                goalLine
             } else if !model.needsZones, let selection = model.selection {
                 zoneBar(selection)
                 if let readout = model.readout {
@@ -34,6 +36,9 @@ struct ErgDetailView: View {
                 } else if let noLine = model.noLine {
                     ErgNoLineView(noLine: noLine)
                 }
+                // Under the readout, or the no-line text, whatever zone is selected: it
+                // is the goal's point, not the screen's (SPEC §13.10).
+                goalLine
                 if let points = model.reading.line?.points, !points.isEmpty {
                     ZoneLineChart(
                         points: points,
@@ -72,6 +77,19 @@ struct ErgDetailView: View {
         .sheet(item: $history) { ErgHistorySheet(model: $0) }
         // Entries logged before the zones join the lines the moment they are set.
         .sheet(item: $settings, onDismiss: model.refresh) { SettingsSheet(model: $0) }
+        .sheet(item: $goalSheet) { EnduranceGoalSheet(model: $0) }
+        // A unit change says so when it clears a goal (SPEC §13.6).
+        .alert(
+            "Goal cleared",
+            isPresented: Binding(
+                get: { model.clearedGoalNotice != nil },
+                set: { if !$0 { model.clearedGoalNotice = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.clearedGoalNotice ?? "")
+        }
         // The qualifier's `New machine here` (SPEC §13.11), on the screen rather than the
         // toolbar item so it outlives the menu that raised it.
         .namingMachine(at: $naming, check: { model.nearModel(named: $1, at: $0) }) { gym, name in
@@ -86,6 +104,11 @@ struct ErgDetailView: View {
                     Button("Rename", systemImage: "pencil") {
                         draftName = model.name
                         renaming = true
+                    }
+                    // Absent until zones are set, and on a gym-bound erg with no machine
+                    // (SPEC §13.10).
+                    if let goalMenuLabel = model.goalMenuLabel {
+                        Button(goalMenuLabel, systemImage: "scope") { goalSheet = model.goalSheet() }
                     }
                     // **Absent, not disabled**, once the erg has an entry (SPEC §13.6).
                     if model.canChangeUnit {
@@ -167,6 +190,14 @@ struct ErgDetailView: View {
             }
         }
         .padding(.top, 8)
+    }
+
+    /// The goal line — no `›`, never on the chart — opening the goal sheet (SPEC §13.10).
+    @ViewBuilder
+    private var goalLine: some View {
+        if let line = model.goalLine {
+            ErgGoalLine(line: line) { goalSheet = model.goalSheet() }
+        }
     }
 
     /// Opens Settings, which is where zones are set (SPEC §13.3).

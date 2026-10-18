@@ -46,6 +46,10 @@ struct ZoneLine {
     /// Each duration's window cut-off: the start of the oldest visit in it.
     private let cutOffs: [Int: Date]
 
+    /// Every duration's point, **over 20:00 too** — those are never drawn, but a goal can
+    /// name one (SPEC §13.10), and it is read by the same window and mean as the rest.
+    private let pointsByDuration: [Int: Point]
+
     /// Every entry on this line — this zone, this incline — at any duration, from all
     /// time: what `entries(at:)` reads.
     private let members: [Entry]
@@ -61,6 +65,7 @@ struct ZoneLine {
         guard let zones else {
             points = []
             cutOffs = [:]
+            pointsByDuration = [:]
             entriesOverTheAxis = []
             members = []
             return
@@ -74,30 +79,39 @@ struct ZoneLine {
                 && (unit != .speed || Self.inclineSteps($0.incline) == Self.inclineSteps(incline))
         }
         self.members = members
-        let onTheAxis = members.filter { $0.duration <= Self.axisEnd }
         entriesOverTheAxis = members
             .filter { $0.duration > Self.axisEnd }
             .sorted { $0.date > $1.date }
 
-        var points: [Point] = []
+        var pointsByDuration: [Int: Point] = [:]
         var cutOffs: [Int: Date] = [:]
-        for (duration, all) in Dictionary(grouping: onTheAxis, by: \.duration).sorted(by: { $0.key < $1.key }) {
+        for (duration, all) in Dictionary(grouping: members, by: \.duration) {
             // A visit is a calendar day, so the window is counted in days, not entries,
             // and only a new day can push the oldest out.
             let visits = Set(all.map { calendar.startOfDay(for: $0.date) }).sorted(by: >)
             let cutOff = visits.prefix(Self.window).last!
             let window = all.filter { $0.date >= cutOff }
 
-            cutOffs[duration] = cutOff
-            points.append(Point(
+            if duration <= Self.axisEnd { cutOffs[duration] = cutOff }
+            pointsByDuration[duration] = Point(
                 duration: duration,
                 intensity: Self.mean(of: window.map(\.intensity), in: unit),
                 averageHeartRate: Int((Double(window.map(\.averageHeartRate).reduce(0, +)) / Double(window.count)).rounded()),
                 entryCount: window.count
-            ))
+            )
         }
-        self.points = points
+        self.points = pointsByDuration.values
+            .filter { $0.duration <= Self.axisEnd }
+            .sorted { $0.duration < $1.duration }
         self.cutOffs = cutOffs
+        self.pointsByDuration = pointsByDuration
+    }
+
+    /// The point at exactly `duration`, **drawn or not**: past 20:00 it is off the line
+    /// but still a point, by the same window and mean, so a goal there reads against it
+    /// (SPEC §13.10). Nil where this zone holds nothing at that duration.
+    func point(at duration: Int) -> Point? {
+        pointsByDuration[duration]
     }
 
     /// Where the window at `duration` begins: the start of the oldest visit in it.

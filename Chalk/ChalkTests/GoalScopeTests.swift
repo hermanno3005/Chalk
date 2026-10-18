@@ -69,4 +69,64 @@ struct GoalScopeTests {
         #expect(exercise.goalIntensity == nil)
         #expect(exercise.goalIncline == nil)
     }
+
+    // MARK: - Endurance
+
+    @Test("Setting an endurance goal writes its four fields and the moment, and nothing of strength's")
+    func settingAnEnduranceGoal() {
+        let erg = Exercise(name: "Treadmill", unit: .speed)
+
+        GoalScope.exercise(erg).set(zone: 4, duration: 360, intensity: 15.5, incline: 1, at: setAt)
+
+        #expect(erg.goalZone == 4)
+        #expect(erg.goalDuration == 360)
+        #expect(erg.goalIntensity == 15.5)
+        #expect(erg.goalIncline == 1)
+        #expect(erg.goalSetAt == setAt)
+        #expect(erg.goalReps == nil)
+        #expect(erg.goalWeight == nil)
+    }
+
+    @Test("An endurance goal on any unit but speed stores no incline")
+    func anEnduranceGoalOffSpeedHasNoIncline() throws {
+        let fixture = try LibraryFixture()
+        let rower = fixture.erg("Rower", unit: .split)
+        let machine = fixture.machine(for: rower, at: fixture.gym("Fitness X"), label: "Concept2")
+
+        GoalScope.machine(machine).set(zone: 3, duration: 600, intensity: 110, incline: 2, at: setAt)
+
+        #expect(machine.goalIncline == nil)
+        #expect(machine.goalIntensity == 110)
+    }
+
+    @Test("A machine's endurance goal is read in its erg's unit and judged against that machine's entries")
+    func readingAMachinesEnduranceGoal() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(120, 140, 158, 170)
+        let erg = fixture.erg("Treadmill")
+        let gym = fixture.gym("Fitness X")
+        let machine = fixture.machine(for: erg, at: gym)
+        let sibling = fixture.machine(for: erg, at: gym, label: "Other")
+        fixture.interval(erg, machine: machine, intensity: 15.1, average: 164)
+        fixture.interval(erg, machine: sibling, intensity: 16.0, average: 164)
+        try fixture.save()
+
+        GoalScope.machine(machine).set(zone: 4, duration: 360, intensity: 15.5, incline: 0)
+
+        let goal = try #require(GoalScope.machine(machine).enduranceGoal(zones: fixture.heldZones()))
+        #expect(goal.unit == .speed)
+        #expect(goal.current == 15.1)
+        #expect(GoalScope.machine(sibling).enduranceGoal(zones: fixture.heldZones()) == nil)
+    }
+
+    @Test("A strength goal is never read as an endurance goal, nor a lift's fields as one")
+    func aLiftHasNoEnduranceGoal() {
+        let exercise = Exercise(name: "Bench Press")
+        exercise.goalZone = 4
+        exercise.goalDuration = 360
+        exercise.goalIntensity = 15.5
+        exercise.goalSetAt = setAt
+
+        #expect(GoalScope.exercise(exercise).enduranceGoal(zones: nil) == nil)
+    }
 }
