@@ -13,6 +13,7 @@ struct ErgDetailView: View {
     @State private var renaming = false
     @State private var draftName = ""
     @State private var changingUnit = false
+    @State private var changingKind = false
     @State private var confirmingDelete = false
     @State private var logging: LapListModel?
     /// The gym the qualifier's `New machine here` is naming a machine at.
@@ -80,6 +81,8 @@ struct ErgDetailView: View {
                     if model.canChangeUnit {
                         Button("Change unit…", systemImage: "ruler") { changingUnit = true }
                     }
+                    // Transferable ↔ gym-bound (SPEC §13.11); `ErgChangeKind` asks the rest.
+                    Button("Change kind", systemImage: "arrow.left.arrow.right") { changingKind = true }
                     Button("Delete erg", systemImage: "trash", role: .destructive) {
                         confirmingDelete = true
                     }
@@ -88,6 +91,7 @@ struct ErgDetailView: View {
                 }
             }
         }
+        .changingKind(of: model, isRequested: $changingKind)
         .alert("Rename", isPresented: $renaming) {
             TextField("Name", text: $draftName)
             Button("Cancel", role: .cancel) {}
