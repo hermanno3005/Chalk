@@ -65,7 +65,7 @@ struct LastEntry: Equatable {
 /// Deliberately not `RelativeDateTimeFormatter`, which measures elapsed time and calls
 /// this morning's lift "8 hours ago". What matters here is which *day* you lifted on, so
 /// the difference is counted in whole days from midnight to midnight.
-private enum RelativeDay {
+enum RelativeDay {
     static func text(for date: Date, asOf now: Date) -> String {
         let calendar = Calendar.current
         let days = calendar.dateComponents(

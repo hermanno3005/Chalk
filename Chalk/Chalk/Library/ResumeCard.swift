@@ -21,7 +21,7 @@ struct ResumeCard: View {
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 8) {
                     goalSlot
-                    Text(resume.lastEntry.text())
+                    Text(resume.text())
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

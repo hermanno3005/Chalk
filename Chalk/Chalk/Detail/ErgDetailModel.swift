@@ -5,9 +5,9 @@ import SwiftData
 /// The erg detail screen's state (SPEC §13.8), beside `ExerciseDetailModel` and reached
 /// from the library model as `detail(for:)` is.
 ///
-/// **Bare for now**: the erg's name, §5.4's empty state, and the overflow's lifetime
-/// operations — Rename, *Change unit…* and Delete. The zone line, readout, hint, goal and
-/// sheets join it in later tickets.
+/// **Bare for now**: the erg's name, §5.4's empty state, the Log bar's lap-list sheet,
+/// and the overflow's lifetime operations — Rename, *Change unit…* and Delete. The zone
+/// line, readout, hint, goal and the other sheets join it in later tickets.
 @Observable
 final class ErgDetailModel {
 
@@ -24,19 +24,41 @@ final class ErgDetailModel {
     /// The gyms, shared with the library — the machine qualifier and the log sheet read
     /// the current gym through it.
     @ObservationIgnored let gyms: GymsModel
+    /// Where this device's heart-rate zones are held, handed on to the sheets that read
+    /// them live (ADR-0005).
+    @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let onLibraryChange: () -> Void
 
     init(
         erg: Exercise,
         context: ModelContext,
         gyms: GymsModel,
+        defaults: UserDefaults = .standard,
         onLibraryChange: @escaping () -> Void = {}
     ) {
         self.erg = erg
         self.context = context
         self.gyms = gyms
+        self.defaults = defaults
         self.onLibraryChange = onLibraryChange
         refresh()
+    }
+
+    /// The lap-list sheet the Log bar opens (SPEC §13.7). A write re-reads this screen
+    /// and puts the library behind it back in step, as §6.7's does.
+    ///
+    /// No machine yet: a gym-bound erg's caption and machine resolution join with its
+    /// machines, and until then its sheet cannot save (SPEC §3, invariant 4).
+    func logSheet() -> LapListModel? {
+        LapListModel(
+            erg: erg,
+            context: context,
+            gyms: gyms,
+            defaults: defaults
+        ) { [weak self] in
+            self?.refresh()
+            self?.onLibraryChange()
+        }
     }
 
     /// Whether *Change unit…* is offered: **only while the erg has no entries** (SPEC

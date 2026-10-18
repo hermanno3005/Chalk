@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The erg detail screen (SPEC §13.8) — **bare for now**: the erg's name, §5.4's empty
-/// state, and an overflow of its lifetime operations. The zone line, the readout and the
-/// Log bar join it with logging.
+/// state, the Log bar into the lap-list sheet (§13.7), and an overflow of its lifetime
+/// operations. The zone line and the readout join it with the detail screen.
 struct ErgDetailView: View {
     /// Held in `@State` for the life of the push, as `ExerciseDetailView`'s model is.
     @State var model: ErgDetailModel
@@ -12,15 +12,18 @@ struct ErgDetailView: View {
     @State private var draftName = ""
     @State private var changingUnit = false
     @State private var confirmingDelete = false
+    @State private var logging: LapListModel?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             // §5.4: no chart, no axes, no readout — short text.
-            Text("Nothing logged yet.")
-                .font(.title3.weight(.medium))
-            Text("Log a block and what you held in each zone starts here.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if model.entryCount == 0 {
+                Text("Nothing logged yet.")
+                    .font(.title3.weight(.medium))
+                Text("Log a block and what you held in each zone starts here.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
             Spacer(minLength: 0)
         }
         .padding(.horizontal)
@@ -28,6 +31,8 @@ struct ErgDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .navigationTitle(model.name)
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) { logBar }
+        .sheet(item: $logging) { LapListSheet(model: $0) }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -71,5 +76,19 @@ struct ErgDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    private var logBar: some View {
+        Button {
+            logging = model.logSheet()
+        } label: {
+            Text("Log")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .buttonStyle(.borderedProminent)
+        .padding(.horizontal)
+        .padding(.bottom, 8)
     }
 }

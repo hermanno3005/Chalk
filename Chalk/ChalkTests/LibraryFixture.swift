@@ -197,7 +197,8 @@ final class LibraryFixture {
         ErgDetailModel(
             erg: erg,
             context: context,
-            gyms: gyms ?? gymsModel()
+            gyms: gyms ?? gymsModel(),
+            defaults: defaults
         ) { library?.refresh() }
     }
 
@@ -220,6 +221,25 @@ final class LibraryFixture {
             gyms: gyms ?? gymsModel(),
             onSave: onSave
         )
+    }
+
+    /// The lap-list log sheet over this store's context, reading this fixture's zones.
+    /// `machine` is the caller's answer, as the detail screen hands it over; `onSave`
+    /// stands in for the screen behind the sheet.
+    func lapListModel(
+        for erg: Exercise,
+        on machine: Machine? = nil,
+        gyms: GymsModel? = nil,
+        onSave: @escaping () -> Void = {}
+    ) -> LapListModel {
+        LapListModel(
+            erg: erg,
+            machine: machine,
+            context: context,
+            gyms: gyms ?? gymsModel(),
+            defaults: defaults,
+            onSave: onSave
+        )!
     }
 
     /// A history sheet over this store's context, at one rep count. `onChange` stands

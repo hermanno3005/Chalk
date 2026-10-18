@@ -267,8 +267,27 @@ final class LibraryModel {
     /// `detail(for:)` is: the context stays this model's own, and a rename, a unit change
     /// or a delete over there puts the grid behind it back in step.
     func ergDetail(for erg: Exercise) -> ErgDetailModel {
-        ErgDetailModel(erg: erg, context: context, gyms: gyms) { [weak self] in
+        ErgDetailModel(erg: erg, context: context, gyms: gyms, defaults: defaults) { [weak self] in
             self?.refresh()
+        }
+    }
+
+    /// The lap-list sheet over `erg` (SPEC §13.7) — what the endurance card's **Log
+    /// again** opens, seeded from the erg's most recent valid interval, the one the card
+    /// is showing. `nil` for a lift, which has the two-stage sheet instead.
+    ///
+    /// **The machine comes from the entry being resumed**, as strength's does: *Log
+    /// again* means again on that machine.
+    func lapList(for erg: Exercise, onSave: @escaping () -> Void = {}) -> LapListModel? {
+        LapListModel(
+            erg: erg,
+            machine: LastInterval.latestEntry(in: erg.entries ?? [])?.machine,
+            context: context,
+            gyms: gyms,
+            defaults: defaults
+        ) { [weak self] in
+            self?.refresh()
+            onSave()
         }
     }
 

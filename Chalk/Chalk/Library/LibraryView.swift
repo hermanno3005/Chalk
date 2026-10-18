@@ -115,8 +115,13 @@ struct LibraryView: View {
                 }
                 .sheet(item: $loggingAgain) { request in
                     // Exactly as the detail screen opens it (SPEC §6.4): a free-weight
-                    // exercise needs nothing else from its caller.
-                    LogSheet(model: model.logSheet(for: request.exercise))
+                    // exercise needs nothing else from its caller. An erg's card opens
+                    // the lap-list grid instead (SPEC §13.7).
+                    if let lapList = model.lapList(for: request.exercise) {
+                        LapListSheet(model: lapList)
+                    } else {
+                        LogSheet(model: model.logSheet(for: request.exercise))
+                    }
                 }
                 .sheet(item: $creating) { request in
                     if request.half == .endurance {
