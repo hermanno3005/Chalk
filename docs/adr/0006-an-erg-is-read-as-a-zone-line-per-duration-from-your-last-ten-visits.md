@@ -63,3 +63,7 @@ fitted, and nothing on it is a number you have not held.
   are set; logging is not.
 - *Am I getting fitter?* is answered by the window moving, not by a trend: no history of
   the line is kept or drawn.
+- **No ghost is drawn.** [#102](https://github.com/hermanno3005/Chalk/issues/102) found no
+  sound model for the intensity that holds a zone across durations, and
+  [#98](https://github.com/hermanno3005/Chalk/issues/98) declined the one stub Chalk could
+  draw past the longest duration. Unlike strength's curve, the zone line stands alone.
