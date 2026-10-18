@@ -62,10 +62,14 @@ presented as something you have lifted.
 _Avoid_: Estimated max, projected 1RM, target
 
 **History sheet**:
-Every entry that can determine one rep-max — `reps >= n`, newest first, with the one
-currently setting the cell flagged. It mirrors the derivation rather than restating it,
-which is what makes it sufficient. The only entry point to raw history and the only place
-an entry is edited or deleted; there is no all-entries log screen.
+Every entry that can determine one derived number, newest first. In strength, one
+rep-max — `reps >= n`, with the one currently setting the cell flagged. In endurance, one
+point on a zone line — every entry at that duration, zone and incline, from all time, with
+a divider where the ten-visit window ends; nothing is flagged, because a mean has no one
+entry setting it. It mirrors the derivation rather than restating it. The only entry point
+to raw history and the only place an entry is edited or deleted; there is no all-entries
+log screen. Endurance entries longer than the chart's axis are reached from a list of
+their own instead, and entries logged before zones are set are reached once they are.
 _Avoid_: Log screen, entry list, records list
 
 ### An endurance entry
