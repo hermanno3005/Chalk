@@ -44,6 +44,11 @@ final class ErgDetailModel {
     /// selection carried over, so the screen stays where you left it (SPEC §5.2).
     private(set) var reading = ErgReading(entries: [], zones: nil, unit: nil, keeping: nil)
 
+    /// On a gym-bound erg whose machine in scope has no entries: one dimmed line quoting a
+    /// sibling machine's line, under the empty state's text (SPEC §13.8). Never part of
+    /// any line.
+    private(set) var hint: ErgMachineHint?
+
     @ObservationIgnored private let context: ModelContext
     /// The gyms, shared with the library — the machine qualifier and the log sheet read
     /// the current gym through it.
@@ -154,6 +159,10 @@ final class ErgDetailModel {
     /// The dimmed `2 entries over 20:00` caption under the line; nil without one.
     var overTheAxisCaption: String? { reading.overTheAxisCaption }
 
+    /// The text and quotes in place of the chart when the selected zone has no line here;
+    /// nil when it has one, or there is nothing to select.
+    var noLine: ErgNoLine? { ErgNoLine(reading, place: isGymBound ? "machine" : "erg") }
+
     /// Whether a zone has a line on this scope and incline. A zone without one is dimmed
     /// but still tappable.
     func hasLine(_ zone: Int) -> Bool { reading.hasLine(zone) }
@@ -255,6 +264,7 @@ final class ErgDetailModel {
             unit: unit,
             keeping: reading.selection
         )
+        hint = ErgMachineHint.lookUp(erg, scopedTo: machine, zones: reading.zones)
     }
 
     private func save() {
