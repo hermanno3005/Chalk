@@ -49,7 +49,11 @@ struct LibraryView: View {
         NavigationStack(path: $opened) {
             keyboardDismissingContent
                 .navigationDestination(for: Exercise.self) { exercise in
-                    ExerciseDetailView(model: model.detail(for: exercise))
+                    if exercise.isErg {
+                        ErgDetailView(model: model.ergDetail(for: exercise))
+                    } else {
+                        ExerciseDetailView(model: model.detail(for: exercise))
+                    }
                 }
                 // **Every route off this screen at once** — a result row, a grid tile
                 // and the resume card all push onto this path, so ending the search
@@ -64,12 +68,17 @@ struct LibraryView: View {
                     searchFocused = false
                     model.endSearch()
                 }
-                .navigationTitle("Chalk")
+                // Never drawn — the switch stands in its place — but it is what a
+                // pushed screen's back button says.
+                .navigationTitle(model.half.title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
+                    // **The switch stands where the "Chalk" title was** (SPEC §13.5), on
+                    // this screen only, so switching always lands on that half's home.
+                    ToolbarItem(placement: .principal) { halfSwitch }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("New exercise", systemImage: "plus") {
-                            creating = CreateRequest(name: "")
+                        Button(model.half == .endurance ? "New erg" : "New exercise", systemImage: "plus") {
+                            creating = CreateRequest(name: "", half: model.half)
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
@@ -100,7 +109,8 @@ struct LibraryView: View {
                                 model.search(typed)
                             }
                         ),
-                        isFocused: $searchFocused
+                        isFocused: $searchFocused,
+                        prompt: model.half == .endurance ? "Search or add an erg" : "Search or add an exercise"
                     )
                 }
                 .sheet(item: $loggingAgain) { request in
@@ -109,21 +119,14 @@ struct LibraryView: View {
                     LogSheet(model: model.logSheet(for: request.exercise))
                 }
                 .sheet(item: $creating) { request in
-                    CreateExerciseSheet(
-                        seedName: request.name,
-                        gyms: model.gyms,
-                        groups: model.groups
-                    ) { name, kind, group, gym, manufacturer in
-                        // Creating leaves you on the grid with the new tile on it — under
-                        // the group that was picked (§7.3) — and the detail screen is a
-                        // tap away with nothing on it yet.
-                        model.create(
-                            name: name,
-                            kind: kind,
-                            group: group,
-                            gym: gym,
-                            manufacturer: manufacturer
-                        )
+                    if request.half == .endurance {
+                        // Creating leaves you on the grid with the new tile on it, as a
+                        // lift does — no machine yet: the first log resolves it (§13.6).
+                        CreateErgSheet(seedName: request.name, groups: model.groups) { draft in
+                            model.create(draft)
+                        }
+                    } else {
+                        createExerciseSheet(request)
                     }
                 }
                 .sheet(isPresented: $editingGroups) {
@@ -146,6 +149,42 @@ struct LibraryView: View {
                     // the gym, so that is where you now are.
                     NewGymSheet(gyms: model.gyms) { model.gyms.select($0) }
                 }
+        }
+    }
+
+    /// The `Strength | Endurance` control (SPEC §13.5). Leaving a half leaves its modes
+    /// too: Arrange and a half-typed search belong to the half they were started on.
+    private var halfSwitch: some View {
+        Picker("Half", selection: Binding(
+            get: { model.half },
+            set: { half in
+                arranging = false
+                searchFocused = false
+                model.show(half)
+            }
+        )) {
+            ForEach(Half.allCases, id: \.self) { Text($0.title).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .frame(width: 220)
+    }
+
+    private func createExerciseSheet(_ request: CreateRequest) -> some View {
+        CreateExerciseSheet(
+            seedName: request.name,
+            gyms: model.gyms,
+            groups: model.groups
+        ) { name, kind, group, gym, manufacturer in
+            // Creating leaves you on the grid with the new tile on it — under the group
+            // that was picked (§7.3) — and the detail screen is a tap away with nothing
+            // on it yet.
+            model.create(
+                name: name,
+                kind: kind,
+                group: group,
+                gym: gym,
+                manufacturer: manufacturer
+            )
         }
     }
 
@@ -199,7 +238,7 @@ struct LibraryView: View {
     private var content: some View {
         switch model.content {
         case .empty:
-            EmptyLibraryView { creating = CreateRequest(name: "") }
+            EmptyLibraryView(half: model.half) { creating = CreateRequest(name: "", half: model.half) }
         case .grid(let sections):
             grid(sections)
         case .searching(let matches, let createSuggestion):
@@ -317,7 +356,7 @@ struct LibraryView: View {
             }
             if let createSuggestion {
                 Button {
-                    creating = CreateRequest(name: createSuggestion)
+                    creating = CreateRequest(name: createSuggestion, half: model.half)
                 } label: {
                     Label("Create “\(createSuggestion)”", systemImage: "plus.circle.fill")
                         .font(.body.weight(.medium))
@@ -341,6 +380,19 @@ private struct LoggingRequest: Identifiable {
 private struct CreateRequest: Identifiable {
     let id = UUID()
     let name: String
+    /// The half it was opened on, which decides the sheet: an exercise or an erg. Held
+    /// rather than read at presentation, as the name is.
+    let half: Half
+}
+
+private extension Half {
+    /// The half's name, on the switch and on a pushed screen's back button.
+    var title: String {
+        switch self {
+        case .strength: "Strength"
+        case .endurance: "Endurance"
+        }
+    }
 }
 
 #Preview("Empty") {
