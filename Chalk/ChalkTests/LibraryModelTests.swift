@@ -25,7 +25,7 @@ struct LibraryModelTests {
         let fixture = try LibraryFixture()
         let model = fixture.libraryModel()
 
-        #expect(try fixture.allGroups().count == 5)
+        #expect(try fixture.allGroups(.strength).count == 5)
         #expect(model.content.drawn == "empty")
     }
 
