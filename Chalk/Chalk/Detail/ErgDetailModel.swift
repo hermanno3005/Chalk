@@ -5,9 +5,10 @@ import SwiftData
 /// The erg detail screen's state (SPEC §13.8), beside `ExerciseDetailModel` and reached
 /// from the library model as `detail(for:)` is.
 ///
-/// **Bare for now**: the erg's name, §5.4's empty state, the Log bar's lap-list sheet,
-/// and the overflow's lifetime operations — Rename, *Change unit…* and Delete. The zone
-/// line, readout, hint, goal and the other sheets join it in later tickets.
+/// **Bare for now**: the erg's name, the machine qualifier on a gym-bound erg, §5.4's
+/// empty state, the Log bar's lap-list sheet, and the overflow's lifetime operations —
+/// Rename, *Change unit…* and Delete. The zone line, readout, hint, goal and the other
+/// sheets join it in later tickets.
 @Observable
 final class ErgDetailModel {
 
@@ -19,6 +20,22 @@ final class ErgDetailModel {
     private(set) var name = ""
     private(set) var unit: ErgUnit?
     private(set) var entryCount = 0
+
+    /// Whether this erg's numbers are kept per machine. **The qualifier exists only
+    /// where they are** — a transferable erg shows no qualifier at all, not a disabled
+    /// one and not a placeholder (SPEC §5.3, §13.8).
+    private(set) var isGymBound = false
+
+    /// The machine the screen is scoped to, and every machine it could be scoped to —
+    /// both empty on a transferable erg. `machine` is `nil` for a gym-bound erg with no
+    /// machines yet, until the first block makes one.
+    private(set) var machine: Machine?
+    private(set) var machines: [Machine] = []
+
+    /// The qualifier's rows: every machine for this erg, flat, sectioned by gym — the
+    /// app's one machine menu (SPEC §5.3). Built on refresh rather than behind `var
+    /// body`.
+    private(set) var machineMenu = MachineMenu(machines: [])
 
     @ObservationIgnored private let context: ModelContext
     /// The gyms, shared with the library — the machine qualifier and the log sheet read
@@ -44,14 +61,17 @@ final class ErgDetailModel {
         refresh()
     }
 
-    /// The lap-list sheet the Log bar opens (SPEC §13.7). A write re-reads this screen
-    /// and puts the library behind it back in step, as §6.7's does.
+    /// The lap-list sheet the Log bar opens (SPEC §13.7), **handed the qualifier's
+    /// machine** — the sheet never resolves one itself (§6.4). A write re-reads this
+    /// screen and puts the library behind it back in step, as §6.7's does.
     ///
-    /// No machine yet: a gym-bound erg's caption and machine resolution join with its
-    /// machines, and until then its sheet cannot save (SPEC §3, invariant 4).
+    /// A gym-bound erg with no machine yet still opens it: the caption reads
+    /// `No machine`, its `New machine here` is where the hole is closed, and Save waits
+    /// until it is (SPEC §3, invariant 4).
     func logSheet() -> LapListModel? {
         LapListModel(
             erg: erg,
+            machine: machine,
             context: context,
             gyms: gyms,
             defaults: defaults
@@ -96,6 +116,14 @@ final class ErgDetailModel {
         return true
     }
 
+    /// Re-scopes the screen to another machine (SPEC §5.3). Nothing is cached, so this
+    /// is a re-read and not an invalidation.
+    func select(_ machine: Machine) {
+        guard isGymBound, machine.exercise?.id == erg.id else { return }
+        self.machine = machine
+        refresh()
+    }
+
     /// Cosmetic; identity is the UUID (SPEC §5.5). A blank name is not a rename.
     func rename(to newName: String) {
         let newName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -127,6 +155,22 @@ final class ErgDetailModel {
             ids.formUnion((machine.entries ?? []).map(\.persistentModelID))
         }
         entryCount = ids.count
+
+        // The qualifier, resolved as a gym-bound exercise's is (SPEC §5.3, unchanged):
+        // the screen stays on the machine you switched to, and otherwise opens on the
+        // current gym's — or, where it holds none, the one most recently logged on.
+        isGymBound = erg.isGymBound
+        if isGymBound {
+            machines = MachineScope.byRecency(erg.machines ?? [])
+            if machine == nil || !machines.contains(where: { $0 === machine }) {
+                machine = MachineScope.opening(machines: machines, currentGym: gyms.currentGym)
+            }
+            machineMenu = MachineMenu(machines: machines, currentGym: gyms.currentGym)
+        } else {
+            machine = nil
+            machines = []
+            machineMenu = MachineMenu(machines: [])
+        }
     }
 
     private func save() {

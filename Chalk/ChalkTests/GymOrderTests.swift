@@ -70,4 +70,33 @@ struct GymOrderTests {
 
         #expect(GymOrder.byRecency([zeroed, real]).map(\.name) == ["Fitness X", "Ghost Gym"])
     }
+
+    // MARK: - Endurance (SPEC §13.12)
+
+    @Test("A gym you visit only for endurance outranks an older strength-only gym")
+    func aGymVisitedForEnduranceDoesNotSink() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let treadmill = fixture.erg("Treadmill")
+        let liftsOnly = fixture.gym("Fitness X")
+        let ergsOnly = fixture.gym("Urban Gym")
+        fixture.log(fixture.machine(for: legPress, at: liftsOnly), reps: 5, weight: 60, on: .days(ago: 10))
+        fixture.interval(treadmill, machine: fixture.machine(for: treadmill, at: ergsOnly), on: .days(ago: 2))
+
+        #expect(GymOrder.byRecency([liftsOnly, ergsOnly]).map(\.name) == ["Urban Gym", "Fitness X"])
+    }
+
+    @Test("An interval that is not valid does not float a gym")
+    func recencyCountsValidIntervalsOnly() throws {
+        let fixture = try LibraryFixture()
+        let legPress = fixture.exercise("Leg Press", kind: .gymBound)
+        let treadmill = fixture.erg("Treadmill")
+        let liftsOnly = fixture.gym("Fitness X")
+        let ergsOnly = fixture.gym("Urban Gym")
+        fixture.log(fixture.machine(for: legPress, at: liftsOnly), reps: 5, weight: 60, on: .days(ago: 10))
+        // No average heart rate: not a valid interval, so not something you did.
+        fixture.interval(treadmill, machine: fixture.machine(for: treadmill, at: ergsOnly), average: 0, on: .days(ago: 2))
+
+        #expect(GymOrder.byRecency([liftsOnly, ergsOnly]).map(\.name) == ["Fitness X", "Urban Gym"])
+    }
 }
