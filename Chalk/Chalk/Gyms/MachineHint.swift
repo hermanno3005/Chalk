@@ -82,15 +82,20 @@ struct MachineHint: Equatable {
         // A machine with a lift on it speaks for itself.
         guard !entries.contains(where: \.isALift) else { return nil }
 
-        let siblings = (exercise.machines ?? []).filter { $0 !== machine }
-        // Most recently logged first — the app's one recency rule, over machines
-        // (SPEC §5.3) — so the sibling is `max(by:)` over `Entry.date` and ties settle
-        // by name rather than by whatever order the store handed them back in. A sibling
-        // nobody has logged on has no `best[5]` either, so it falls out below.
-        guard let sibling = MachineScope.byRecency(siblings).first,
+        // A sibling nobody has logged on has no `best[5]` either, so it falls out below.
+        guard let sibling = sibling(of: exercise, scopedTo: machine),
               let best = RepMaxCurve.best(atLeast: reps, in: sibling.entries ?? [])
         else { return nil }
 
         return MachineHint(weight: best, machineName: sibling.name)
+    }
+
+    /// The machine a hint quotes from: **the most recently used** of the exercise's other
+    /// machines — `max(by:)` over `Entry.date`, the app's one recency rule over machines
+    /// (SPEC §5.3), ties settled by name rather than by whatever order the store handed
+    /// them back in. Nothing ranks siblings beyond that, on either half; an erg's hint
+    /// puts the same model at another gym ahead of it and otherwise defers here (§13.8).
+    static func sibling(of exercise: Exercise, scopedTo machine: Machine?) -> Machine? {
+        MachineScope.byRecency((exercise.machines ?? []).filter { $0 !== machine }).first
     }
 }

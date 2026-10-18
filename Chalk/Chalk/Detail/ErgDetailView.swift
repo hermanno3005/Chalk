@@ -30,6 +30,8 @@ struct ErgDetailView: View {
                 if let readout = model.readout {
                     // The `›` is inert until the point's sheet exists (SPEC §13.9).
                     readoutView(readout)
+                } else if let noLine = model.noLine {
+                    ErgNoLineView(noLine: noLine)
                 }
                 if let points = model.reading.line?.points, !points.isEmpty {
                     ZoneLineChart(
@@ -139,7 +141,8 @@ struct ErgDetailView: View {
         .disabled(model.machineMenu.isEmpty)
     }
 
-    /// §5.4: nothing logged on the scope — no chart, no axes, no readout, short text.
+    /// §5.4: nothing logged on the scope — no chart, no axes, no readout, short text, and
+    /// on a gym-bound erg's new machine the hint under it.
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
@@ -147,6 +150,13 @@ struct ErgDetailView: View {
             Text("Log a block and what you held in each zone starts here.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+            // Another machine's numbers, as text and dimmed: never part of any line.
+            if let hint = model.hint {
+                Text(hint.emptyStateLine)
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 4)
+            }
         }
         .padding(.top, 8)
     }
