@@ -9,9 +9,10 @@ Read `CONTEXT.md` first: it is the glossary, and this document uses its words ex
 **free-weight**, **gym-bound**, **Group**, **Ungrouped**, **Gym**, **Machine**, **Merge**,
 **current gym**,
 **Archived**, **Hint**, **Scope**, **Goal**, **Reached**, **Gap**, **Setting a goal**,
-**Clearing a goal**, **Goal sheet**). Read `docs/adr/0001` and `docs/adr/0002` before touching
-persistence or the derivation — they record the two decisions most likely to be "helpfully"
-undone. Read `docs/adr/0004` before touching how a goal is stored.
+**Clearing a goal**, **Goal sheet**, and endurance's words, listed in §13). Read `docs/adr/0001`
+and `docs/adr/0002` before touching persistence or the derivation — they record the two decisions
+most likely to be "helpfully" undone. Read `docs/adr/0004` before touching how a goal is stored,
+and `docs/adr/0005` to `0008` before touching endurance (§13).
 
 Build it in the order of §10. Where this document says **must**, it is closing a hole an
 implementer would otherwise fill by invention.
@@ -20,9 +21,11 @@ implementer would otherwise fill by invention.
 
 ## 1. What Chalk is
 
-A personal strength-record tracker for iOS. You keep a library of the exercises you actually
-do, log what you lifted as plain `reps × weight` **entries**, and the app tells you what to
-load at the rack.
+A personal training-record tracker for iOS, in two halves. In **strength** you keep a library of
+the exercises you actually do, log what you lifted as plain `reps × weight` **entries**, and the
+app tells you what to load at the rack. In **endurance** (§13) you keep a library of the indoor
+ergs you train on, log each interval with the heart rate it cost you, and the app tells you what
+to set on the machine.
 
 It is **not** a workout logger. There are no sessions, no sets, no routines, no rest timers.
 The unit of record is one entry. Every "best" number is derived at read time and never stored.
@@ -73,14 +76,18 @@ with it.
 
 ### Durability
 
-v1 ships **no export and no import** — no Settings screen, no share sheet, no file writer
-([#17](https://github.com/hermanno3005/Chalk/issues/17)). Sync-later is the whole durability
-story; entries are re-derivable by lifting again, and what the app is worth is the derivation.
+Chalk ships **no export and no import** — no share sheet, no file writer
+([#17](https://github.com/hermanno3005/Chalk/issues/17)). **Settings** (§13.3) holds heart-rate
+zones and nothing about durability: no export row, no import row
+([ADR-0005](docs/adr/0005-heart-rate-zones-are-five-typed-boundaries-on-a-settings-screen.md)).
+Sync-later is the whole durability story; entries are re-derivable by training again, and what
+the app is worth is the derivation.
 
 The escape hatch is **Xcode's Download Container** (Devices & Simulators → Installed Apps),
 used **on demand** — deliberately not pinned to the weekly ritual. This makes the store's
 readability load-bearing: **no encrypted store, and no opaque `Transformable` attributes.**
-Pull a container before doing anything irreversible (see the merge in §7.5).
+Pull a container before doing anything irreversible (see the merge in §7.5). The container
+carries the heart-rate zones too: they live beside the store, not in it (§13.3).
 
 ---
 
@@ -88,9 +95,12 @@ Pull a container before doing anything irreversible (see the merge in §7.5).
 
 From [#9](https://github.com/hermanno3005/Chalk/issues/9), amended by
 [#14](https://github.com/hermanno3005/Chalk/issues/14) and, for the goal fields,
-[#66](https://github.com/hermanno3005/Chalk/issues/66). Governed by ADR-0001 and ADR-0004.
+[#66](https://github.com/hermanno3005/Chalk/issues/66), and for endurance by
+[#100](https://github.com/hermanno3005/Chalk/issues/100). Governed by ADR-0001, ADR-0004 and
+ADR-0008.
 
-Five entities. Every attribute optional or defaulted; every relationship optional with an
+Five entities. **Endurance adds fifteen attributes to them at schema `3.0.0`, and nothing else**
+— no entity, relationship or delete rule (§13.1). The code below is strength's shape. Every attribute optional or defaulted; every relationship optional with an
 explicit inverse; no `.unique`; no `.deny`. **These are CloudKit-mirroring rules obeyed under a
 local-only store — they are not sloppiness, and tightening them breaks sync on the day it is
 switched on.** See ADR-0001 before changing anything here.
@@ -189,9 +199,17 @@ an implementer invents behaviour.
 7. **Gyms and groups are held explicitly on the store, never derived from the machines or
    exercises that happen to exist.** A newly created empty gym or group must survive the sheet
    closing. (The library prototype hit this bug for real.)
-8. **Goal fields are nil on an `Exercise` while it is gym-bound.** A gym-bound exercise's goals
-   live on its machines, one per machine; the kind change moves them (§8). A partly filled set
-   of three is **no goal**, and nothing reads the raw fields except through `Goal` (§12.2).
+8. **Goal fields — either half's — are nil on an `Exercise` while it is gym-bound.** A gym-bound
+   exercise's or erg's goals live on its machines, one per machine; the kind change moves them
+   (§8, §13.11). A partly filled set is **no goal**, and nothing reads the raw fields except
+   through `GoalScope`, into `Goal` (§12.2) or `EnduranceGoal` (§13.10).
+9. **An erg's `unit` is set at create, never cleared, and changed only while the erg has no
+   entries.** A lift's `unit` is always nil; that is what makes it a lift (§13.1, §13.6).
+10. **An exercise or erg sits only in a group of its own half.** An erg never sits in *Push*, a
+    lift never in *Bikes* (§13.5).
+11. **A row's goal fields are its own half's.** A lift's exercise or machine holds only
+    `goalReps` and `goalWeight`, an erg's only the four endurance fields; `goalSetAt` is shared.
+    `GoalScope.clear()` nils all seven (§13.1).
 
 ### Storage details
 
@@ -239,6 +257,9 @@ asserts every row survives with nil goal fields. The fixture is a real file, not
 copy of the old `@Model` classes: two classes with one entity name in the same test process
 collide in SwiftData while suites run in parallel. The round-trip test covers the goal fields on both `Exercise` and `Machine`. Download
 the container (§2) before the first launch of that build on the phone.
+
+**Endurance bumps it to `3.0.0` the same way**, in place and with no stage, tested against a
+real `Chalk-2.0.0.store` (§13.1).
 
 **If the container fails to open**, present a plain full-screen message naming the store path
 and stop. Do **not** delete or recreate the store, and do not retry in a loop: deleting is the
@@ -614,8 +635,11 @@ rather than from your most recent one, presented as an edit. **No new sheet is d
   §5.6 load-bearing rather than optional.
 - 0 kg is displayable but **not savable**.
 - **After saving, the sheet closes**, the detail screen flashes a brief confirmation, and the
-  curve updates behind it. The sheet never stays open to log again — sessions are not modelled,
-  so there is no run of entries to batch.
+  curve updates behind it. The sheet never stays open to log again. **In strength there is no run
+  of entries to batch**: an entry is typed at the rack, one lift at a time, and sessions are not
+  modelled. **This holds for strength only.** An endurance block is typed afterwards from the
+  watch's lap list, which is a run, so endurance's sheet takes the whole block as a grid — and
+  still writes one entry per row, with nothing wrapping them (§13.7).
 
 ---
 
@@ -628,6 +652,12 @@ from [#14](https://github.com/hermanno3005/Chalk/issues/14) and
 
 The root of the `NavigationStack`. **A sectioned tile grid under a resume card, with search
 pinned in thumb reach.**
+
+**There is no "Chalk" title. A `Strength | Endurance` segmented control takes its place**
+([#96](https://github.com/hermanno3005/Chalk/issues/96)): sticky across launches, Strength on
+first launch, and on the home screen only. Each half has its own home screen. This section is the
+strength half's; endurance's is the same screen over ergs (§13.5). The Gym menu, `Manage gyms…`
+and a `Settings…` row (§13.3) sit in both halves' overflow.
 
 ### 7.1 Layout
 
@@ -748,15 +778,23 @@ archive the husk. **There is no gym merge.**
 - **swipe** to archive
 - **full-swipe** to delete a gym with no machines
 - **archived gyms** in a section at the bottom
-- **tap through a gym** to its machines, where each machine row offers §7.5's two verbs
+- **tap through a gym** to its machines, in Strength and Endurance sections (§13.11), where each
+  machine row offers §7.5's three verbs
 
 **Log-time menus stay pure pickers — they resolve, they never administer.** Nothing destructive
 belongs one slip away from the two-tap log path. This is why the destructive verbs are not
 long-presses in the picker.
 
-### 7.5 Machine repair: `Move to another gym…` and `Merge into…`
+### 7.5 Machine repair: `Rename…`, `Move to another gym…` and `Merge into…`
 
-Both live on a machine row inside `Manage gyms…` → gym → machine, and **nowhere else**.
+All three live on a machine row inside `Manage gyms…` → gym → machine, in both halves, and
+**nowhere else**.
+
+**`Rename…`** ([#101](https://github.com/hermanno3005/Chalk/issues/101)) edits the machine's
+label without merging. It is cosmetic, as a gym's rename is: identity is `Machine.id`, so nothing
+derived moves. **A blank name leaves the label unchanged.** On an erg's machine the label is its
+model, so renaming runs the erg near-name check, and a same-gym match offers `Merge into…` that
+sibling (§13.11).
 
 **`Move to another gym…`** repoints `machine.gym`. It fixes the commoner mistake — filing a
 machine under the wrong gym — and is half the duplicate-gym repair. **Its goal rides along
@@ -767,10 +805,15 @@ untouched**: the goal is three fields on the machine, and Move never pools two m
 entries on the unlabelled default machine, then a month later you notice the stack says *Hammer
 Strength* and create a machine for it. Same physical machine, two curves, and the number you
 trust has silently halved. **No creation-time warning can catch that** — which is why, unlike
-gyms, **machine creation gets no near-name warning.**
+gyms, **strength machine creation gets no near-name warning.**
 
-- **Targets are same-gym, same-exercise siblings only** — exactly the sibling set the hints draw
-  from. Merging across gyms is incoherent by construction.
+**Erg machines do get one**, for a different reason: an erg's label is its model, and the hint
+prefers the same model at another gym by label, so model spellings must converge across gyms. It
+runs on create, `Rename…` and Move, warns and never blocks (§13.11). It does not catch late
+relabelling either; Merge still does.
+
+- **Targets are same-gym siblings of the same exercise or erg only** — exactly the sibling set
+  the hints draw from. Merging across gyms is incoherent by construction.
 - **When the sibling set is empty, `Merge into…` is absent from the row — not disabled, not
   greyed.** A dead verb on a rare admin screen is a puzzle.
 - **One destructive confirmation, phrased as the outcome and carrying counts:**
@@ -841,6 +884,7 @@ irreversible.
 | Value on one entry | Edit it in the history sheet (§5.6, §6.6) |
 | Machine on one entry | Edit it in the history sheet (§6.6) |
 | Machine on **all** an entry set's entries | `Merge into…` (§7.5) |
+| Label of a machine | `Rename…` (§7.5) |
 | Gym of a machine | `Move to another gym…` (§7.5) |
 | Kind of an exercise | Change kind (§8) |
 | Gym you no longer visit | Archive (§7.4) |
@@ -895,22 +939,45 @@ unfixable without deleting the exercise and losing its history.
 
 ```
 NavigationStack
-└── Library (§7)                       root
-    ├── search field (pinned)          filters in place; "Create it" as last result
-    ├── resume card
-    │   ├── Log again        → Log sheet (§6)             sheet
-    │   └── card body        → Exercise detail            push
-    ├── tile                 → Exercise detail            push
-    ├── + / "Create it"      → Create exercise (§7.3)     sheet
-    └── overflow
-        ├── Arrange                                       in-place mode, exit via Done
-        ├── Edit groups (§7.2)                            sheet
-        └── Gym ▸
-            ├── current-gym picker (§7.4)                 menu
-            └── Manage gyms… (§7.4)                       sheet
-                └── gym → machines
-                    ├── Move to another gym… (§7.5)
-                    └── Merge into…          (§7.5)       confirmation alert
+└── Home (§7, §13.5)                   root; one per half
+    ├── Strength | Endurance           segmented control in the title; sticky; switches in place
+    │
+    ├── Strength half = Library (§7)
+    │   ├── search field (pinned)      filters in place; "Create it" as last result
+    │   ├── resume card
+    │   │   ├── Log again    → Log sheet (§6)             sheet
+    │   │   └── card body    → Exercise detail            push
+    │   ├── tile             → Exercise detail            push
+    │   ├── + / "Create it"  → Create exercise (§7.3)     sheet
+    │   └── overflow
+    │       ├── Arrange                                   in-place mode, exit via Done
+    │       ├── Edit groups (§7.2)                        sheet, strength groups
+    │       ├── Gym ▸                                     shared (below)
+    │       └── Settings… (§13.3)                         shared (below)
+    │
+    ├── Endurance half = Erg library (§13.5)
+    │   ├── search field (pinned)      "Search or add an erg"; "Create it" as last result
+    │   ├── resume card
+    │   │   ├── Log again    → Lap-list sheet (§13.7)     sheet
+    │   │   └── card body    → Erg detail                 push
+    │   ├── tile             → Erg detail                 push
+    │   ├── + / "Create it" / Add your first erg
+    │   │                    → Create erg (§13.6)         sheet
+    │   └── overflow
+    │       ├── Arrange                                   in-place mode, exit via Done
+    │       ├── Edit groups (§7.2)                        sheet, endurance groups
+    │       ├── Gym ▸                                     shared (below)
+    │       └── Settings… (§13.3)                         shared (below)
+    │
+    └── shared by both overflows
+        ├── Gym ▸
+        │   ├── current-gym picker (§7.4)                 menu
+        │   └── Manage gyms… (§7.4)                       sheet
+        │       └── gym → machines, Strength and Endurance sections (§13.11)
+        │           ├── Rename… (§7.5)                    erg: near-name check, may offer Merge into
+        │           ├── Move to another gym… (§7.5)       erg: may ask Merge · Move anyway · Cancel
+        │           └── Merge into…          (§7.5)       confirmation alert
+        └── Settings… (§13.3)                             sheet; heart-rate zones only
 
 Exercise detail (§5)
 ├── machine qualifier (gym-bound only)  → machine menu (§5.3)     menu
@@ -928,6 +995,37 @@ Log sheet (§6)                          stage 1 reps ⇄ stage 2 weight
 Goal sheet (§12.3)                      stage 1 reps ⇄ stage 2 weight
 ├── Set goal                            → closes
 └── Clear goal (only with a goal)       → closes, no confirmation
+
+Erg detail (§13.8)
+├── machine qualifier (gym-bound only)  → machine menu (§5.3)     menu
+├── zone buttons Z1–Z5                                            in place
+├── incline menu (speed only)                                     menu
+├── overflow → Rename / Change unit… (no entries only) / Change kind (§13.11) /
+│              Set a goal… (zones set) / Delete erg
+│   ├── Set a goal… / Change goal…      → Endurance goal sheet (§13.10)   sheet
+│   └── Change unit…                    → unit choice; names a goal it clears
+├── Set your heart-rate zones (no zones)→ Settings (§13.3)
+├── readout `N entries ›`               → Point sheet (§13.9)     sheet
+│   ├── row tap                         → Lap-list sheet, edit mode       sheet
+│   └── swipe                           → Delete (full-swipe off)
+├── `N entries over 20:00 ›`            → Over-20:00 list (§13.9) sheet
+│   ├── row tap                         → Lap-list sheet, edit mode       sheet
+│   └── swipe                           → Delete (full-swipe off)
+├── goal line (no ›)                    → Endurance goal sheet    sheet
+└── Log bar                             → Lap-list sheet (§13.7)  sheet
+
+Lap-list sheet (§13.7)                  one row per entry; keypad always up
+├── caption line (gym-bound only)       → machine menu + New machine here / New gym…
+├── Next / New row
+├── row minus (not on the last row)     → removes the row
+└── Cancel (once touched)               → Discard N entries? / Discard changes?
+
+Endurance goal sheet (§13.10)           zone · duration · incline (speed only) · intensity
+├── Set goal                            → closes
+└── Clear goal (only with a goal)       → closes, no confirmation
+
+Settings (§13.3)                        Z2–Z5 lower bounds
+└── Save (all four valid)               → closes
 ```
 
 **Every screen state to build**, so none is invented at the keyboard:
@@ -945,6 +1043,20 @@ Goal sheet (§12.3)                      stage 1 reps ⇄ stage 2 weight
 | Manage gyms | no gyms · gyms · archived section · gym with no machines (delete available) · machine with no sibling (no *Merge into…*) |
 | Merge confirmation | the four goal rows of §7.5 · loser with zero entries, its goal moving · loser with zero entries, nothing moving |
 | Kind-change confirmation | entries on several machines · plus the lost-goal clause · zero entries, clause alone |
+| Home | Strength · Endurance (each half above its own library) |
+| Erg library | empty (no ergs; seeded groups hidden) · normal · searching, with results · searching, no match (*Create it*) · Arrange mode |
+| Endurance resume card | absent (nothing logged) · no goal · goal, partial ring · goal reached (full grey ring) |
+| Create erg | no unit (Save disabled) · unit chosen · gym-bound (default) · transferable |
+| Settings | zones not set · incomplete or invalid (Save disabled) · set (edit only) |
+| Erg detail | zones not set (*Set your heart-rate zones*) · nothing logged on the scope, bare text · nothing logged, gym-bound with hint · normal · zone with no line (text, up to two quotes) · zone with only entries over 20:00 (text and caption) · over-20:00 caption · gym-bound with no machine yet (no *Set a goal…*) · *Change unit…* present (no entries) |
+| Endurance goal line | absent (no goal) · gap · reached (grey) · `not held yet` |
+| Lap-list sheet | first-ever block (blank) · seeded · several rows · zone line blank (no zones) · peak below average (red cells) · *Save N* disabled · gym-bound caption · Cancel confirmation · edit mode (one row, date in title, plain *Save*) |
+| Point sheet | window only · with divider · emptied (open and empty) |
+| Over-20:00 list | populated |
+| Endurance goal sheet | live line: above · already reached (grey) · not held yet · *Set goal* disabled · *Clear goal* present |
+| Manage gyms → gym | Strength section · Endurance section · empty section hidden |
+| Erg near-name check | other-gym match warns · same-gym match picks on create · same-gym match offers *Merge into* on rename · Move onto a gym with a match (Merge · Move anyway · Cancel) |
+| Unit change | no goal · goal cleared, named |
 
 There is no error state beyond §3's container failure. There is no network, so there is nothing
 to fail.
@@ -979,6 +1091,42 @@ Goals ([#72](https://github.com/hermanno3005/Chalk/issues/72)) build on top, in 
 14. **The resume card's donut** (§7.1).
 15. **Goals under kind change and merge** (§8, §7.5).
 
+Endurance ([#107](https://github.com/hermanno3005/Chalk/issues/107)) builds on top, once its docs
+are on `main` ([#122](https://github.com/hermanno3005/Chalk/issues/122)), in this order:
+
+16. **Storage** (§13.1) — schema `3.0.0` and its migration test against a `Chalk-2.0.0.store`
+    captured **before any model file changes**, the valid-interval check
+    ([#108](https://github.com/hermanno3005/Chalk/issues/108)).
+17. **The two halves and the erg library** (§13.5–13.6) — the segmented control, half-scoped
+    library, per-half group seed, empty state, create-erg sheet, the unit lock, a bare erg
+    detail ([#109](https://github.com/hermanno3005/Chalk/issues/109)).
+18. **Settings and `HeartRateZones`** (§13.3), with unit tests against an injected
+    `UserDefaults` suite ([#110](https://github.com/hermanno3005/Chalk/issues/110)).
+19. **The lap-list sheet on a transferable erg** (§13.7), and the written form on tiles and the
+    resume card (§13.2) ([#111](https://github.com/hermanno3005/Chalk/issues/111)).
+20. **Gym-bound ergs and recency** (§13.7, §13.12) — the machine caption, the qualifier, the
+    once-per-Save un-archive, intervals in gym recency
+    ([#112](https://github.com/hermanno3005/Chalk/issues/112)). **Endurance is now useful for
+    logging.**
+21. **`ZoneLine`** (§13.4) with unit tests, no `ModelContainer`
+    ([#113](https://github.com/hermanno3005/Chalk/issues/113)).
+22. **Erg detail** (§13.8) — zone buttons, incline menu, readout, zone line, the zones gate, the
+    over-20:00 caption ([#114](https://github.com/hermanno3005/Chalk/issues/114)). **Endurance is
+    now useful at the machine.**
+23. **Zones with no line, and the hint** (§13.8)
+    ([#115](https://github.com/hermanno3005/Chalk/issues/115)).
+24. **History, edit and delete** (§13.9, §13.7's edit mode)
+    ([#116](https://github.com/hermanno3005/Chalk/issues/116)).
+25. **Machine repairs** (§7.5, §13.11) — Manage gyms' sections, `Rename…`, the erg near-name
+    check, Merge and Move on ergs ([#117](https://github.com/hermanno3005/Chalk/issues/117)).
+26. **Change kind on ergs** (§13.11) ([#118](https://github.com/hermanno3005/Chalk/issues/118)).
+27. **Endurance goals** (§13.10) — `EnduranceGoal` with unit tests, the goal sheet, the goal line,
+    the unit change clearing a goal ([#119](https://github.com/hermanno3005/Chalk/issues/119)).
+28. **The endurance resume card's ring** (§13.5)
+    ([#120](https://github.com/hermanno3005/Chalk/issues/120)).
+29. **Endurance goals under merge and kind change** (§13.11)
+    ([#121](https://github.com/hermanno3005/Chalk/issues/121)).
+
 ---
 
 ## 11. Out of scope
@@ -990,13 +1138,17 @@ Carried from the map's Out of scope. These are **decided**, not deferred by acci
 - **iCloud sync.** Gated behind a paid Apple Developer Program membership. The schema is built to
   CloudKit's rules so sync becomes a capability change plus one line — shipping it is not part of
   v1. See ADR-0001, including the one unverified claim it rests on.
-- **Export and import.** No Settings screen, no share sheet, no file writer (§2).
+- **Export and import.** No share sheet, no file writer, and no export or import row on
+  Settings (§2, §13.3).
 - **Apple Watch app.**
 - **Workout and program planning** — routines, planned sessions, rest timers. Sessions are not
   part of this domain model at all.
-- **Body metrics and cardio** — bodyweight, measurements, runs.
+- **Outdoor cardio, body metrics and measurements** — GPS runs and rides, bodyweight,
+  measurements. Indoor ergs are endurance (§13); outdoor cardio has no machine to calibrate.
 - **Sharing, social, multi-user.** No backend of any kind.
-- **Pounds, and any unit setting** (§3, §6.2).
+- **Pounds, and any unit setting** (§3, §6.2, §13.2). Settings holds heart-rate zones only
+  (§13.3); each further setting is its own decision, never a row added in passing. An erg's unit
+  is chosen per erg at create, not set app-wide, and Chalk converts nothing between units.
 - **A trend over time** — no "5RM this year" chart anywhere ([#16](https://github.com/hermanno3005/Chalk/issues/16)).
   Backfill makes such a chart a guaranteed-rising staircase, and the dated history sheet already
   answers "when".
@@ -1136,7 +1288,644 @@ Beyond §11's two:
   `Set a goal…` (§5.5). Decided in [#72](https://github.com/hermanno3005/Chalk/issues/72) rather
   than in a ticket; reopen it if that turns out to matter.
 
-## 13. Still open
+## 13. Endurance
+
+From [#107](https://github.com/hermanno3005/Chalk/issues/107), built from the map
+[#88](https://github.com/hermanno3005/Chalk/issues/88) and its eighteen resolved tickets. Governed
+by ADR-0005 (zones), ADR-0006 (the zone line), ADR-0007 (the endurance goal) and ADR-0008
+(storage); **where this section and an ADR disagree, the ADR wins.** Prototypes:
+[`docs/prototypes/endurance-home/`](docs/prototypes/endurance-home/README.md),
+[`docs/prototypes/endurance-log/`](docs/prototypes/endurance-log/README.md) and
+[`docs/prototypes/endurance-detail/`](docs/prototypes/endurance-detail/README.md). Their
+screenshots are the reference for layout and copy.
+
+Chalk's second half. Strength answers *what do I load at the rack*; endurance answers **what do
+I set on this machine to hit this effort** — Z4 for six minutes on this treadmill. You keep a
+library of **ergs**, type the watch's lap list into a grid after a block, and the erg's detail
+screen reads back, per **heart-rate zone**, the **intensity** you held at each duration over your
+last ten **visits**. The motivating fact is that the same treadmill speed costs a very different
+heart rate from one gym to the next, so the job is **calibrating a machine against your heart
+rate**, not logging workouts. §1's *no sessions, no sets* stands: four intervals are four
+**entries**, and nothing wraps them.
+
+This section uses `CONTEXT.md`'s endurance words exactly (**Strength**, **Endurance**, **Erg**,
+**Transferable**, **Unit**, **Intensity**, **Incline**, **Average heart rate**, **Peak heart
+rate**, **Heart-rate zone**, **Zone line**, **Visit**, **Settings**, **Origin**). What you log is
+an **entry**: *interval* is what the watch timed, never a stored thing of its own, and the code's
+*valid interval* (§13.1) is an entry that counts. *Set* (the noun) stays on the _Avoid_ line. Read
+ADR-0008 before touching storage — it records the decision a future reader will most want to
+"fix" — and ADR-0006 before touching the derivation.
+
+**Everything strength already does carries over to ergs unless this section says otherwise**:
+scope (§4), gyms, machines, the current gym and archive (§7.4), the shared machine menu (§5.3,
+§6.4), the hint (§5.4), history, edit and delete (§5.6, §6.6), goal storage (§12.1), Merge and
+Move (§7.5) and the kind change (§8). They carry over because they are the same code (§13.1).
+Each subsection below names only what differs.
+
+### 13.1 Storage — schema `3.0.0`
+
+From [#100](https://github.com/hermanno3005/Chalk/issues/100) and
+[#105](https://github.com/hermanno3005/Chalk/issues/105). Governed by ADR-0008.
+
+**No new entity, relationship or delete rule.** Endurance is fifteen attributes on §3's five
+entities, every one optional or defaulted:
+
+- An entry is an **`Entry`**.
+- An erg is an **`Exercise` whose `unit` is set** — `isErg` is `unit != nil`. The Swift type
+  stays `Exercise`; `CONTEXT.md` carries the note.
+- An erg's machine is a **`Machine`**.
+- An endurance group is an **`ExerciseGroup` with `half` set to endurance**.
+
+| Entity | Added | Type | Default |
+|---|---|---|---|
+| `Exercise` | `unit` — raw value of `speed` / `watts` / `split` / `level`; nil on a lift | `String?` | nil |
+| `Exercise`, `Machine` | `goalZone` (1…5), `goalDuration` (whole s) | `Int?` | nil |
+| `Exercise`, `Machine` | `goalIntensity` (the erg's unit), `goalIncline` (% on speed, nil otherwise) | `Double?` | nil |
+| `Entry` | `duration` (whole s), `averageHeartRate`, `peakHeartRate` (whole bpm) | `Int` | 0 |
+| `Entry` | `intensity` (as typed; a split as seconds per 500 m), `incline` (%, read on speed ergs only) | `Double` | 0 |
+| `ExerciseGroup` | `half` | `String` | strength |
+
+> **The tempting fix, and why not.** Splitting out an `Erg` entity, or an entity of its own for
+> endurance entries, so each row holds only meaningful fields. Every repair Chalk has works by
+> re-pointing `Entry.machine` and `Machine.exercise`, and §7.5's hazard guards **one** cascading
+> relationship. A second entity doubles it, and a path that remembers one but not the other
+> silently deletes history. With one entity, every repair carries ergs with no change.
+
+- **A transferable erg stores `kind` as `freeWeight`**, raw value and Swift case alike. A doc
+  comment on `ExerciseKind` says *free-weight on a lift, transferable on an erg*, and code reads
+  `isGymBound` in both halves. **Do not rename the case**: strength code would then call a
+  barbell `.transferable`, and renaming the raw value needs a stage that rewrites rows.
+- **`goalSetAt` is shared** by both halves' goal fields. A row is a lift's or an erg's, never
+  both, so it holds at most one goal, and *the most recently set goal wins* (§7.5, §8) keeps
+  reading one field. `GoalScope.clear()` nils **all seven** goal fields. The half is read from
+  the owner, never from which goal fields happen to be set.
+- **A valid interval** — duration > 0, intensity > 0, average heart rate set — is the endurance
+  twin of `isALift`. Use it wherever recency, seeding or the derivation reads an entry.
+  `isALift` is already false for every interval, so `RepMaxCurve`, `LastEntry` and every lift
+  reader ignore intervals unchanged.
+- **Intensity is a `Double` as typed, and every derived comparison goes through whole unit
+  steps**: `Int((value / step).rounded())`. 0.1 km/h is not exact in binary floating point the
+  way 2.5 kg is (§3). This covers point rounding, reached, the gap and the ring.
+- **Fetches filter by half; relationships do not need to.** The library fetch filters on
+  `unit`, and the group fetch and the group seed on `half`. Traversals stay one half by
+  construction.
+- **The zones are not in the store** (§13.3).
+- §3's invariants 9–11 are endurance's, and invariant 8 covers both halves' goal fields.
+
+**Versioning.** Bump `versionIdentifier` to **`3.0.0` in place, with `stages` still empty**, as
+`2.0.0` was (§3). The migration test reopens a real `ChalkTests/Fixtures/Chalk-2.0.0.store`,
+**captured from the app at `2.0.0` before any model file changes**. It holds *Bench Press*
+(free-weight, `5 × 100`, goal `5 × 140`) and *Chest Press* (gym-bound, machine *Plate-loaded* at
+*Fitness X*, `8 × 60`, machine goal `8 × 72.5`), both in *Push*, with every date fixed. Through
+`ChalkStore.open` it asserts every row, both strength goals, and every new field at its default
+(`unit == nil`, endurance goal fields nil, entry fields 0, `isALift` true, not a valid interval,
+`Push.half == strength`). It then writes a gym-bound speed erg with a machine goal and an entry
+at *Fitness X*, saves, reopens, and asserts both goals coexist on one gym. The `1.0.0` test stays
+and gains the same default assertions; the round-trip test covers every new field; the schema
+test asserts `3.0.0`, five entities and no stages.
+
+Download the container (§2) before the first launch of the `3.0.0` build on the phone — and
+first check that Download Container works on Xcode 27.1, which the storage research left
+unverified.
+
+### 13.2 Units, and how an entry is written
+
+From [#94](https://github.com/hermanno3005/Chalk/issues/94).
+
+An erg speaks **one unit**, chosen at create (§13.6). Chalk knows four:
+
+| Unit | Accepts | Written | Harder is | Averaged as |
+|---|---|---|---|---|
+| Speed | 0.1 km/h | `15.0 km/h (4:00 /km)` | higher | itself |
+| Watts | whole W | `220 W` | higher | itself |
+| Split | 0.1 s per 500 m | `1:45 /500 m`, `1:45.3 /500 m` | **lower** | through `1/split³` and back |
+| Level | whole | `Level 12` (`L12` on the goal line) | higher | mean, rounded to a whole level |
+
+- **A speed's pace is `60 / km/h`, to the whole second, for display only.** It is the one number
+  ever worked out from an intensity. Nothing is stored about it.
+- **A speed keeps its tenth** (`15.0 km/h`), unlike a weight's trimmed zero (§3). **A split
+  trims a trailing `.0`.**
+- **No mph, no steps/min, no /1000 m.** Chalk converts nothing between units and knows no brands
+  — a *Concept2 RowErg* is an erg you named that way.
+- **The written form of an entry:** `6:00 at 15.0 km/h (4:00 /km) · 1 % · 168/174 bpm`. Average
+  before peak. Incline is left out at 0 % (the log grid still shows it). Durations are `m:ss`, or
+  `h:mm:ss` from an hour.
+- **The word is *harder*, never *better*.**
+
+### 13.3 Heart-rate zones and Settings
+
+From [#92](https://github.com/hermanno3005/Chalk/issues/92). Governed by ADR-0005.
+
+**Five zones, typed in.** You type **four whole-bpm lower bounds, Z2 to Z5**. Z1 has no floor and
+Z5 no ceiling. **Chalk owns no zone model and computes no boundary** — never from an age, never
+from a max, never seeded from your logged peaks. You work the numbers out from your watch or a
+lactate test, so Chalk and the source you trust always agree. **No boundary is ever called a
+threshold**: which one that is depends on a zone model, and Chalk owns none.
+
+- **One set, shared by every erg**, so Z4 is the same heart rate on the rower and the treadmill.
+  You can move the boundaries, never the count.
+- **Read live.** No entry stores a zone and nothing caches a boundary, so moving one changes every
+  zone line on the next read, with nothing to migrate.
+- **Held per device, beside the store** — one `UserDefaults` key holding four `Int`s, as
+  `currentGymID` is held (§3). It sits in the app container's `Library/Preferences`, so Download
+  Container carries it; a recovered `.store` alone leaves only the lookup gated, never wrong.
+  Once sync exists, a second device starts gated.
+- **A Foundation-only `HeartRateZones` value is the only way in.** Its failable reader treats a
+  missing, short, out-of-order or out-of-range value as *not yet set*. `zone(of:)` returns 1…5,
+  **with a heart rate exactly on a boundary in the upper zone**, since zones are stored as lower
+  bounds. The zones are injected as `UserDefaults`, as `LibraryModel`'s are, so tests use a
+  suite of their own.
+
+**The Settings screen** is Chalk's first, reached from a **`Settings…` row in the home screen's
+overflow, in both halves**. It sits outside either half.
+
+- Four whole-bpm fields, Z2 to Z5. **Each is 40–230 and strictly higher than the one below.**
+- **Save needs all four**, and is disabled otherwise, so a half-typed set never exists.
+- **Edited, never cleared.** Once set, nothing that depends on zones is ever gated again.
+- **It holds the zones and nothing else** — no export, no import, no share row (§2). Each further
+  setting is its own decision, never a row added in passing.
+
+**Logging never needs zones.** Before the first save you log as normal; only the lookup is gated
+(§13.8), and entries logged before zones were set join the lines the moment they are.
+
+### 13.4 The zone line
+
+From [#95](https://github.com/hermanno3005/Chalk/issues/95), with the ghost settled by
+[#102](https://github.com/hermanno3005/Chalk/issues/102) and
+[#98](https://github.com/hermanno3005/Chalk/issues/98). Governed by ADR-0006.
+
+For one zone, on one scope, at one incline:
+
+```
+point[d] = mean(intensity) over entries on the scope
+           whose average heart rate is in the zone,
+           whose incline is this incline,
+           whose duration is exactly d,
+           on the last 10 visits that hold one
+```
+
+- **Membership is the average heart rate's alone.** Peak heart rate is not read. A heart rate on a
+  boundary goes to the upper zone (§13.3).
+- **Durations group exactly as typed.** A `6:02` is its own point and never joins `6:00`. This is
+  what makes a one-minute entry as honest as a twenty-minute one: a short rep's lagging heart
+  rate is only ever compared with another rep of the same length, so there is no duration floor.
+- **The window is the last ten visits** — calendar days on which you logged that duration in that
+  zone on the scope. Five reps in one day are one visit. **The window never moves with time**,
+  only when a new visit pushes the oldest out, so a machine you have not used in months still
+  shows what you last held. That is strength's *the number never moves on its own* (§4), kept.
+- **Each point carries its mean heart rate and its entry count**, for the readout (§13.8).
+- **Each point is rounded to its unit's step, nearest**: speed and watts as they are; a split
+  averaged through `1/split³` and back; a level averaged and rounded to a whole level.
+- **Inclines never mix.** 15 km/h at 1 % never claims to be 15 km/h flat. Incline is to the zone
+  line what reps are to the curve, and never a scope.
+- **Points join by straight segments in duration order**, ending at the shortest and longest
+  durations you have done. **No extrapolation, and no correction**: physiology says a longer
+  entry in a zone needs a lower intensity, but a point out of that order is drawn as it is.
+- **A zone you have never landed in has no line.** A machine you are new to shows only the zones
+  your first visit happened to reach.
+- **No ghost** ([#102](https://github.com/hermanno3005/Chalk/issues/102) found no sound model).
+  Unlike the strength curve, the zone line stands alone.
+
+**Scoping is the caller's job**, exactly as for `RepMaxCurve` (§4): every entry for a
+**transferable** erg, at every gym; **one machine's** entries for a **gym-bound** one. Hints never
+enter it.
+
+**`ZoneLine`** is a Foundation-only struct beside `RepMaxCurve`, built from already-scoped
+`[Entry]`, the zones, the unit, the zone and the incline. **No SwiftData dependency, nothing
+cached** — ADR-0002 carries over unchanged. An edited heart rate can move an entry onto another
+zone's line; that is the derivation working. Boundary membership, exact-duration grouping, the
+ten-visit window and the per-unit mean are the parts an implementer gets subtly wrong; they get
+tests, with no `ModelContainer`.
+
+### 13.5 The home screen, in two halves
+
+From [#96](https://github.com/hermanno3005/Chalk/issues/96) and
+[#104](https://github.com/hermanno3005/Chalk/issues/104). Prototype:
+[`docs/prototypes/endurance-home/`](docs/prototypes/endurance-home/README.md) (variant A, round
+two).
+
+**A `Strength | Endurance` segmented control stands where the "Chalk" title was.** One tap,
+always visible on the home screen, and the plainest way to say there are exactly two halves.
+
+- **Sticky across launches**, stored per device (`@AppStorage`, backed by a `Half` enum that also
+  backs `ExerciseGroup.half`). The app reopens on the half you left it in. **Strength on first
+  launch**, so the shipped experience is unchanged until you choose endurance.
+- **On the home screen only.** Switching always lands on that half's home screen, and nothing
+  remembers where you were in the other half.
+- **Each half has its own resume card, search field, `+`, grid, groups, Arrange mode and Edit
+  groups.** Search never covers both halves. `LibraryModel` takes the half and scopes all of them
+  to it.
+- **Shared by both halves:** the current gym and the Gym menu (§7.4), and `Settings…` (§13.3).
+
+**The endurance home screen is §7's screen over ergs.** What differs:
+
+- **The search field reads *Search or add an erg*.** *Create it* opens the create-erg sheet
+  (§13.6) with the name filled in.
+- **One tile per erg.** A treadmill at four gyms is one *Treadmill* tile; its machine is picked
+  inside, as a gym-bound exercise's is.
+- **Tiles and the resume card show the last entry in the written form** (§13.2), with when it
+  was: `6:00 at 15.0 km/h · today` on a tile; the resume card's line carries the heart rates too.
+  The last entry of an erg is its most recent valid interval.
+- **The resume card** is the last erg you logged anywhere, with **Log again** into the lap-list
+  sheet (§13.7) and a tap through to its detail screen. It carries the goal ring under §7.1's
+  rules: **only a goal on the last entry's own scope** — the erg when transferable, that entry's
+  machine when gym-bound — so a holiday gym's log never shows your home machine's goal.
+- **The library starts empty.** No erg is preset: every erg's name, unit, classification and
+  group is your own choice. **The empty state** is §7.1's, with *Calibrate the machines you train
+  on*, a line on what an interval is, and **Add your first erg**.
+- **Groups are §7.2's mechanics, with a set per half.** An erg sits only in an endurance group,
+  an exercise only in a strength one. The suggestion is **`Treadmills / Rowing & Ski / Bikes`**,
+  with **Ungrouped last** and no *Other* (Ungrouped is the catch-all) and no *Ergs* (every
+  endurance machine is an erg). **The seeded groups are hidden while you have no ergs**, so the
+  empty state carries no empty headers.
+- **Each half seeds its groups once, with its own flag**, and a deleted suggestion stays deleted.
+
+> **Seed hazard.** The endurance seed's *already seeded* guard must count **endurance groups
+> only**. Strength's guard treats any group as seeded, so reusing it would leave every existing
+> install — which already has strength groups — with no endurance groups. An updating install
+> gets the three groups, exactly once.
+
+### 13.6 Creating an erg
+
+From [#93](https://github.com/hermanno3005/Chalk/issues/93) and
+[#104](https://github.com/hermanno3005/Chalk/issues/104).
+
+A sheet, reached from `+`, *Create it* and the empty state, with four rows:
+
+- **Name** — plain text, **no suggestions**. Chalk keeps no vocabulary of machines, and no back
+  door to presets.
+- **Unit** — speed, watts, split or level, **starting on none**. **Save stays disabled until a
+  unit is chosen**, so no erg exists without one. Chalk never guesses a unit, because a unit has
+  no repair once the erg has entries.
+- **Transferable / Gym-bound** — **starting on gym-bound**, each option with a one-line footer
+  stating the test: **does the same number mean the same thing on every one of these machines,
+  anywhere?** Gym-bound
+  is the cheaper mistake: a cold start and a hint, rather than pooling numbers that should never
+  meet. Unlike §7.3, picking gym-bound reveals no machine fields: the first log resolves the
+  machine (§13.7).
+- **Group** — §7.3's picker over the endurance groups, Ungrouped last and selected.
+
+**The unit is changeable only while the erg has no entries**, from *Change unit…* in the erg's
+overflow (§13.8), which is absent once there is an entry. Changing it **clears the erg's goal and
+says so**: *Your goal of 260 W · 10:00 in Z3 is cleared.* Once there is an entry the unit is
+locked, so no logged number is ever reinterpreted. **There is no repair for a wrong unit with
+entries; deleting the erg is the accepted cost.**
+
+### 13.7 The log sheet — a lap-list grid
+
+From [#97](https://github.com/hermanno3005/Chalk/issues/97). Prototype:
+[`docs/prototypes/endurance-log/`](docs/prototypes/endurance-log/README.md) (variant C, round
+two).
+
+You log **after the block**, reading the watch's lap list. **One sheet takes the whole block as a
+grid, one row per entry**, and Save writes **one entry per row** with nothing grouping them
+afterwards. The rows are a way of typing, not a session. This is why §6.7's *no run of entries to
+batch* holds for strength only.
+
+**Columns follow the watch's order**: `Time | km/h | % | Avg | Peak` on a speed erg, `Time |
+<unit> | Avg | Peak` on the others, so your eye moves down the wrist and down the grid together.
+
+**Input.**
+
+- **One keypad, always up. No steppers** — with no pattern from one interval to the next, every
+  number is a jump, and a jump is keypad distance (§6.2).
+- ***Next* walks the cells left to right**, and becomes ***New row*** at the end of the last row.
+  **A heart rate's third digit and a speed's tenth move on by themselves.**
+- **Typing in a cell replaces its seed**; you never delete a seeded number first.
+- **Times fill from the right**, as on a microwave: `6`, `60`, `600` → `6:00`; `h:mm:ss` from an
+  hour. **Typed to the second and never snapped**: a `6:00` rep is `6:00` because you typed it,
+  and a `6:02` you do type stands on its own (§13.4).
+- **A split takes a tenth after the decimal key** (`1:47.5`). **The decimal key is dead on watts
+  and level.** Speed takes 0.1 km/h, and **off-step values are refused** (`15.05`).
+- **Incline** is on every row of a speed erg, in **0.5 % steps, clamped at 0**. **0 % is a value**.
+  It is seeded, and never defaulted to 1 %: Chalk never shows a number you did not set.
+
+**Seeding.** **The first row is seeded from the scope's most recent valid interval** — the erg's
+when transferable, the machine's when gym-bound, as §6.3 seeds a weight only from the machine in
+scope. **Each new row is seeded from the row above.** A first-ever block opens blank.
+
+**The line under the grid** shows **the zone of the focused row's average heart rate**, e.g. `Z4 ·
+158–169 bpm`, **and nothing per row**, so the grid stays a plain copy of the watch. Without zones
+set it is **blank, not a prompt** — logging never nags. **There is no goal crossing** (§6.5 has
+one; no single row can reach a mean over visits).
+
+**Validation and Save.**
+
+- **Save reads `Save 5`** and is enabled only when every row is complete and valid: every
+  number above zero (incline aside: 0 % is a value), **both heart rates 40–230**, and **peak ≥
+  average**.
+- **A row whose peak is below its average outlines those two cells in red**, and the line under
+  the grid says why, so a disabled Save points at the row to fix.
+- **Each row carries a visible red minus** to delete it, **except the last remaining row** —
+  Cancel is how you log nothing.
+- **Cancel asks *Discard 5 entries?* once anything is typed**, and swipe-down is disabled while
+  the sheet has been touched. **An untouched sheet closes without asking.**
+- After Save, the sheet closes; the detail screen behind it re-reads, as §6.7's does.
+
+**The machine caption** (§6.4, gym-bound only) appears **once, above the grid, covering every
+row**: a block is logged on one machine. It opens the shared machine menu with `New machine here`
+and `New gym…`, and **resolves a machine as strength's does — a gym-bound erg can never log with
+no machine** (invariant 4). A transferable erg's sheet carries no caption. §6.4's stickiness holds:
+picking another gym's machine while logging moves the current gym at the pick. **Saving on an
+archived gym's machine un-archives that gym and makes it current, once per Save**, not once per
+row.
+
+**Edit mode** is §6.6 over this sheet: tapping a history row (§13.9) **reopens the grid with one
+row, seeded from that entry**.
+
+- **No *New row*, no row delete, and a plain `Save`.** The date is in the title and not editable.
+- Duration, intensity, incline, both heart rates and, on a gym-bound erg, the machine are
+  editable. **Changing the machine moves the entry silently.**
+- The line under the grid shows the edited row's zone, so you see where it will land.
+- **Cancel asks *Discard changes?* only if something changed.**
+- **Editing never un-archives a gym or moves the current gym** (§6.4).
+
+The grid's keypad formats and clamps are **shared with the endurance goal sheet** (§13.10), not
+copied.
+
+### 13.8 Erg detail screen
+
+From [#98](https://github.com/hermanno3005/Chalk/issues/98). Prototype:
+[`docs/prototypes/endurance-detail/`](docs/prototypes/endurance-detail/README.md) (variant A,
+round two).
+
+**One zone at a time, laid out like §5.** Top to bottom:
+
+1. **Zone buttons, `Z1`–`Z5`**, with an **incline menu at the trailing end on a speed erg**. They
+   pick the effort and the grade you are about to train at. **A zone with no line on this scope
+   and incline is dimmed but still tappable** — you see where you have never landed, and can
+   still ask.
+2. **The scrub readout.** One large intensity (`15.0 km/h`), a speed's pace under it (`4:00
+   /km`), then **`6:00 in Z4 · 164 bpm · 12 entries ›`** — the point's duration, zone, mean heart
+   rate and entry count. **The entry count is the uncertainty: no ± band is drawn**, because a
+   band is a number Chalk computed and you never held. **The goal line** sits under it (§13.10).
+3. **The zone line, 150 pt**, in the accent colour, a point on every duration you have done,
+   joined by straight segments.
+4. **Empty space**, as §5.1 leaves it.
+5. **Log bar**, opening the lap-list sheet (§13.7).
+
+**Toolbar:** back; the machine qualifier menu on a gym-bound erg (§5.3, unchanged, including which
+machine the screen opens on); an overflow.
+
+**The chart.**
+
+- **The duration axis is linear and fixed at 0–20:00** on every erg and every zone, so lines
+  compare and **switching zones never rescales the chart under your thumb**.
+- **The intensity axis is framed to the data**, as §5.2's is. **A split is plotted upside down**,
+  so harder is up on every erg.
+- **Scrubbing snaps to durations you have done**: nothing between two points is a number you have
+  held. `chartXSelection`, never a hand-rolled gesture, and **the selection is sticky** (§5.2).
+- **The screen opens on the zone, duration and incline of the scope's most recent valid
+  interval**, so the usual answer needs no taps.
+- **No ghost.** Nothing is drawn that you have not held.
+- **Entries over 20:00 are stored but not drawn**, as strength stores reps above 12. Each duration
+  stands alone, so they change no drawn point. When the selected zone, incline and scope has any,
+  a **dimmed `2 entries over 20:00 ›` caption** sits under the line, so a long entry — or a
+  mistyped `60:00` — can still be found (§13.9).
+
+**A zone with no line** shows text where the chart would be — `No Z4 on this machine yet.` /
+`Nothing you've logged here averaged 158–169 bpm.` — and under it **up to two lines quoting the
+nearest zone above and below that has a line**, at the duration closest to the selection:
+`Z5 3:00 at 16.5 km/h — too hard`, `Z3 … — too easy`. **Quotes come from on-axis points only.** A
+zone whose only entries are over 20:00 shows this state, with the caption under the text. This is
+what makes a first visit useful: it often lands only in Z5, and Z5 still says where Z4 must be.
+
+**Nothing logged on the scope** is §5.4's empty state: no chart, no axes, no readout, short text,
+and the Log bar.
+
+**The hint** (§5.4, carried over) is for a gym-bound erg whose machine in scope has no entries:
+
+> `No entries here — 6:00 in Z4 at 15.0 km/h · 1 % on Technogym Run · Urban Gym`
+
+- **The sibling prefers the same model at another gym** — a case-insensitive equal label —
+  otherwise §5.4's most recently used sibling. It reuses `MachineHint`'s choice.
+- **It quotes the sibling's line at the zone, duration and incline of the sibling's most recent
+  valid interval** — the entry the lap-list sheet would seed from on that machine.
+- **When that point has dropped out of the sibling's line, there is no hint.** It never quotes a
+  number the line no longer holds, and it never falls back to another point (§5.4's rule).
+- Text, visibly another machine's numbers, **never part of any line**. A transferable erg has no
+  hint.
+
+**Zones not set:** a **`Set your heart-rate zones`** row, which opens Settings, stands in place of
+the zone buttons, readout and line (final wording is the build's). The Log bar works as normal.
+
+**The overflow** carries the erg's lifetime operations, as §5.5's does:
+
+- **Rename**.
+- **`Change unit…`**, only while the erg has no entries (§13.6). Absent, not disabled, otherwise.
+- **Change kind** (§13.11).
+- **`Set a goal…` / `Change goal…`** (§13.10). **Absent until zones are set**, and absent on a
+  gym-bound erg with no machine (§5.5).
+- **Delete erg**, confirmed as §5.5's is, with the count.
+
+The **erg detail model** sits beside `ExerciseDetailModel`, reached from the library model as
+`detail(for:)` is. It holds the selected zone, duration and incline, the readout, the no-line text
+and quotes, the hint, the over-20:00 caption, the zones gate and the goal line, and builds the
+log, history and goal sheets' models.
+
+### 13.9 History — the point's sheet
+
+From [#103](https://github.com/hermanno3005/Chalk/issues/103).
+
+**The readout's `12 entries ›` is the only door from the chart**, as §5.6's is. Tapping a point
+does nothing; scrubbing only selects.
+
+- **It lists every entry at this duration, zone and incline on this scope, from all time, newest
+  first** — everything that could make the point.
+- **A divider after the tenth visit**: `Older — not in the line`. **Nothing is flagged** — a mean
+  has no one entry setting it. **The readout's count equals the rows above the divider**; the two
+  never disagree.
+- Rows read **`date · intensity (pace beside a speed) · avg/peak bpm`**. Duration, zone and incline
+  are left out: the point fixes them.
+- **The over-20:00 caption opens one flat list**, newest first, with no divider. Rows read **`date
+  · duration · intensity · avg/peak bpm`**.
+- **Tap a row → edit** (§13.7). **Swipe left → Delete**, exactly §5.6: full-swipe disabled, no
+  alert, no undo.
+
+§5.6's two non-special-cases hold:
+
+- **An edit that moves an entry** to another duration, zone, incline or scope **makes its row
+  vanish from the sheet it was opened from.** The sheet mirrors the point. Removing an entry
+  inside the window can pull an older visit above the divider.
+- **Deleting a point's last entry leaves the sheet open and empty.** Behind it, the selection
+  falls to the nearest remaining duration in the zone; with none, the zone dims; with nothing left
+  on the scope, §5.4's empty state.
+
+**Without zones there is no readout, so no door.** Entries logged before zones were set are
+reached once they are.
+
+### 13.10 Endurance goals
+
+From [#99](https://github.com/hermanno3005/Chalk/issues/99). Governed by ADR-0007, ADR-0004's
+companion.
+
+On each scope you can name one **goal**: **a point on the zone line** — a zone, a duration and an
+intensity, plus an incline on a speed erg. Written `Goal 15.5 km/h · 6:00 in Z4 · 1 %`. Everything
+in §12 holds unless it is named here.
+
+**What is stored.** The four endurance goal fields plus the shared `goalSetAt` (§13.1), on the
+erg while transferable and on the machine while gym-bound, through `GoalScope` only. **A partial
+set is no goal, and a speed goal with no incline is no goal.** **A goal holds a zone, not a
+bpm**, so it follows your boundaries when a lactate test moves them. Setting one writes all its
+fields with `goalSetAt = now`; clearing nils all seven (§13.1).
+
+**The `EnduranceGoal` value** is Foundation-only, beside `Goal` (§12.2), and the only way to build
+an endurance goal: a failable init over the fields, the scope's `[Entry]`, the zones and the unit.
+Everything below compares in whole steps (§13.1).
+
+| Member | Meaning |
+|---|---|
+| `current` | the zone line's point at **exactly** the goal's zone, duration and incline — its ten-visit mean (§13.4) — or nil |
+| `isReached` | `current >= goal`, or `current <= goal` on a split |
+| `gap` | the distance in the unit's own step; nil when there is no point |
+| `origin` | the point over entries dated **strictly before** `setAt`, or else the point as of the first visit after it |
+| `progress` | `(current − origin) / (goal − origin)` in the unit's own number, reversed on a split, **clamped to 0…1**, and 1 when reached |
+
+- **No backfill** across zones or durations. A lower zone or a longer duration at the goal's
+  intensity never counts: the goal is read against its own point only.
+- **A reached goal can un-reach with no edit**, when a slower visit pushes a faster one out of the
+  window. Nothing is stored, so nothing needs repairing.
+- **Unlike §12.2, `current >= origin` does not hold by construction.** A point can fall back
+  below its origin, which leaves the ring empty rather than negative.
+
+**The goal line** sits under the readout **whatever zone is selected**, and under the text in the
+no-line and nothing-logged states, as §5.4's does.
+
+- **Gap in the unit's step**: `0.4 km/h to go`, `12 W to go`, `2 s to go`, `2 levels to go`.
+- **Reached:** `· reached`, the whole line grey.
+- **No point:** `not held yet` — never a gap from zero.
+- **No pace on the goal line**, so it stays short.
+- **Tappable, no `›`, never drawn on the chart** (§12.4). Orange, grey once reached, no
+  celebration (§12.5).
+
+**The goal sheet** is a short form, not the two-stage giant number. Opened from the goal line or
+the overflow.
+
+- **Four rows: zone (`Z1–Z5` segmented), duration, incline (speed only) and intensity.**
+- **Zone, duration and incline are seeded from the point you scrubbed to. Intensity is blank,
+  with the keypad up** — a goal is by definition a number you have not held.
+- **It uses the lap-list grid's keypad, formats and clamps**, shared rather than copied (§13.7).
+- **One live line under the intensity**:
+
+  | Condition | Line |
+  |---|---|
+  | above the point | `0.4 km/h above your 6:00 in Z4` |
+  | at or below the point | `Already reached — your 6:00 in Z4 is 15.6 km/h` (grey) |
+  | no point | `Not held yet — 6:00 in Z4 · 1 %` |
+
+- ***Set goal* is enabled once every field is filled.** *Clear goal* sits at the foot, only with a
+  goal, with no confirmation (§12.3). **A goal over 20:00 is valid**, and reads `not held yet`
+  until you do one.
+
+**Gates and edges.**
+
+- **No goal before zones are set** — no goal may name a zone that does not exist yet. Zones are
+  never cleared, so no goal ever loses them.
+- **No goal on a gym-bound erg with no machine**, no goal on tiles, and never another machine's
+  goal borrowed (§12.6).
+- **A unit change clears the goal and says so** (§13.6).
+- **No crossing on the lap-list sheet** (§13.7). You find out on the detail screen after Save.
+- **The resume card's ring** is §7.1's, at the last entry's own scope (§13.5).
+
+### 13.11 Repairs
+
+From [#101](https://github.com/hermanno3005/Chalk/issues/101).
+
+**Merge, Move and the kind change carry ergs unchanged in mechanism** — same erg, same gym, all or
+nothing, one confirmation with counts, hard delete, and §7.5's *reassign and flush before
+deleting*. Incline moves with its entries. What changes is the wording, and two additions.
+
+- **Goals: the most recently set wins**, read off the shared `goalSetAt`, in both repairs. The
+  lost-goal clause in endurance wording: *Your goal of 15.5 km/h · 6:00 in Z4 · 1 % is kept; 1
+  other goal is cleared.* Move carries the machine's goal, as §7.5's does.
+- **Change kind** (§8) works in both directions. **To gym-bound** asks *Which machine is this
+  on?* when there are entries or a goal, and moves both there. **To transferable** pools every
+  machine behind ***Treadmill has entries on 3 machines. They'll be read as one.***, plus the
+  lost-goal clause. **The endurance wording never says *curve*.** Unit and incline are untouched:
+  only the scope changes.
+- **`Rename…`** on a machine row (§7.5), in both halves.
+- **A near-name check on erg machines only.** An erg's label is its model, and the hint matches
+  models across gyms by label (§13.8), so spellings must converge. It reuses gym creation's loose
+  matching (`GymNameMatch`, §7.4) **against that erg's machines at every gym**, **warns but never
+  blocks**, and offers the existing spelling: *You have a Technogym Excite at FitX — same model?*
+  - **On create** (the caption menu's and the qualifier menu's `New machine here`): a match **at
+    the same gym picks the existing machine**, so one gym never holds two machines with one
+    label.
+  - **On rename:** a same-gym match offers **Merge into** that sibling, with Merge's usual
+    confirmation.
+  - **On Move:** when the target gym already has a passing machine for this erg, Move asks *FitX
+    already has a Technogym Excite. Merge into it?* → **Merge** (then Merge's confirmation) ·
+    **Move anyway** · **Cancel**.
+  - **Strength machines get no near-name check**, for §7.5's reason.
+- **`Manage gyms…`** is reachable from either half's overflow, and is one screen. **A gym's
+  machines sit in two sections, Strength and Endurance**, each ordered by most recent use, an
+  empty section hidden, **never filtered by the half you came from**. **The gym row's machine
+  count covers both halves**, since that count decides whether hard delete is offered.
+- **An erg's unit has no repair once it has entries** (§13.6).
+
+The repair map (§7.5) gains:
+
+| Wrong | Fix |
+|---|---|
+| Transferable / gym-bound | Change kind (§13.11) |
+| Unit, before any entry | `Change unit…` (§13.6) |
+| Unit, with entries | Delete the erg |
+
+### 13.12 Recency
+
+From [#106](https://github.com/hermanno3005/Chalk/issues/106).
+
+- **A gym's recency is its latest lift or valid interval** on any of its machines. It orders the
+  shared current-gym picker, the machine menu's gym sections and `Manage gyms…` (§7.4), so a gym
+  you visit only for endurance does not sink.
+- **An erg machine's recency is its latest valid interval.** `Machine.lastLogged` and
+  `Gym.lastLogged` count a lift or a valid interval; a machine's is its own half's by
+  construction.
+- **A transferable erg's entries count toward no gym**, as a free-weight lift's do not.
+- Archive and stickiness are unchanged: a Save un-archives and makes current (§13.7); an edit does
+  neither.
+
+### 13.13 Tests
+
+Rule names in test titles follow the existing style, and each suite's doc comment names the one
+or two rules an implementer gets subtly wrong.
+
+- **No `ModelContainer`:** `ZoneLine`, `EnduranceGoal`, and `HeartRateZones` against an injected
+  `UserDefaults` suite (prior art: `RepMaxCurveTests`, `GoalTests`).
+- **Through `LibraryFixture`**, over a real temporary store and its own `UserDefaults` suite: half
+  scoping, the per-half seed, create-erg's unit gate and lock, the grid, the erg detail, history,
+  the goal sheet, the repairs and recency. The fixture gains erg, entry and zones helpers.
+- **Store:** §13.1's migration and round-trip tests.
+- **Not unit-tested:** views, the chart's drawing, zone colours, the ring and the keypad layout.
+  Check them on the phone (§12.5). Zone colours are placeholders until then: Z1 grey, Z2 blue, Z3
+  green, Z4 purple, Z5 red — **never orange, which goals own.**
+
+### 13.14 Out of scope for endurance
+
+Beyond §11:
+
+- **Outdoor cardio** — GPS runs, rides, terrain, weather. There is no machine to calibrate.
+- **Importing from a watch or platform** (Coros, Apple Health, Strava). Heart rate is typed by
+  hand.
+- **Sessions, workouts, interval programmes and timers.** Nothing groups a block once saved, and a
+  visit is never stored.
+- **Units beyond the four**: user-defined units, mph, steps/min, /1000 m splits, and **any
+  conversion between units**.
+- **Machine settings other than incline** — damper, resistance, programme.
+- **Zones per modality, a zone count other than five, any zone model or computed boundary**, and
+  naming any boundary *threshold*.
+- **A ghost or any fitted or extrapolated line**, an HR–intensity fit, a minimum-duration floor,
+  and a ± band.
+- ***Am I getting fitter?* as a trend.** The window moving is the answer; no history of the line is
+  kept or drawn.
+- **Preset ergs**, and name suggestions on the create-erg sheet.
+- **A repair for an erg's unit once it has entries.**
+- **Brand knowledge of any kind** — Concept2 formulas, calibrations.
+- **Settings rows beyond zones**, export and import included.
+- **Zones syncing across devices** — no sync exists.
+- **A goal crossing on the lap-list sheet**, and a history of goals reached.
+
+## 14. Still open
 
 One thing, deliberately: **app identity.** The name (Chalk) and the icon. The bundle id
 `com.hermannaust.Chalk` and the 18.0 deployment target are provisional facts from the skeleton
