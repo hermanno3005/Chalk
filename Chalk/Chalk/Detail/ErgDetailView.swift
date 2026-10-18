@@ -16,6 +16,8 @@ struct ErgDetailView: View {
     @State private var changingKind = false
     @State private var confirmingDelete = false
     @State private var logging: LapListModel?
+    /// The point's sheet or the over-20:00 list (SPEC §13.9).
+    @State private var history: ErgHistoryModel?
     /// The gym the qualifier's `New machine here` is naming a machine at.
     @State private var naming: Gym?
 
@@ -28,7 +30,6 @@ struct ErgDetailView: View {
             } else if !model.needsZones, let selection = model.selection {
                 zoneBar(selection)
                 if let readout = model.readout {
-                    // The `›` is inert until the point's sheet exists (SPEC §13.9).
                     readoutView(readout)
                 } else if let noLine = model.noLine {
                     ErgNoLineView(noLine: noLine)
@@ -42,9 +43,15 @@ struct ErgDetailView: View {
                     )
                 }
                 if let caption = model.overTheAxisCaption {
-                    Text(caption)
-                        .font(.footnote)
-                        .foregroundStyle(.tertiary)
+                    // A door to the flat over-20:00 list (SPEC §13.9).
+                    Button {
+                        history = model.overTheAxisSheet()
+                    } label: {
+                        Text("\(caption) ›")
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             // Zones not set: one row in place of the buttons, readout and line — under
@@ -62,6 +69,7 @@ struct ErgDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) { logBar }
         .sheet(item: $logging) { LapListSheet(model: $0) }
+        .sheet(item: $history) { ErgHistorySheet(model: $0) }
         // Entries logged before the zones join the lines the moment they are set.
         .sheet(item: $settings, onDismiss: model.refresh) { SettingsSheet(model: $0) }
         // The qualifier's `New machine here` (SPEC §13.11), on the screen rather than the
@@ -245,14 +253,21 @@ struct ErgDetailView: View {
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
-            HStack(spacing: 4) {
-                Text(readout.detail)
-                Image(systemName: "chevron.right")
-                    .font(.caption2.weight(.semibold))
+            // `12 entries ›`: **the chart's only door** to the point's entries (SPEC
+            // §13.9). Tapping a point on the line does nothing; scrubbing only selects.
+            Button {
+                history = model.historySheet()
+            } label: {
+                HStack(spacing: 4) {
+                    Text(readout.detail)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                }
+                .font(.subheadline)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
             }
-            .font(.subheadline)
-            .monospacedDigit()
-            .foregroundStyle(.secondary)
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)

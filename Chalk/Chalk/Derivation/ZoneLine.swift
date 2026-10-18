@@ -46,6 +46,10 @@ struct ZoneLine {
     /// Each duration's window cut-off: the start of the oldest visit in it.
     private let cutOffs: [Int: Date]
 
+    /// Every entry on this line — this zone, this incline — at any duration, from all
+    /// time: what `entries(at:)` reads.
+    private let members: [Entry]
+
     init(
         entries: [Entry],
         zones: HeartRateZones?,
@@ -58,6 +62,7 @@ struct ZoneLine {
             points = []
             cutOffs = [:]
             entriesOverTheAxis = []
+            members = []
             return
         }
         // Membership is the average heart rate's alone; peak is never read. Incline is a
@@ -68,6 +73,7 @@ struct ZoneLine {
                 && zones.zone(of: $0.averageHeartRate) == zone
                 && (unit != .speed || Self.inclineSteps($0.incline) == Self.inclineSteps(incline))
         }
+        self.members = members
         let onTheAxis = members.filter { $0.duration <= Self.axisEnd }
         entriesOverTheAxis = members
             .filter { $0.duration > Self.axisEnd }
@@ -99,6 +105,14 @@ struct ZoneLine {
     /// `Older — not in the line` divider there. Nil where the line has no such point.
     func cutOff(at duration: Int) -> Date? {
         cutOffs[duration]
+    }
+
+    /// Every entry at `duration` on this line — this zone, this incline — **from all
+    /// time**, newest first: everything that could make the point, which is what its
+    /// history sheet lists (SPEC §13.9). Those dated before `cutOff(at:)` are outside the
+    /// window, under the sheet's divider. Empty where nothing was done at that duration.
+    func entries(at duration: Int) -> [Entry] {
+        members.filter { $0.duration == duration }.sorted { $0.date > $1.date }
     }
 
     /// Every zone's line, Z1 to Z5, at one incline, from the same scoped entries — what the
