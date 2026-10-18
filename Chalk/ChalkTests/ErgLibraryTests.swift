@@ -77,6 +77,73 @@ struct ErgLibraryTests {
         #expect(tiles.map(\.name) == ["Rower", "BikeErg"])
     }
 
+    // MARK: - The card's ring
+
+    @Test("A transferable erg's goal rings the endurance card, filled from where you stood when it was set")
+    func aTransferableErgsGoalRingsTheCard() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(117, 140, 158, 170)
+        let treadmill = fixture.erg("Treadmill", kind: .freeWeight)
+        fixture.interval(treadmill, intensity: 14.0, on: .days(ago: 10))
+        GoalScope.exercise(treadmill).set(zone: 4, duration: 360, intensity: 16.0, incline: 0, at: .days(ago: 5))
+        fixture.interval(treadmill, intensity: 16.0, on: .now)
+        try fixture.save()
+
+        let resume = try #require(try endurance(fixture).model.resume)
+
+        // The point is the mean of 14.0 and 16.0: halfway from 14.0 to 16.0.
+        #expect(resume.ring == LibraryResume.Ring(progress: 0.5, isReached: false))
+    }
+
+    @Test("A gym-bound erg's card rings the goal of the machine the last entry was logged on")
+    func aGymBoundCardRingsTheResumedMachine() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(117, 140, 158, 170)
+        let rower = fixture.erg("Rower", unit: .split)
+        let home = fixture.machine(for: rower, at: fixture.gym("Home"))
+        let holiday = fixture.machine(for: rower, at: fixture.gym("Holiday"))
+        GoalScope.machine(home).set(zone: 4, duration: 240, intensity: 100, incline: nil, at: .days(ago: 20))
+        GoalScope.machine(holiday).set(zone: 4, duration: 240, intensity: 110, incline: nil, at: .days(ago: 20))
+        fixture.interval(rower, machine: home, duration: 240, intensity: 102, on: .days(ago: 3))
+        fixture.interval(rower, machine: holiday, duration: 240, intensity: 108, on: .now)
+        try fixture.save()
+
+        let resume = try #require(try endurance(fixture).model.resume)
+
+        // The holiday rower's goal, reached there — never the home rower's, still open.
+        #expect(resume.enduranceGoal?.intensity == 110)
+        #expect(resume.ring == LibraryResume.Ring(progress: 1, isReached: true))
+    }
+
+    @Test("A goal on a sibling machine never rings the endurance card")
+    func aSiblingMachinesGoalNeverRingsTheCard() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(117, 140, 158, 170)
+        let rower = fixture.erg("Rower", unit: .split)
+        let home = fixture.machine(for: rower, at: fixture.gym("Home"))
+        let holiday = fixture.machine(for: rower, at: fixture.gym("Holiday"))
+        GoalScope.machine(home).set(zone: 4, duration: 240, intensity: 100, incline: nil, at: .days(ago: 20))
+        fixture.interval(rower, machine: home, duration: 240, intensity: 102, on: .days(ago: 3))
+        fixture.interval(rower, machine: holiday, duration: 240, intensity: 108, on: .now)
+        try fixture.save()
+
+        let resume = try #require(try endurance(fixture).model.resume)
+
+        #expect(resume.ring == nil)
+    }
+
+    @Test("An erg with no goal leaves the endurance card's ring empty")
+    func noGoalNoRing() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(117, 140, 158, 170)
+        fixture.interval(fixture.erg("Treadmill", kind: .freeWeight))
+        try fixture.save()
+
+        let resume = try #require(try endurance(fixture).model.resume)
+
+        #expect(resume.ring == nil)
+    }
+
     // MARK: - Into the sheet
 
     @Test("Log again opens the lap list seeded from the card's entry, and Save moves the card")
