@@ -131,13 +131,30 @@ enum GoalScope {
         }
     }
 
+    // MARK: - Repairs (SPEC §7.5, §8, §13.11)
+
+    /// The goal held here **in the owner's half** — an erg's scope holds an endurance goal,
+    /// a lift's a strength one, and the half is read from the owner, never from which
+    /// fields happen to be set (§13.1). What the repairs weigh by `setAt` and name.
+    ///
+    /// Read without zones: a repair carries the fields and never judges the goal, so
+    /// whether it is reached plays no part.
+    var heldGoal: (any HeldGoal)? {
+        unit == nil ? goal : enduranceGoal(zones: nil)
+    }
+
     /// Moves the goal set at `source` here, **keeping its `goalSetAt`** — the goal is the
     /// same goal wherever it lands, so its ring still counts from the moment it was named
     /// — and clears `source`. The kind change's move and pool (SPEC §8), and the merge's
-    /// survivor (§7.5).
+    /// survivor (§7.5), **in either half** (§13.11).
     func takeGoal(from source: GoalScope) {
-        if let goal = source.goal {
+        switch source.heldGoal {
+        case let goal as Goal:
             set(reps: goal.reps, weight: goal.weight, at: goal.setAt)
+        case let goal as EnduranceGoal:
+            set(zone: goal.zone, duration: goal.duration, intensity: goal.intensity, incline: goal.incline, at: goal.setAt)
+        default:
+            break
         }
         source.clear()
     }

@@ -41,15 +41,15 @@ struct KindChange {
 
     var entryCount: Int { (exercise.entries ?? []).count }
 
-    /// The free-weight exercise's own goal — what the flip to gym-bound carries onto the
-    /// machine. Nil going the other way: a gym-bound exercise holds no goal of its own
-    /// (SPEC §3).
-    private var exerciseGoal: Goal? {
-        direction == .toGymBound ? GoalScope.exercise(exercise).goal : nil
+    /// The free-weight exercise's or transferable erg's own goal — what the flip to
+    /// gym-bound carries onto the machine. Nil going the other way: a gym-bound exercise
+    /// holds no goal of its own (SPEC §3).
+    private var exerciseGoal: (any HeldGoal)? {
+        direction == .toGymBound ? GoalScope.exercise(exercise).heldGoal : nil
     }
 
     /// The machines' goals — pooling keeps the most recently set (SPEC §8, #67), and the
-    /// rest die with their machines.
+    /// rest die with their machines. Either half's (§13.11).
     private var machineGoals: MachineGoals { MachineGoals(machines) }
 
     /// The machine whose goal pooling copies onto the exercise: the most recently set.

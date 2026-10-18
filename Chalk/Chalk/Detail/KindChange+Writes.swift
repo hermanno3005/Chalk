@@ -12,14 +12,11 @@ extension KindChange {
     /// else rides along.
     ///
     /// `name` is the same optional one-field answer `New machine here` asks for, `nil`
-    /// where you skipped it.
+    /// where you skipped it. The machine is made through the one door every new machine
+    /// goes through (`Machine.made`), so an erg's same-gym near name would pick its
+    /// machine there — which, with a transferable erg holding no machines, it never finds.
     func placeEntries(at gym: Gym, named name: String?, in context: ModelContext) -> Machine {
-        let machine = Machine(
-            label: Machine.label(from: name),
-            exercise: exercise,
-            gym: gym
-        )
-        context.insert(machine)
+        let machine = Machine.made(for: exercise, at: gym, named: name, in: context)
         for entry in exercise.entries ?? [] {
             entry.machine = machine
         }

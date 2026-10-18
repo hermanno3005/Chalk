@@ -147,10 +147,12 @@ final class ErgDetailModel {
     /// **Transferable → gym-bound**: every entry moves to one new machine at `gym`, and
     /// the screen opens on it — the only one there is.
     ///
-    /// The erg's goal is not moved yet (#121).
+    /// **The erg's goal moves there too**, keeping when it was set, and leaves the erg in
+    /// the same save: a gym-bound erg holds no goal of its own (SPEC §13.11).
     func makeGymBound(at gym: Gym, named name: String?) {
         guard erg.isErg, !erg.isGymBound else { return }
         let machine = kindChange.placeEntries(at: gym, named: name, in: context)
+        GoalScope.machine(machine).takeGoal(from: .exercise(erg))
         save()
         self.machine = machine
         refresh()
@@ -169,9 +171,17 @@ final class ErgDetailModel {
 
     /// **Gym-bound → transferable**: every machine pooled, the machines deleted, and no
     /// interval lost to the cascade — reassigned and flushed first (ADR-0002).
+    ///
+    /// **The most recently set machine goal survives onto the erg**, keeping its own
+    /// `goalSetAt`, before any machine goes; the cascade takes the others with their
+    /// machines, as the confirmation said it would (SPEC §13.11).
     func makeTransferable() {
         guard erg.isErg, erg.isGymBound else { return }
-        guard kindChange.pool(in: context) else {
+        let change = kindChange
+        if let keeping = change.machineKeepingGoal {
+            GoalScope.exercise(erg).takeGoal(from: .machine(keeping))
+        }
+        guard change.pool(in: context) else {
             refresh()
             return
         }
