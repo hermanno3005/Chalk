@@ -17,12 +17,25 @@ final class Machine {
     @Relationship(deleteRule: .cascade, inverse: \Entry.machine)
     var entries: [Entry]? = []
 
-    /// This machine's goal — **all three set, or no goal at all** (ADR-0004). Rides the
-    /// machine: it dies with it and survives its gym's deletion. Read and written through
-    /// `GoalScope`, never directly by a screen.
+    /// This machine's strength goal — **all three set, or no goal at all** (ADR-0004).
+    /// Rides the machine: it dies with it and survives its gym's deletion. Read and
+    /// written through `GoalScope`, never directly by a screen.
+    ///
+    /// **A row's goal fields are its own half's** (SPEC §3, invariant 11): a lift's
+    /// machine leaves the endurance goal fields nil, and an erg's machine the strength
+    /// ones. `goalSetAt` is shared by both halves' goals, so *the most recently set goal
+    /// wins* reads one field.
     var goalReps: Int?
     var goalWeight: Double?
     var goalSetAt: Date?
+
+    /// This machine's endurance goal, as on a transferable erg (`Exercise.goalZone`):
+    /// zone, duration, intensity and (on a speed erg) incline all set with `goalSetAt`,
+    /// or no goal at all (ADR-0007).
+    var goalZone: Int?
+    var goalDuration: Int?
+    var goalIntensity: Double?
+    var goalIncline: Double?
 
     /// What this machine is called on screen: its label, or the make when it has no
     /// label of its own, or `Unlabelled` when it has neither.
