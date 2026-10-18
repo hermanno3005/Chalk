@@ -11,7 +11,7 @@ enum EnduranceField: CaseIterable, Hashable {
 
     /// The columns a lap-list grid draws for `unit`, in the watch's order.
     static func columns(for unit: ErgUnit) -> [EnduranceField] {
-        unit == .speed ? allCases : allCases.filter { $0 != .incline }
+        unit.hasIncline ? allCases : allCases.filter { $0 != .incline }
     }
 
     /// The grid's column title: `Time | km/h | % | Avg | Peak`, or the unit's own word.

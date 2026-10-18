@@ -51,12 +51,12 @@ struct EnduranceGoal: Equatable {
         calendar: Calendar = .current
     ) {
         guard let zone, let duration, let intensity, let setAt else { return nil }
-        guard unit != .speed || incline != nil else { return nil }
+        guard !unit.hasIncline || incline != nil else { return nil }
         self.unit = unit
         self.zone = zone
         self.duration = duration
         self.intensity = intensity
-        self.incline = unit == .speed ? incline : nil
+        self.incline = unit.hasIncline ? incline : nil
         self.setAt = setAt
         let point = { (entries: [Entry]) in
             ZoneLine(entries: entries, zones: zones, unit: unit, zone: zone, incline: incline ?? 0, calendar: calendar)

@@ -61,7 +61,7 @@ final class EnduranceGoalSheetModel: Identifiable {
         hasGoal = scope.enduranceGoal(zones: zones) != nil
 
         // The point first, then the number at it — not the grid's watch order.
-        rows = unit == .speed ? [.duration, .incline, .intensity] : [.duration, .intensity]
+        rows = unit.hasIncline ? [.duration, .incline, .intensity] : [.duration, .intensity]
         zone = selection?.zone
         inputs = [
             .duration: EnduranceInput(.duration, unit: unit, value: selection.map { Double($0.duration) }),

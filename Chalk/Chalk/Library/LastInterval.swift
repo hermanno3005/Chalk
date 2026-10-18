@@ -79,7 +79,7 @@ struct LastInterval: Equatable {
     /// What you did and set: `6:00 at 15.0 km/h (4:00 /km) · 1 %`.
     private func setting(pace: Bool) -> String {
         var text = "\(EnduranceText.clock(duration)) at \(EnduranceText.intensity(intensity, unit, pace: pace))"
-        if unit == .speed, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
+        if unit.hasIncline, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
         return text
     }
 }

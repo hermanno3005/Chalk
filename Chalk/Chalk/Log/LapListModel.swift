@@ -421,7 +421,7 @@ final class LapListModel: Identifiable {
             context.insert(Entry(
                 duration: Int(row.value(.duration) ?? 0),
                 intensity: row.value(.intensity) ?? 0,
-                incline: unit == .speed ? row.value(.incline) ?? 0 : 0,
+                incline: unit.hasIncline ? row.value(.incline) ?? 0 : 0,
                 averageHeartRate: Int(row.value(.averageHeartRate) ?? 0),
                 peakHeartRate: Int(row.value(.peakHeartRate) ?? 0),
                 date: now.addingTimeInterval(Double(index - (rows.count - 1))),
@@ -444,7 +444,7 @@ final class LapListModel: Identifiable {
         let row = rows[0]
         entry.duration = Int(row.value(.duration) ?? 0)
         entry.intensity = row.value(.intensity) ?? 0
-        entry.incline = unit == .speed ? row.value(.incline) ?? 0 : 0
+        entry.incline = unit.hasIncline ? row.value(.incline) ?? 0 : 0
         entry.averageHeartRate = Int(row.value(.averageHeartRate) ?? 0)
         entry.peakHeartRate = Int(row.value(.peakHeartRate) ?? 0)
         entry.machine = machine

@@ -244,7 +244,7 @@ struct ErgDetailView: View {
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
             Spacer(minLength: 0)
-            if model.unit == .speed {
+            if model.unit?.hasIncline == true {
                 inclineMenu(selection)
             }
         }

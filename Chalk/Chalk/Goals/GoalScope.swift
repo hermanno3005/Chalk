@@ -85,7 +85,7 @@ enum GoalScope {
     /// replacing whatever goal was here. The incline is kept on a speed erg only; every
     /// other unit stores none.
     func set(zone: Int, duration: Int, intensity: Double, incline: Double?, at date: Date = .now) {
-        let incline = unit == .speed ? incline : nil
+        let incline = unit?.hasIncline == true ? incline : nil
         switch self {
         case .exercise(let exercise):
             exercise.goalZone = zone
