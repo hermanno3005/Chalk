@@ -77,7 +77,7 @@ enum LibraryDropTarget: Hashable {
 }
 
 /// The last thing you logged, anywhere in the library — what the resume card at the top
-/// of the screen shows (SPEC §7.1). Absent when nothing has been logged at all.
+/// of the screen shows (SPEC §7.1, §13.5). Absent when nothing has been logged at all.
 struct LibraryResume {
     let exercise: Exercise
     /// The resumed lift, on strength's card.
@@ -89,20 +89,40 @@ struct LibraryResume {
     /// ring with no words. Nil where that scope holds no goal: **a sibling machine's goal
     /// is never borrowed**, so a log at a holiday gym never shows your home machine's.
     let goal: Goal?
+    /// Endurance's `goal`: the endurance goal at the resumed interval's own scope — that
+    /// interval's machine for a gym-bound erg, the erg for a transferable one — under the
+    /// same rule. Nil on strength's card.
+    let enduranceGoal: EnduranceGoal?
+
+    /// What the card's ring draws: how far from the goal's origin you have come, clamped
+    /// to 0…1, and whether it is reached. The same for both halves.
+    struct Ring: Equatable {
+        let progress: Double
+        let isReached: Bool
+    }
+
+    /// The card's ring, or nil where the resumed entry's scope holds no goal.
+    var ring: Ring? {
+        if let goal { return Ring(progress: goal.progress, isReached: goal.isReached) }
+        if let enduranceGoal { return Ring(progress: enduranceGoal.progress, isReached: enduranceGoal.isReached) }
+        return nil
+    }
 
     init(exercise: Exercise, lastEntry: LastEntry, goal: Goal?) {
         self.exercise = exercise
         self.lastEntry = lastEntry
         self.lastInterval = nil
         self.goal = goal
+        self.enduranceGoal = nil
     }
 
-    /// An erg's card. **No goal ring yet**: the endurance goal joins it with goals.
-    init(exercise: Exercise, lastInterval: LastInterval) {
+    /// An erg's card.
+    init(exercise: Exercise, lastInterval: LastInterval, goal: EnduranceGoal?) {
         self.exercise = exercise
         self.lastEntry = nil
         self.lastInterval = lastInterval
         self.goal = nil
+        self.enduranceGoal = goal
     }
 
     /// The card's line: `8 × 52.5 kg · today`, or an erg's last entry in the written form
@@ -111,11 +131,18 @@ struct LibraryResume {
         lastEntry?.text(asOf: now) ?? lastInterval?.text(asOf: now) ?? ""
     }
 
-    /// The card for `exercise`, or nil when it has nothing to resume.
-    init?(exercise: Exercise) {
+    /// The card for `exercise`, or nil when it has nothing to resume. `zones` are the
+    /// heart-rate zones, read live by the caller — an endurance goal is judged in them.
+    init?(exercise: Exercise, zones: HeartRateZones? = nil) {
         if exercise.isErg {
-            guard let lastInterval = LastInterval.latest(in: exercise.entries ?? []) else { return nil }
-            self.init(exercise: exercise, lastInterval: lastInterval)
+            guard let entry = LastInterval.latestEntry(in: exercise.entries ?? []),
+                  let lastInterval = LastInterval(entry)
+            else { return nil }
+            self.init(
+                exercise: exercise,
+                lastInterval: lastInterval,
+                goal: GoalScope(exercise: exercise, machine: entry.machine)?.enduranceGoal(zones: zones)
+            )
             return
         }
         guard let entry = LastEntry.latestEntry(in: exercise.entries ?? []),
@@ -149,13 +176,15 @@ struct LibraryLayout {
     /// The last section's title. Not a group name — no `ExerciseGroup` is ever called this.
     static let ungroupedTitle = "Ungrouped"
 
-    init(exercises: [Exercise], groups: [ExerciseGroup]) {
+    /// `zones` are the heart-rate zones, read live by the caller: the endurance card's
+    /// ring is judged in them.
+    init(exercises: [Exercise], groups: [ExerciseGroup], zones: HeartRateZones? = nil) {
         tiles = Self.byRecency(exercises)
         sections = Self.sections(tiles: tiles, groups: groups)
         // The tiles are in recency order, so the library's most recent entry is the
         // first tile's — if that tile has one at all. The entry is read again for its
         // machine, once, rather than carried on every tile: only the card needs a scope.
-        resume = tiles.first.flatMap { LibraryResume(exercise: $0.exercise) }
+        resume = tiles.first.flatMap { LibraryResume(exercise: $0.exercise, zones: zones) }
     }
 
     /// The tiles whose name contains `query`, ignoring case and diacritics, in the same

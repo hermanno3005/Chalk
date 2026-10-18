@@ -337,7 +337,13 @@ final class LibraryModel {
         let exercises = (try? context.fetch(Self.library(of: half))) ?? []
         let typed = query.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let layout = LibraryLayout(exercises: exercises, groups: groups.groups)
+        // The zones are read live, never cached: the endurance card's ring is judged in
+        // them, and Settings can move them behind this screen.
+        let layout = LibraryLayout(
+            exercises: exercises,
+            groups: groups.groups,
+            zones: HeartRateZones(defaults: defaults)
+        )
         resume = layout.resume
 
         if typed.isEmpty {
