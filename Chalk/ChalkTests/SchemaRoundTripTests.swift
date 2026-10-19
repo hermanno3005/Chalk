@@ -81,6 +81,76 @@ struct SchemaRoundTripTests {
         #expect(machine.entries?.count == 1)
     }
 
+    @Test("An erg, its group, machine, goals and interval survive a write and a reopen")
+    func roundTripsEveryEnduranceField() throws {
+        let store = try TemporaryStore()
+        let loggedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let ergGoalSetAt = Date(timeIntervalSince1970: 1_700_100_000)
+        let machineGoalSetAt = Date(timeIntervalSince1970: 1_700_200_000)
+
+        do {
+            let context = ModelContext(store.container)
+            let group = ExerciseGroup(name: "Treadmills", sortIndex: 2, half: .endurance)
+            let erg = Exercise(name: "Treadmill", kind: .gymBound, group: group, unit: .speed)
+            // The invariant keeps a gym-bound erg's goal fields nil (SPEC §3), but the
+            // schema holds them either way — this is the schema's test, not the app's.
+            erg.goalZone = 4
+            erg.goalDuration = 360
+            erg.goalIntensity = 15.5
+            erg.goalIncline = 1
+            erg.goalSetAt = ergGoalSetAt
+            let gym = Gym(name: "Fitness X")
+            let machine = Machine(label: "Technogym Excite", exercise: erg, gym: gym)
+            machine.goalZone = 3
+            machine.goalDuration = 600
+            machine.goalIntensity = 13.2
+            machine.goalIncline = 0.5
+            machine.goalSetAt = machineGoalSetAt
+            let entry = Entry(
+                duration: 362,
+                intensity: 15.1,
+                incline: 1.5,
+                averageHeartRate: 164,
+                peakHeartRate: 171,
+                date: loggedAt,
+                exercise: erg,
+                machine: machine
+            )
+            try store.insertAll([group, erg, gym, machine, entry], into: context)
+        }
+
+        let context = ModelContext(try store.reopened())
+
+        let erg = try #require(try context.fetch(FetchDescriptor<Exercise>()).first)
+        #expect(erg.unit == "speed")
+        #expect(erg.group?.name == "Treadmills")
+        #expect(erg.goalZone == 4)
+        #expect(erg.goalDuration == 360)
+        #expect(erg.goalIntensity == 15.5)
+        #expect(erg.goalIncline == 1)
+        #expect(erg.goalSetAt == ergGoalSetAt)
+
+        let group = try #require(try context.fetch(FetchDescriptor<ExerciseGroup>()).first)
+        #expect(group.half == "endurance")
+
+        let machine = try #require(try context.fetch(FetchDescriptor<Machine>()).first)
+        #expect(machine.goalZone == 3)
+        #expect(machine.goalDuration == 600)
+        #expect(machine.goalIntensity == 13.2)
+        #expect(machine.goalIncline == 0.5)
+        #expect(machine.goalSetAt == machineGoalSetAt)
+
+        let entry = try #require(try context.fetch(FetchDescriptor<Entry>()).first)
+        #expect(entry.duration == 362)
+        #expect(entry.intensity == 15.1)
+        #expect(entry.incline == 1.5)
+        #expect(entry.averageHeartRate == 164)
+        #expect(entry.peakHeartRate == 171)
+        #expect(entry.date == loggedAt)
+        #expect(entry.exercise?.id == erg.id)
+        #expect(entry.machine?.id == machine.id)
+    }
+
     @Test("Defaults let every entity be created with nothing supplied")
     func defaultsAreEnoughToInsert() throws {
         let store = try TemporaryStore()
@@ -95,9 +165,9 @@ struct SchemaRoundTripTests {
         #expect(try context.fetchCount(FetchDescriptor<ExerciseGroup>()) == 1)
     }
 
-    @Test("The schema is 2.0.0 and names all five entities")
+    @Test("The schema is 3.0.0 and names all five entities")
     func schemaListsFiveEntities() {
-        #expect(ChalkSchemaV1.versionIdentifier == Schema.Version(2, 0, 0))
+        #expect(ChalkSchemaV1.versionIdentifier == Schema.Version(3, 0, 0))
         #expect(ChalkSchemaV1.models.count == 5)
         #expect(ChalkMigrationPlan.schemas.count == 1)
         #expect(ChalkMigrationPlan.stages.isEmpty)

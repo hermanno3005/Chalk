@@ -67,7 +67,7 @@ struct LogSheet: View {
             // One field, optional, with Skip — the machine is created at the gym its
             // row sat in and **the sheet resolves to it**, so there is no second
             // decision (SPEC §6.4).
-            .namingMachine(at: $naming) { gym, name in
+            .namingMachine(at: $naming, check: { model.nearModel(named: $1, at: $0) }) { gym, name in
                 model.createMachine(at: gym, named: name)
             }
             // `New gym…`: standing in an unfamiliar gym is exactly when you need one.
@@ -89,25 +89,14 @@ struct LogSheet: View {
     @ViewBuilder
     private var caption: some View {
         if let machineCaption = model.machineCaption {
-            Menu {
-                MachinePicker(
-                    menu: model.machineMenu,
-                    selected: model.machine,
-                    onSelect: model.select,
-                    onNewMachine: { naming = $0 },
-                    onNewGym: { creatingGym = true }
-                )
-            } label: {
-                Label(machineCaption, systemImage: "square.stack.3d.up")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .padding(.vertical, 8)
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("Changes the machine this is logged on")
+            MachineCaptionMenu(
+                text: machineCaption,
+                menu: model.machineMenu,
+                selected: model.machine,
+                onSelect: model.select,
+                onNewMachine: { naming = $0 },
+                onNewGym: { creatingGym = true }
+            )
         }
     }
 

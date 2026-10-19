@@ -37,6 +37,9 @@ writer. Sync-later is the whole durability story, and it holds because entries a
 re-derivable by lifting again: what the app is worth is the derivation, and the raw
 material regenerates.
 
+_Amended 2026-10-16:_ a Settings screen now exists, for heart-rate zones only, and it
+carries no export ([ADR-0005](0005-heart-rate-zones-are-five-typed-boundaries-on-a-settings-screen.md)).
+
 The escape hatch is **Xcode's Download Container** (Devices & Simulators → Installed
 Apps), which pulls the whole app container — SwiftData store included — onto the Mac.
 It costs the app nothing and works only because Chalk is development-signed onto a

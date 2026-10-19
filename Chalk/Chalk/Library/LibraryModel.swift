@@ -2,7 +2,10 @@ import Foundation
 import Observation
 import SwiftData
 
-/// The library screen's state, and the one mutation it owns (SPEC §7.1–7.3).
+/// The library screen's state, and the one mutation it owns (SPEC §7.1–7.3) — **for the
+/// half on screen** (SPEC §13.5). Strength's library holds lifts and endurance's holds
+/// ergs; the grid, search, groups, Arrange and Create it all read that half alone, while
+/// the gyms are shared by both.
 ///
 /// The ordering is **cached here and refreshed on mutation**, never computed behind
 /// `var body` — SPEC §7.2's third hazard, which cost the prototype a round: the
@@ -33,6 +36,14 @@ final class LibraryModel {
     /// once per keystroke rather than once per render.
     private(set) var query = ""
 
+    /// The half on screen — the home screen's `Strength | Endurance` control. **Sticky
+    /// and per device**: held in the injected defaults beside the current gym, so the app
+    /// reopens on the half you left it in, and strength on first launch (SPEC §13.5).
+    private(set) var half: Half
+
+    /// Where the half is held. A device preference, never part of the record.
+    static let halfKey = "com.hermannaust.Chalk.half"
+
     /// The gyms, and the gym you are standing in (SPEC §7.4). Held here because the
     /// library's overflow is where the current gym is chosen, and because the create
     /// sheet's gym-bound branch and the detail screen's opening cascade both read it.
@@ -44,18 +55,47 @@ final class LibraryModel {
     let groups: GroupsModel
 
     @ObservationIgnored private let context: ModelContext
+    /// Where this device's settings live, beside the store: the current gym, the half
+    /// on screen, the seed flags and the heart-rate zones.
+    @ObservationIgnored private let defaults: UserDefaults
 
     init(context: ModelContext, defaults: UserDefaults = .standard) {
         self.context = context
+        self.defaults = defaults
         self.gyms = GymsModel(context: context, defaults: defaults)
+        let half = defaults.string(forKey: Self.halfKey).flatMap(Half.init(rawValue:)) ?? .strength
+        self.half = half
         // Seeded before the groups are read, so first launch opens on the suggestion
-        // rather than on an empty sheet.
-        SuggestedGroups.seedIfNeeded(in: context, defaults: defaults)
-        self.groups = GroupsModel(context: context)
+        // rather than on an empty sheet. **Both halves, each once, each with its own
+        // flag** — an install that seeded strength long ago still gets endurance's.
+        for half in Half.allCases {
+            SuggestedGroups.seedIfNeeded(half, in: context, defaults: defaults)
+        }
+        self.groups = GroupsModel(context: context, half: half)
         // Wired after `init`, not through it: a stored property cannot capture the
         // owner that is still initialising it.
         groups.onChange = { [weak self] in self?.refresh() }
         refresh()
+    }
+
+    /// Switches the home screen to `half`, and remembers it for the next launch.
+    ///
+    /// **Always lands on that half's home screen**: the search is the half's own, so a
+    /// query typed on one never carries to the other (SPEC §13.5). The switch only exists
+    /// on the home screen, so there is no pushed screen to leave behind either.
+    func show(_ half: Half) {
+        defaults.set(half.rawValue, forKey: Self.halfKey)
+        guard half != self.half else { return }
+        self.half = half
+        groups.show(half)
+        query = ""
+        refresh()
+    }
+
+    /// Settings, opened from the home overflow's *Settings…* row. It belongs to neither
+    /// half (ADR-0005), so it reads nothing of the library but this device's defaults.
+    func settings() -> SettingsModel {
+        SettingsModel(defaults: defaults)
     }
 
     /// Filters the library to `text`, or returns to the grid when it is cleared.
@@ -129,17 +169,70 @@ final class LibraryModel {
         return exercise
     }
 
+    /// Creates an erg from the create-erg sheet's answers (SPEC §13.6) and returns to the
+    /// grid, as `create(name:kind:…)` does for a lift.
+    ///
+    /// Returns `nil` while the draft cannot save — **no unit, or no name** — so no erg
+    /// ever exists without a unit. **A gym-bound erg gets no machine here**: unlike
+    /// §7.3, the sheet asks for none, and the first log resolves it (§13.7).
+    ///
+    /// The group is honoured only if it is an **endurance** group (SPEC §3, invariant
+    /// 10); anything else — a strength group, or one deleted while the sheet was open —
+    /// is Ungrouped.
+    @discardableResult
+    func create(_ draft: NewErg) -> Exercise? {
+        guard draft.canSave, let unit = draft.unit else { return nil }
+
+        let erg = Exercise(
+            name: draft.trimmedName,
+            kind: draft.kind,
+            group: enduranceGroup(id: draft.groupID),
+            unit: unit
+        )
+        context.insert(erg)
+        // As in `create(name:kind:…)`: nothing to report, nothing to retry.
+        try? context.save()
+
+        query = ""
+        refresh()
+        return erg
+    }
+
+    /// The endurance group with this id, read from the store rather than `groups` so the
+    /// answer does not depend on which half is on screen.
+    private func enduranceGroup(id: UUID?) -> ExerciseGroup? {
+        guard let id else { return nil }
+        let endurance = Half.endurance.rawValue
+        var descriptor = FetchDescriptor<ExerciseGroup>(
+            predicate: #Predicate { $0.id == id && $0.half == endurance }
+        )
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
     /// Files `exercise` under `group`, or under **Ungrouped** when that is `nil`.
     ///
     /// The one mutation behind both of SPEC §7.2's assignment paths — a tile dragged into a
     /// section, and the ••• group picker Arrange mode puts on every tile. **Re-filing, not
     /// first filing**: an exercise reaches its group at create time (§7.3, ADR-0003), and
     /// these two paths are the periodic re-shelving pass that corrects it afterwards.
-    func assign(_ exercise: Exercise, to group: ExerciseGroup?) {
+    ///
+    /// **Never across halves** (SPEC §3, invariant 10): an erg sits only in an endurance
+    /// group and a lift only in a strength one, so a group of the other half files
+    /// nothing. Returns whether anything was filed.
+    @discardableResult
+    func assign(_ exercise: Exercise, to group: ExerciseGroup?) -> Bool {
+        if let group, group.half != Self.half(of: exercise).rawValue { return false }
         exercise.group = group
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
         refresh()
+        return true
+    }
+
+    /// The half a row belongs to: an erg's is endurance, read off its unit (ADR-0008).
+    private static func half(of exercise: Exercise) -> Half {
+        exercise.isErg ? .endurance : .strength
     }
 
     /// The same, for a **drop**, which carries an id rather than a model — a
@@ -154,8 +247,7 @@ final class LibraryModel {
         descriptor.fetchLimit = 1
         guard let exercise = try? context.fetch(descriptor).first else { return false }
 
-        assign(exercise, to: group)
-        return true
+        return assign(exercise, to: group)
     }
 
     /// The detail screen's state for one exercise (SPEC §5), made here so the store's
@@ -168,6 +260,34 @@ final class LibraryModel {
     func detail(for exercise: Exercise) -> ExerciseDetailModel {
         ExerciseDetailModel(exercise: exercise, context: context, gyms: gyms) { [weak self] in
             self?.refresh()
+        }
+    }
+
+    /// The erg detail screen's state (SPEC §13.8), made here for the same reasons
+    /// `detail(for:)` is: the context stays this model's own, and a rename, a unit change
+    /// or a delete over there puts the grid behind it back in step.
+    func ergDetail(for erg: Exercise) -> ErgDetailModel {
+        ErgDetailModel(erg: erg, context: context, gyms: gyms, defaults: defaults) { [weak self] in
+            self?.refresh()
+        }
+    }
+
+    /// The lap-list sheet over `erg` (SPEC §13.7) — what the endurance card's **Log
+    /// again** opens, seeded from the erg's most recent valid interval, the one the card
+    /// is showing. `nil` for a lift, which has the two-stage sheet instead.
+    ///
+    /// **The machine comes from the entry being resumed**, as strength's does: *Log
+    /// again* means again on that machine.
+    func lapList(for erg: Exercise, onSave: @escaping () -> Void = {}) -> LapListModel? {
+        LapListModel(
+            erg: erg,
+            machine: LastInterval.latestEntry(in: erg.entries ?? [])?.machine,
+            context: context,
+            gyms: gyms,
+            defaults: defaults
+        ) { [weak self] in
+            self?.refresh()
+            onSave()
         }
     }
 
@@ -197,6 +317,15 @@ final class LibraryModel {
         LastEntry.latestEntry(in: exercise.entries ?? [])?.machine
     }
 
+    /// The half's library: **the fetch filters on `unit`** (SPEC §13.1) — an erg is an
+    /// exercise that speaks one, a lift one that does not.
+    private static func library(of half: Half) -> FetchDescriptor<Exercise> {
+        switch half {
+        case .strength: FetchDescriptor(predicate: #Predicate { $0.unit == nil })
+        case .endurance: FetchDescriptor(predicate: #Predicate { $0.unit != nil })
+        }
+    }
+
     /// Re-reads the store and rebuilds the cached ordering. Called after every mutation
     /// this model makes, and by anything that changes the library behind its back.
     func refresh() {
@@ -205,10 +334,16 @@ final class LibraryModel {
         // The groups are re-read too: a rename, a reorder or a delete behind the grid
         // is a change to the sections it draws.
         groups.refresh()
-        let exercises = (try? context.fetch(FetchDescriptor<Exercise>())) ?? []
+        let exercises = (try? context.fetch(Self.library(of: half))) ?? []
         let typed = query.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let layout = LibraryLayout(exercises: exercises, groups: groups.groups)
+        // The zones are read live, never cached: the endurance card's ring is judged in
+        // them, and Settings can move them behind this screen.
+        let layout = LibraryLayout(
+            exercises: exercises,
+            groups: groups.groups,
+            zones: HeartRateZones(defaults: defaults)
+        )
         resume = layout.resume
 
         if typed.isEmpty {

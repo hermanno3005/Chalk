@@ -13,14 +13,21 @@ import SwiftData
 /// **Reordering is the primary verb, not an afterthought** — this list's order *is* the
 /// section order on the library screen, which is the whole of "compounds at the top".
 ///
+/// **Scoped to one half** (SPEC §13.5): each half has its own set, so everything here —
+/// the list, a new group, a reorder — is that half's alone, and an erg's picker never
+/// offers *Push*.
+///
 /// Held by `LibraryModel`, which wires `onChange` to its own refresh so the grid behind
-/// the sheet moves with it.
+/// the sheet moves with it, and re-scopes it when the home screen switches half.
 @Observable
 final class GroupsModel {
 
-    /// Every group, in the user's own order — including the ones holding nothing, which
-    /// the grid leaves out but the group picker must still offer.
+    /// The half's groups, in the user's own order — including the ones holding nothing,
+    /// which the grid leaves out but the group picker must still offer.
     private(set) var groups: [ExerciseGroup] = []
+
+    /// The half these groups shelve. Set through `show(_:)`.
+    private(set) var half: Half
 
     /// What to put back in step after a mutation — the library grid behind the sheet.
     /// Assigned after `init` rather than taken as a parameter, because the owner cannot
@@ -29,8 +36,16 @@ final class GroupsModel {
 
     @ObservationIgnored private let context: ModelContext
 
-    init(context: ModelContext) {
+    init(context: ModelContext, half: Half = .strength) {
         self.context = context
+        self.half = half
+        refresh()
+    }
+
+    /// Re-scopes to the other half's groups — the home screen's switch.
+    func show(_ half: Half) {
+        guard half != self.half else { return }
+        self.half = half
         refresh()
     }
 
@@ -58,7 +73,7 @@ final class GroupsModel {
         // Past the current maximum rather than `groups.count`, so a store whose indices
         // are not dense — one arriving from another device — cannot collide.
         let last = groups.map(\.sortIndex).max() ?? -1
-        let group = ExerciseGroup(name: name, sortIndex: last + 1)
+        let group = ExerciseGroup(name: name, sortIndex: last + 1, half: half)
         context.insert(group)
         save()
         return group
@@ -103,10 +118,15 @@ final class GroupsModel {
         save()
     }
 
-    /// Re-reads the groups. Called at init, and by `LibraryModel.refresh()` — anything
-    /// that edits a group behind the grid comes back through here.
+    /// Re-reads the half's groups. Called at init, and by `LibraryModel.refresh()` —
+    /// anything that edits a group behind the grid comes back through here.
+    ///
+    /// The fetch filters on `half` (SPEC §13.1): a group's half is the one thing it
+    /// cannot read off what it holds, since an empty group holds nothing.
     func refresh() {
-        groups = GroupOrder.inOrder((try? context.fetch(FetchDescriptor<ExerciseGroup>())) ?? [])
+        let raw = half.rawValue
+        let descriptor = FetchDescriptor<ExerciseGroup>(predicate: #Predicate { $0.half == raw })
+        groups = GroupOrder.inOrder((try? context.fetch(descriptor)) ?? [])
     }
 
     /// As everywhere else: v1 has no error state past §3's container failure and no

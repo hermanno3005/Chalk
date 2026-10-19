@@ -13,8 +13,11 @@ import Foundation
 /// Not offering the flip at all is rejected: a genuine misclassification would then be
 /// unfixable without deleting the exercise and losing its history.
 ///
-/// The type is the words and the counts; the writes are
-/// `ExerciseDetailModel.makeGymBound(…)` and `.makeFreeWeight()`.
+/// **Ergs flip the same way** (SPEC §13.11) — transferable is free-weight's stored kind
+/// (ADR-0008) — and only the words change: *transferable*, and never *curve*.
+///
+/// The type is the words and the counts; the shared writes are `placeEntries(…)` and
+/// `pool(in:)`, called by `ExerciseDetailModel` and `ErgDetailModel`.
 struct KindChange {
     let exercise: Exercise
 
@@ -38,15 +41,15 @@ struct KindChange {
 
     var entryCount: Int { (exercise.entries ?? []).count }
 
-    /// The free-weight exercise's own goal — what the flip to gym-bound carries onto the
-    /// machine. Nil going the other way: a gym-bound exercise holds no goal of its own
-    /// (SPEC §3).
-    private var exerciseGoal: Goal? {
-        direction == .toGymBound ? GoalScope.exercise(exercise).goal : nil
+    /// The free-weight exercise's or transferable erg's own goal — what the flip to
+    /// gym-bound carries onto the machine. Nil going the other way: a gym-bound exercise
+    /// holds no goal of its own (SPEC §3).
+    private var exerciseGoal: (any HeldGoal)? {
+        direction == .toGymBound ? GoalScope.exercise(exercise).heldGoal : nil
     }
 
     /// The machines' goals — pooling keeps the most recently set (SPEC §8, #67), and the
-    /// rest die with their machines.
+    /// rest die with their machines. Either half's (§13.11).
     private var machineGoals: MachineGoals { MachineGoals(machines) }
 
     /// The machine whose goal pooling copies onto the exercise: the most recently set.
@@ -83,13 +86,19 @@ struct KindChange {
     private var poolingSentence: String {
             switch loggedMachineCount {
             case 0:
-                return "Make \(exercise.name) free-weight?"
+                return "Make \(exercise.name) \(transferableWord)?"
             case 1:
                 // One curve does not merge with anything; saying it would is a lie about
                 // the only thing this confirmation exists to say.
-                return "\(exercise.name) has entries on one machine. They'll become the exercise's own curve."
+                return exercise.isErg
+                    ? "\(exercise.name) has entries on one machine. They'll be read as the erg's own."
+                    : "\(exercise.name) has entries on one machine. They'll become the exercise's own curve."
             default:
-                return "\(exercise.name) has entries on \(phrase(machines: loggedMachineCount)). They'll merge into one curve."
+                // **The endurance wording never says *curve*** (SPEC §13.11): an erg
+                // has zone lines, and what pooling does to them is read them as one.
+                return exercise.isErg
+                    ? "\(exercise.name) has entries on \(phrase(machines: loggedMachineCount)). They'll be read as one."
+                    : "\(exercise.name) has entries on \(phrase(machines: loggedMachineCount)). They'll merge into one curve."
             }
     }
 
@@ -98,6 +107,8 @@ struct KindChange {
     /// their count in every branch that has one.
     var detail: String {
         switch direction {
+        case .toGymBound where exercise.isErg:
+            return "Its numbers will be kept per machine. Log a block and name the machine you are on."
         case .toGymBound:
             return "Its numbers will be kept per machine. Log a lift and name the one you are at."
         case .toFreeWeight where machines.isEmpty:
@@ -111,15 +122,24 @@ struct KindChange {
 
     /// The confirming button, phrased as the kind you end up with rather than as *OK*.
     var confirmButton: String {
-        direction == .toGymBound ? "Make gym-bound" : "Make free-weight"
+        direction == .toGymBound ? "Make gym-bound" : "Make \(transferableWord)"
+    }
+
+    /// The not-gym-bound kind in the exercise's own half's words: one stored kind,
+    /// *free-weight* on a lift and *transferable* on an erg (ADR-0008).
+    private var transferableWord: String {
+        exercise.isErg ? "transferable" : "free-weight"
     }
 
     /// The machine prompt's question — **one machine, for every entry there is**. It is
     /// asked once and there is no "some of them": splitting a history across machines
     /// after the fact is the history sheet's per-entry machine edit (SPEC §6.6). With
     /// nothing logged it is a goal being placed, so it asks about the exercise instead.
+    ///
+    /// **An erg is always asked about itself** (SPEC §13.11): the machine is what the erg
+    /// is, and the entries going with it are the line underneath.
     var prompt: String {
-        entryCount == 0 ? "Which machine is this on?" : "Which machine are these entries on?"
+        entryCount == 0 || exercise.isErg ? "Which machine is this on?" : "Which machine are these entries on?"
     }
 
     /// What moves: the entries, the goal, or both — the goal keeping the moment it was

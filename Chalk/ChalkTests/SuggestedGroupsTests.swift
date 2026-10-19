@@ -59,4 +59,69 @@ struct SuggestedGroupsTests {
 
         #expect(try fixture.allGroups().map(\.name) == ["Legs"])
     }
+
+    // MARK: - Endurance
+
+    @Test("First launch seeds the three endurance suggestions in their listed order")
+    func firstLaunchSeedsTheThreeEnduranceGroups() throws {
+        let fixture = try LibraryFixture()
+
+        SuggestedGroups.seedIfNeeded(.endurance, in: fixture.context, defaults: fixture.defaults)
+
+        let seeded = try fixture.allGroups().sorted { $0.sortIndex < $1.sortIndex }
+        #expect(seeded.map(\.name) == ["Treadmills", "Rowing & Ski", "Bikes"])
+        #expect(seeded.map(\.sortIndex) == [0, 1, 2])
+        #expect(seeded.allSatisfy { $0.half == Half.endurance.rawValue })
+    }
+
+    @Test("A store that already holds strength groups still gets the endurance groups, once")
+    func anExistingInstallGetsTheEnduranceGroupsOnce() throws {
+        let fixture = try LibraryFixture()
+        // An install from before endurance: its strength seed ran long ago.
+        SuggestedGroups.seedIfNeeded(in: fixture.context, defaults: fixture.defaults)
+        fixture.group("Grip", sortIndex: 5)
+        try fixture.save()
+
+        SuggestedGroups.seedIfNeeded(.endurance, in: fixture.context, defaults: fixture.defaults)
+        SuggestedGroups.seedIfNeeded(.endurance, in: fixture.context, defaults: fixture.defaults)
+
+        #expect(try fixture.allGroups(.endurance).map(\.name) == ["Treadmills", "Rowing & Ski", "Bikes"])
+        #expect(try fixture.allGroups(.strength).map(\.name) == ["Compound", "Legs", "Push", "Pull", "Core", "Grip"])
+    }
+
+    @Test("A deleted endurance suggestion stays deleted")
+    func aDeletedEnduranceSuggestionStaysDeleted() throws {
+        let fixture = try LibraryFixture()
+        SuggestedGroups.seedIfNeeded(.endurance, in: fixture.context, defaults: fixture.defaults)
+        let bikes = try #require(try fixture.allGroups(.endurance).first { $0.name == "Bikes" })
+        fixture.context.delete(bikes)
+        try fixture.save()
+
+        SuggestedGroups.seedIfNeeded(.endurance, in: fixture.context, defaults: fixture.defaults)
+
+        #expect(try fixture.allGroups(.endurance).map(\.name) == ["Treadmills", "Rowing & Ski"])
+    }
+
+    @Test("Each half's seed counts only its own groups")
+    func eachHalfsSeedCountsOnlyItsOwnGroups() throws {
+        let fixture = try LibraryFixture()
+
+        // Endurance first: strength's guard must not read these as its own seed.
+        SuggestedGroups.seedIfNeeded(.endurance, in: fixture.context, defaults: fixture.defaults)
+        SuggestedGroups.seedIfNeeded(.strength, in: fixture.context, defaults: fixture.defaults)
+
+        #expect(try fixture.allGroups(.strength).map(\.name) == ["Compound", "Legs", "Push", "Pull", "Core"])
+        #expect(try fixture.allGroups(.endurance).map(\.name) == ["Treadmills", "Rowing & Ski", "Bikes"])
+    }
+
+    @Test("A store that already holds endurance groups is never seeded into")
+    func aStoreWithEnduranceGroupsIsNeverSeededInto() throws {
+        let fixture = try LibraryFixture()
+        fixture.group("Rowers", sortIndex: 0, half: .endurance)
+        try fixture.save()
+
+        SuggestedGroups.seedIfNeeded(.endurance, in: fixture.context, defaults: fixture.defaults)
+
+        #expect(try fixture.allGroups(.endurance).map(\.name) == ["Rowers"])
+    }
 }

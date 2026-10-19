@@ -10,12 +10,15 @@ struct LibrarySearchField: View {
     @Binding var query: String
     /// Whether the field is first responder.
     @FocusState.Binding var isFocused: Bool
+    /// The half's own words: *an exercise* on strength, *an erg* on endurance (SPEC
+    /// §13.5).
+    var prompt = "Search or add an exercise"
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Search or add an exercise", text: $query)
+            TextField(prompt, text: $query)
                 .focused($isFocused)
                 // An exit in its own right: submit resigns focus.
                 .submitLabel(.search)

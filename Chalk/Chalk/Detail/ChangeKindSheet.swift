@@ -52,8 +52,13 @@ struct ChangeKindSheet: View {
                 }
             }
             // Literally the same one field, optional, with Skip, that the log sheet's
-            // `New machine here` puts up (SPEC §6.4).
-            .namingMachine(at: $naming, onName: pick)
+            // `New machine here` puts up (SPEC §6.4) — with its near-name warning on an
+            // erg (§13.11), which a lift never raises.
+            .namingMachine(
+                at: $naming,
+                check: { [change] gym, name in ErgModelMatch.onCreate(name, for: change.exercise, at: gym) },
+                onName: pick
+            )
             .sheet(isPresented: $creatingGym) {
                 // The new gym joins the list behind this sheet and is tapped like any
                 // other. It is not picked for you: raising the naming alert as the

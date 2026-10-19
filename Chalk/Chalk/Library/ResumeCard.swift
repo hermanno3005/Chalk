@@ -21,7 +21,7 @@ struct ResumeCard: View {
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 8) {
                     goalSlot
-                    Text(resume.lastEntry.text())
+                    Text(resume.text())
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -51,8 +51,8 @@ struct ResumeCard: View {
     /// other tap there, and it is never a target between *Log again* and the card.
     private var goalSlot: some View {
         ZStack {
-            if let goal = resume.goal {
-                GoalDonut(progress: goal.progress, isReached: goal.isReached)
+            if let ring = resume.ring {
+                GoalDonut(progress: ring.progress, isReached: ring.isReached)
             }
         }
         .frame(width: GoalDonut.size, height: GoalDonut.size)
