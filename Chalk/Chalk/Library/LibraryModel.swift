@@ -93,9 +93,10 @@ final class LibraryModel {
     }
 
     /// Settings, opened from the home overflow's *Settings…* row. It belongs to neither
-    /// half (ADR-0005), so it reads nothing of the library but this device's defaults.
+    /// half (ADR-0005), so it reads nothing of the library but this device's defaults, and
+    /// the whole store only when a backup is made (ADR-0010).
     func settings() -> SettingsModel {
-        SettingsModel(defaults: defaults)
+        SettingsModel(defaults: defaults, container: context.container)
     }
 
     /// Filters the library to `text`, or returns to the grid when it is cleared.

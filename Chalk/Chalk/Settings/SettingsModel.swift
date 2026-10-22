@@ -1,9 +1,10 @@
 import Foundation
 import Observation
+import SwiftData
 
-/// Settings' state (ADR-0005): Chalk's one settings screen, holding your heart-rate zones
-/// and nothing else — no export, no import, nothing about durability. Each further setting
-/// is its own decision, never a row added in passing.
+/// Settings' state (ADR-0005): Chalk's one settings screen, holding your heart-rate zones,
+/// and where a **backup** is made (ADR-0010). Each further setting is its own decision,
+/// never a row added in passing.
 ///
 /// Four whole-bpm fields, the lower bounds of Z2 to Z5. A save needs all four, each 40–230
 /// and strictly higher than the one below — `HeartRateZones`' own rule, so the screen and
@@ -22,10 +23,15 @@ final class SettingsModel: Identifiable {
     /// Whether the four fields make a set of zones.
     var canSave: Bool { typedZones != nil }
 
+    /// A backup of everything in `container`, handed to the share sheet. Nothing is
+    /// written until a destination asks for it.
+    let backup: BackupFile
+
     @ObservationIgnored private let defaults: UserDefaults
 
-    init(defaults: UserDefaults) {
+    init(defaults: UserDefaults, container: ModelContainer) {
         self.defaults = defaults
+        backup = BackupFile(container: container, settings: Backup.Settings(defaults: defaults))
         if let zones = HeartRateZones(defaults: defaults) {
             lowerBounds = zones.lowerBounds
         }
@@ -35,6 +41,12 @@ final class SettingsModel: Identifiable {
     /// caller can save a partial or impossible set, or clear one.
     func save() {
         typedZones?.save(to: defaults)
+    }
+
+    /// Settings has closed, and the share sheet with it: no destination is still copying
+    /// a backup, so Chalk keeps none.
+    func close() {
+        BackupFile.clear()
     }
 
     private var typedZones: HeartRateZones? {

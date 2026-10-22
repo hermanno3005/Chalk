@@ -6,6 +6,9 @@ struct ChalkApp: App {
     private let root: Root
 
     init() {
+        // A backup shared before the app last quit is no longer being copied anywhere,
+        // and Chalk keeps none of its own (ADR-0010).
+        BackupFile.clear()
         switch ChalkStore.open() {
         case .opened(let container):
             // The library model is made once, here, rather than per body evaluation: it

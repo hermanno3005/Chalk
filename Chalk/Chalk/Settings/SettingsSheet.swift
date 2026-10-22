@@ -1,11 +1,16 @@
+import SwiftData
 import SwiftUI
 
-/// Settings (ADR-0005): the heart-rate zones and nothing else, reached from *Settings…* in
-/// the home overflow and belonging to neither half.
+/// Settings (ADR-0005): the heart-rate zones, and *Make a backup* (ADR-0010), reached from
+/// *Settings…* in the home overflow and belonging to neither half.
 ///
 /// Four whole-bpm fields, Z2 to Z5. Z1 is written out rather than typed, because it has no
 /// floor of its own — it is everything below Z2. Save stays disabled until the four make a
 /// set of zones; there is no clear.
+///
+/// *Make a backup* hands one readable file of everything Chalk holds to the share sheet. It
+/// backs up the zones as saved, not as typed: Save closes the sheet, so what is typed here
+/// is never saved while the row is on screen.
 struct SettingsSheet: View {
     let model: SettingsModel
 
@@ -37,7 +42,15 @@ struct SettingsSheet: View {
                 } footer: {
                     Text("The lowest heart rate of each zone, in whole bpm, from your watch or a lactate test. Each is between 40 and 230 and higher than the one before. Z5 has no ceiling.")
                 }
+                Section {
+                    ShareLink(item: model.backup, preview: SharePreview("Chalk backup")) {
+                        Label("Make a backup", systemImage: "square.and.arrow.up")
+                    }
+                } footer: {
+                    Text("One file holding every entry, exercise, erg, gym, machine and goal, and your zones. Keep it off the phone, in Files or on a Mac.")
+                }
             }
+            .onDisappear(perform: model.close)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -68,6 +81,10 @@ struct SettingsSheet: View {
 
 #Preview {
     SettingsSheet(model: SettingsModel(
-        defaults: UserDefaults(suiteName: "chalk-preview-\(UUID().uuidString)")!
+        defaults: UserDefaults(suiteName: "chalk-preview-\(UUID().uuidString)")!,
+        container: try! ModelContainer(
+            for: Schema(versionedSchema: ChalkSchemaV1.self),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
     ))
 }
