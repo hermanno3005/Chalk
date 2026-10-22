@@ -18,7 +18,7 @@ import Foundation
 /// backup carries none.
 ///
 /// The shape, the encoding and the version follow *How does a Chalk library round-trip
-/// exactly through a readable backup file?* (`docs/research/backup-round-trip.md`).
+/// exactly through a readable backup file?* (https://github.com/hermanno3005/Chalk/issues/128).
 struct Backup: Equatable, Sendable {
 
     /// What the file says it is, so a picker that offers any JSON can tell a backup apart.
