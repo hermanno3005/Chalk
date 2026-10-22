@@ -30,7 +30,13 @@ to set on the machine.
 It is **not** a workout logger. There are no sessions, no sets, no routines, no rest timers.
 The unit of record is one entry. Every "best" number is derived at read time and never stored.
 
-Single user. One device. No backend, no accounts, no sharing. Sideloaded from Xcode.
+**The plan lives somewhere else.** Chalk is what you consult to carry out a training plan kept
+in another app: the plan names the reps, the reps in reserve, the duration and the zone, and
+Chalk turns them into the number to load on the bar or set on the console. For `8 @ RIR 2` you
+read `best[10]`. That translation is yours, and Chalk never takes it over (§15).
+
+Single user. One device. No backend, no accounts, no sharing. Sideloaded from Xcode, and built
+so that a paid developer account is the only thing between it and the App Store (§15).
 
 ---
 
@@ -75,6 +81,10 @@ signing problem — rebuild and re-trust.** Deleting is the one action that take
 with it.
 
 ### Durability
+
+_Reversed 2026-10-22: Chalk makes and restores backups from Settings (§15,
+[ADR-0010](docs/adr/0010-chalk-makes-and-restores-backups.md)). The rest of this section
+describes v1 as it shipped._
 
 Chalk ships **no export and no import** — no share sheet, no file writer
 ([#17](https://github.com/hermanno3005/Chalk/issues/17)). **Settings** (§13.3) holds heart-rate
@@ -1134,21 +1144,22 @@ are on `main` ([#122](https://github.com/hermanno3005/Chalk/issues/122)), in thi
 Carried from the map's Out of scope. These are **decided**, not deferred by accident.
 
 - **App Store distribution.** Sideloading from Xcode with free provisioning is the v1 delivery.
-  Don't paint into a corner that blocks a future release; don't design for one either.
+  _Amended 2026-10-22:_ Chalk is now designed for a release, so that paying for the membership
+  is the only step left (§15). Shipping one is still out of scope.
 - **iCloud sync.** Gated behind a paid Apple Developer Program membership. The schema is built to
   CloudKit's rules so sync becomes a capability change plus one line — shipping it is not part of
   v1. See ADR-0001, including the one unverified claim it rests on.
-- **Export and import.** No share sheet, no file writer, and no export or import row on
-  Settings (§2, §13.3).
+- ~~**Export and import.**~~ _Reversed 2026-10-22:_ backup and restore, §15.
 - **Apple Watch app.**
 - **Workout and program planning** — routines, planned sessions, rest timers. Sessions are not
   part of this domain model at all.
 - **Outdoor cardio, body metrics and measurements** — GPS runs and rides, bodyweight,
   measurements. Indoor ergs are endurance (§13); outdoor cardio has no machine to calibrate.
 - **Sharing, social, multi-user.** No backend of any kind.
-- **Pounds, and any unit setting** (§3, §6.2, §13.2). Settings holds heart-rate zones only
-  (§13.3); each further setting is its own decision, never a row added in passing. An erg's unit
-  is chosen per erg at create, not set app-wide, and Chalk converts nothing between units.
+- ~~**Pounds, and any unit setting**~~ _Reversed 2026-10-22:_ a weight unit and a distance unit,
+  app-wide, §15 ([ADR-0009](docs/adr/0009-units-are-rewritten-never-converted-for-display.md)).
+  Each further setting is still its own decision, never a row added in passing. An erg's unit
+  is still chosen per erg at create, and Chalk still converts nothing between an erg's units.
 - **A trend over time** — no "5RM this year" chart anywhere ([#16](https://github.com/hermanno3005/Chalk/issues/16)).
   Backfill makes such a chart a guaranteed-rising staircase, and the dated history sheet already
   answers "when".
@@ -1406,7 +1417,9 @@ An erg speaks **one unit**, chosen at create (§13.6). Chalk knows four:
 - **A speed keeps its tenth** (`15.0 km/h`), unlike a weight's trimmed zero (§3). **A split
   trims a trailing `.0`.**
 - **No mph, no steps/min, no /1000 m.** Chalk converts nothing between units and knows no brands
-  — a *Concept2 RowErg* is an erg you named that way.
+  — a *Concept2 RowErg* is an erg you named that way. _Amended 2026-10-22:_ a speed is written
+  in the app-wide distance unit, km/h with min/km or mph with min/mile (§15). That is a scale,
+  not a fifth unit.
 - **The written form of an entry:** `6:00 at 15.0 km/h (4:00 /km) · 1 % · 168/174 bpm`. Average
   before peak. Incline is left out at 0 % (the log grid still shows it). Durations are `m:ss`, or
   `h:mm:ss` from an hour.
@@ -1911,8 +1924,8 @@ Beyond §11:
   hand.
 - **Sessions, workouts, interval programmes and timers.** Nothing groups a block once saved, and a
   visit is never stored.
-- **Units beyond the four**: user-defined units, mph, steps/min, /1000 m splits, and **any
-  conversion between units**.
+- **Units beyond the four**: user-defined units, steps/min, /1000 m splits, and **any
+  conversion between units**. (mph is the distance unit's, §15.)
 - **Machine settings other than incline** — damper, resistance, programme.
 - **Zones per modality, a zone count other than five, any zone model or computed boundary**, and
   naming any boundary *threshold*.
@@ -1923,7 +1936,7 @@ Beyond §11:
 - **Preset ergs**, and name suggestions on the create-erg sheet.
 - **A repair for an erg's unit once it has entries.**
 - **Brand knowledge of any kind** — Concept2 formulas, calibrations.
-- **Settings rows beyond zones**, export and import included.
+- **Settings rows beyond zones**, except the ones §15 adds.
 - **Zones syncing across devices** — no sync exists.
 - **A goal crossing on the lap-list sheet**, and a history of goals reached.
 
@@ -1932,3 +1945,85 @@ Beyond §11:
 One thing, deliberately: **app identity.** The name (Chalk) and the icon. The bundle id
 `com.hermannaust.Chalk` and the 18.0 deployment target are provisional facts from the skeleton
 and may be revised. Nothing in this spec waits on it, and an icon is made, not decided.
+
+## 15. Store-ready
+
+From the launch-polish grilling of 2026-10-22, which has no ticket yet. The words are in
+`CONTEXT.md`: **Weight unit**, **Distance unit**, **Relabel**, **Convert**, **Backup**,
+**Restore**, **Bar**, **Plate breakdown**. Read
+[ADR-0009](docs/adr/0009-units-are-rewritten-never-converted-for-display.md) and
+[ADR-0010](docs/adr/0010-chalk-makes-and-restores-backups.md) before touching units or backups.
+
+**The posture.** Chalk stays sideloaded and single-user, but it is built so that paying for the
+developer account is the only step left before the App Store. The weekly re-sign is lived with
+until the features below are done. No free workaround (SideStore, AltStore, a scripted rebuild)
+is adopted.
+
+### 15.1 Backup and restore
+
+- **A backup** is one readable file holding everything Chalk knows, made from Settings and
+  handed to the share sheet. It round-trips exactly.
+- **A restore** replaces everything and never merges. Over a library that is not empty, it first
+  says what will be lost and how old the backup is: `This replaces 1,240 entries with 980 from
+  12 Mar 2026`. Chalk makes no automatic backup of its own, not even before a restore.
+- **Make a backup before the team switch** and before a convert. This replaces *pull a
+  container first*.
+
+### 15.2 Units
+
+- **Weight unit**: kg or lb. **Distance unit**: km or miles, which writes a speed as km/h with
+  min/km or as mph with min/mile. Both are app-wide and independent, and both are chosen at
+  onboarding.
+- **Changing one once there are entries is a relabel or a convert**, two separate and plainly
+  worded acts on Settings. A relabel keeps every number. A convert rewrites every number and
+  goal onto the new scale, rounded to 0.5 kg, 1 lb or 0.1 km/h or mph, and is confirmed with a
+  count.
+- **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb.
+
+### 15.3 Onboarding
+
+**One screen**: the weight unit, the distance unit, and a quieter *Restore from a backup* link.
+There is no tour and no setup flow. Gyms, zones and exercises are still asked for at the moment
+they matter, and if strangers turn out to be confused, the fix goes into the empty states.
+
+### 15.4 Design
+
+- **The layouts stay.** Chalk gains an identity on top of them: a palette and a treatment for
+  the big numbers, taken from the chalk icon. **Two or three palettes are prototyped on the real
+  detail screen before one is chosen.**
+- **The library tiles stop truncating** their last entry, and the grid stops leaving half its
+  width empty.
+- **Haptics in three places only:** a tick at each scrub detent (a rep count on the curve, a
+  duration on the zone line), a success tap when an entry saves, and a distinct one when a save
+  reaches a goal. §6.5's *no haptic* at the stepper crossing stands.
+
+### 15.5 Features
+
+- **Spotlight and App Shortcuts.** Every exercise and erg is findable from the system search and
+  opens on its detail screen.
+- **Plate breakdown**, the first item cut if this list grows too long, and prototyped before it
+  is built. An exercise may have a **bar**, set only by you at create or from the overflow
+  (*No bar*, 20, 15 or 10 kg, or a typed weight), and has none until you set one. Under a readout
+  with a bar, the plates per side come from the weight unit's standard set, or the nearest
+  loadable weight below when the exact one is not loadable. There is no plate inventory per gym,
+  and nothing for plate-loaded machines. It can be switched off on Settings.
+
+### 15.6 Baseline
+
+- **Every string in a String Catalog**, plurals and number formats included. English only.
+- **VoiceOver** labels throughout, and chart descriptions so the curve and the zone line can be
+  heard as audio graphs.
+- **Dynamic Type** that the big readouts survive, and dark mode checked on the phone.
+- **A privacy manifest**, and the store listing's screenshots and copy, ready for the day.
+
+### 15.7 Decided against, or parked
+
+- **A reps-in-reserve input.** `8 @ RIR 2` is read at 10 by you (§1).
+- **A longer rep axis.** Sets above 12 are by feel, or found in the 12-rep history sheet, which
+  lists every entry with `reps >= 12`.
+- **Opening the curve anywhere but 5 reps.**
+- **HealthKit or watch import.** Typing an endurance block after the session is fine (§13.14
+  stands).
+- **Siri lookups**, and **swiping between exercises**.
+- **A log widget**, parked rather than rejected.
+- **A second language at launch.**

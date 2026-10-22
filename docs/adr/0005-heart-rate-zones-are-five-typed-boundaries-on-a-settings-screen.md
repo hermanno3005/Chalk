@@ -30,6 +30,10 @@ screen's overflow in both halves, and for now it holds the zones and nothing els
 - v1's "no Settings screen" (SPEC §2, §11, ADR-0001) is withdrawn. What it guarded is not:
   there is still no export, import or share sheet, and Settings carries none of them. Each
   further setting is its own decision, never a row added in passing.
+  _Amended 2026-10-22:_ three such decisions have since been made. Settings also holds the
+  weight and distance units ([ADR-0009](0009-units-are-rewritten-never-converted-for-display.md)),
+  the plate-breakdown switch, and backup and restore
+  ([ADR-0010](0010-chalk-makes-and-restores-backups.md)).
 - Zones are read live. No entry stores a zone, nothing caches a boundary, and moving one
   recomputes everything on the next read — nothing migrates.
 - Zones are held per device, beside the store rather than in it (ADR-0008), so *one set*
