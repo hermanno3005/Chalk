@@ -271,7 +271,7 @@ final class ErgDetailModel {
     /// Settings, opened in place of the zone buttons while zones are not set. The screen
     /// re-reads when it closes: entries logged before the zones join the lines then.
     func settings() -> SettingsModel {
-        SettingsModel(defaults: defaults)
+        SettingsModel(defaults: defaults, container: context.container)
     }
 
     // MARK: - The goal (SPEC §13.10)

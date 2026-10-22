@@ -1455,8 +1455,10 @@ overflow, in both halves**. It sits outside either half.
 - Four whole-bpm fields, Z2 to Z5. **Each is 40–230 and strictly higher than the one below.**
 - **Save needs all four**, and is disabled otherwise, so a half-typed set never exists.
 - **Edited, never cleared.** Once set, nothing that depends on zones is ever gated again.
-- **It holds the zones and nothing else** — no export, no import, no share row (§2). Each further
-  setting is its own decision, never a row added in passing.
+- ~~**It holds the zones and nothing else** — no export, no import, no share row (§2).~~
+  _Reversed 2026-10-22:_ Settings is also where a backup is made and restored (§15.1,
+  [ADR-0010](docs/adr/0010-chalk-makes-and-restores-backups.md)). Each further setting is its
+  own decision, never a row added in passing.
 
 **Logging never needs zones.** Before the first save you log as normal; only the lookup is gated
 (§13.8), and entries logged before zones were set join the lines the moment they are.
