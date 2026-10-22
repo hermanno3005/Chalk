@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Build Chalk and run its tests on an iOS Simulator. CI runs this same script.
+#
+#   scripts/check                                     # every test
+#   scripts/check -only-testing:ChalkTests/LogSheetModelTests
+#
+# Extra arguments pass straight to `xcodebuild test`. Set CHALK_SIMULATOR to a
+# simulator UDID to pin one; otherwise an iPhone on the newest iOS runtime.
+#
+# Prints only build errors, failing tests and the result; the full log is at
+# build/check.log. No "Test run with N tests" line means an -only-testing
+# filter matched nothing: xcodebuild still says TEST SUCCEEDED. The built app
+# lands at
+# build/DerivedData/Build/Products/Debug-iphonesimulator/Chalk.app.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+# The first iPhone under the newest iOS runtime, which simctl lists last.
+udid="${CHALK_SIMULATOR:-$(xcrun simctl list devices available | awk '
+  /^-- / { ios = /^-- iOS /; taken = 0; next }
+  ios && !taken && /iPhone/ && match($0, /\([0-9A-F-]+\)/) {
+    id = substr($0, RSTART + 1, RLENGTH - 2); taken = 1
+  }
+  END { print id }')}"
+if [[ -z "$udid" ]]; then
+  echo "scripts/check: no available iPhone simulator" >&2
+  exit 1
+fi
+
+mkdir -p build
+xcodebuild test \
+  -project Chalk/Chalk.xcodeproj \
+  -scheme Chalk \
+  -destination "platform=iOS Simulator,id=$udid" \
+  -derivedDataPath build/DerivedData \
+  "$@" 2>&1 |
+  tee build/check.log |
+  { grep -E ':[0-9]+:[0-9]+: error:|^(xcodebuild|ld|clang): error|^error:|✘|Test run with|\*\* [A-Z]+ (SUCCEEDED|FAILED|INTERRUPTED) \*\*' || true; }
