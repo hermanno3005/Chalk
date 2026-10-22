@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C2D33"/><stop offset="1" stop-color="#16171A"/></linearGradient>
+<filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="36"/></filter>
+<filter id="grain" x="0" y="0" width="100%" height="100%">
+  <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="2" result="n"/>
+  <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.54  0 0 0 0 0.5  1.4 0 0 0 -0.55" result="s"/>
+  <feComposite in="s" in2="SourceAlpha" operator="in" result="sa"/>
+  <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="sa"/></feMerge>
+</filter>
+<filter id="dust" x="-20%" y="-20%" width="140%" height="140%">
+  <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="2" seed="11" result="n"/>
+  <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -9 0 0 0 4.4" result="m"/>
+  <feComposite in="SourceGraphic" in2="m" operator="in"/>
+</filter></defs>
+<rect width="1024" height="1024" fill="url(#bg)"/>
+<ellipse cx="512" cy="790" rx="360" ry="70" fill="#FFFFFF" opacity="0.10" filter="url(#blur)"/>
+<ellipse cx="540" cy="790" rx="330" ry="80" fill="#FFFFFF" opacity="0.35" filter="url(#dust)"/>
+<g filter="url(#grain)" stroke-linejoin="round" stroke-width="22" transform="translate(0 30)">
+  <path d="M248 375 L577 565 L577 765 L248 575 Z" fill="#E2DFD7" stroke="#E2DFD7"/>
+  <path d="M577 565 L776 450 L776 650 L577 765 Z" fill="#C4C0B6" stroke="#C4C0B6"/>
+  <path d="M447 260 L776 450 L577 565 L248 375 Z" fill="#FBFAF6" stroke="#FBFAF6"/>
+</g>
+</svg>
