@@ -89,12 +89,39 @@ _Avoid_: Pace, speed, output, load, level, setting, workload
 
 **Unit**:
 The kind of number an erg's intensity is written in — one of four the spec defines:
-**speed** (km/h, with its pace in min/km shown beside it), **watts**, **split** (time per
-500 m) or **level** (the console's own scale). Chosen when you create the erg and
-changeable only while it has no entries, because changing it would reinterpret every
-number logged. A unit is a kind of number, never a brand: Chalk converts nothing between
-units.
+**speed** (in your distance unit — km/h or mph — with its pace per km or per mile shown
+beside it), **watts**, **split** (time per 500 m) or **level** (the console's own scale).
+Chosen when you create the erg and changeable only while it has no entries, because
+changing it would reinterpret every number logged. A unit is a kind of number, never a
+brand: Chalk converts nothing between units.
 _Avoid_: Unit type, measure, metric, scale, readout
+_Not_: the weight unit or the distance unit, which are app-wide and say which scale a
+number is on, not what kind of number it is.
+
+**Weight unit**:
+Kilograms or pounds — the scale every strength weight and strength goal is written on,
+app-wide. Chosen when Chalk first opens, and independent of the distance unit. Changing
+it once you have entries is a relabel or a convert, never a silent switch.
+_Avoid_: Unit (that is an erg's), unit system, metric, imperial
+
+**Distance unit**:
+Kilometres or miles — the scale a speed erg's intensity and its pace are written on
+(km/h with min/km, or mph with min/mile), app-wide. Chosen when Chalk first opens, and
+independent of the weight unit. Changing it once you have entries is a relabel or a
+convert, never a silent switch.
+_Avoid_: Unit (that is an erg's), speed unit, unit system, metric, imperial
+
+**Relabel**:
+Changing the weight or distance unit while every stored number stays as it is — the
+repair for having picked the wrong unit, when the numbers were already on the new scale.
+_Avoid_: Switch, change unit, fix
+
+**Convert**:
+Changing the weight or distance unit and rewriting every stored number onto the new
+scale, goals included — what moving to a gym on the other scale asks for. Rounding is
+part of it, so a convert can move a derived number by a hair; it is one-way, and never
+what happens when you meant to relabel.
+_Avoid_: Switch, change unit, migrate, recalculate
 
 **Incline**:
 The treadmill's grade, in percent, recorded on every entry of a speed erg beside its
@@ -142,9 +169,25 @@ _Avoid_: Session, workout, training day
 
 **Settings**:
 Chalk's one app-wide screen, reached from the home screen in either half. It holds your
-heart-rate zones and nothing else; each further setting is its own decision, and none of
-them is export.
+heart-rate zones, your weight unit, your distance unit and whether plate breakdowns show,
+and is where a backup is made
+and restored; each further setting is its own decision.
 _Avoid_: Preferences, options, profile, configuration
+
+**Backup**:
+One file holding everything Chalk knows — every entry, exercise, erg, group, gym,
+machine and goal, your heart-rate zones and both units — readable by eye and restorable
+exactly. Made by you, when you choose; Chalk keeps none of its own. What carries your
+history across anything Chalk cannot carry it across itself: a new phone, a reinstall, a
+convert you regret.
+_Avoid_: Export, archive, snapshot, dump, save file
+
+**Restore**:
+Loading a backup in place of everything Chalk holds — a replace, never a merge, so what
+you get back is exactly what the backup held. Over a library that is not empty it first
+says what will be lost and how old the backup is, because a stale backup restored by
+mistake is the one way it can cost you.
+_Avoid_: Import, merge, sync, recover
 
 ### What you're heading toward
 
@@ -239,6 +282,19 @@ plate-loaded kit alike; a treadmill whose speed costs a different heart rate fro
 model to the next. The test is transferability, not whether it is colloquially a
 machine. Its numbers derive from one machine's entries only.
 _Avoid_: Machine exercise, fixed-weight
+
+**Bar**:
+The weight of the empty bar an exercise is loaded on, if it is loaded on one — said by
+you, never assumed, so an exercise has no bar until you give it one. A property of the
+exercise, not of a gym or machine, and never part of any derivation.
+_Avoid_: Barbell (as a kind of exercise), implement, equipment
+
+**Plate breakdown**:
+The plates per side that make up the weight you are reading, for an exercise with a bar,
+from the standard plates of your weight unit — the nearest loadable weight below it when
+the exact one is not. Arithmetic on a number Chalk already shows, never a prescription,
+and something you can turn off.
+_Avoid_: Plate calculator, loading guide, plate math
 
 **Group**:
 A user-owned, ordered bucket that an exercise or an erg may sit in, and a shelf rather

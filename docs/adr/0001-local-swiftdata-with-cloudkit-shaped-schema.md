@@ -40,6 +40,11 @@ material regenerates.
 _Amended 2026-10-16:_ a Settings screen now exists, for heart-rate zones only, and it
 carries no export ([ADR-0005](0005-heart-rate-zones-are-five-typed-boundaries-on-a-settings-screen.md)).
 
+_Amended 2026-10-22:_ *no export and no import* is reversed. Chalk makes and restores
+backups from Settings, because a store-ready Chalk cannot rely on the Download Container
+([ADR-0010](0010-chalk-makes-and-restores-backups.md)). Everything below still holds, and the
+readability rule now serves the backup file too.
+
 The escape hatch is **Xcode's Download Container** (Devices & Simulators → Installed
 Apps), which pulls the whole app container — SwiftData store included — onto the Mac.
 It costs the app nothing and works only because Chalk is development-signed onto a
