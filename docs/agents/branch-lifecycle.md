@@ -1,8 +1,18 @@
 # Branch Lifecycle
 
-What a branch means in this repo, and when it stops existing.
+What a branch means in this repo, when it starts, and when it stops existing.
 
 A branch is **work in flight**. It is not an archive. Once its work reaches `main`, the branch name carries nothing the PR list doesn't carry better, so it goes away.
+
+## Every change starts on a branch
+
+Every change reaches `main` through a PR, so cut the branch before the first edit, from a fresh `origin/main`:
+
+```sh
+git fetch origin && git switch -c task/<slug> origin/main
+```
+
+`<slug>` is the issue's slug, one branch per issue (`task/log-sheet`, `task/machine-hints`). Work with no issue behind it takes a short slug naming the change (`task/app-icon`). `scripts/check` passes before the PR opens; CI runs it again on the PR.
 
 ## Merged branches are deleted
 
