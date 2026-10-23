@@ -32,7 +32,7 @@ struct RestoreTests {
     // MARK: - Version 1, frozen
 
     /// `Fixtures/Chalk-backup-1.json` is the fixed library's backup at version 1, written
-    /// once by this suite before the units bumped the version, as `Chalk-2.0.0.store` was
+    /// once by this suite before the units bump the version, as `Chalk-2.0.0.store` was
     /// for the store. The phone's own backup is a version-1 file, so **every later Chalk
     /// must still restore this one**, with keys added since at their schema defaults.
     @Test("The frozen version-1 backup restores")
@@ -197,17 +197,17 @@ struct RestoreTests {
         #expect(try Self.snapshot(of: phone) == before)
     }
 
-    @Test("A file that goes wrong near its end is refused before anything is written")
-    func aFileBadNearItsEndChangesNothing() throws {
+    @Test("A file that fails partway through decoding leaves the library untouched")
+    func aFileThatFailsPartwayChangesNothing() throws {
         let phone = try LibraryFixture()
         try Self.differentLibrary(in: phone)
         let before = try Self.snapshot(of: phone)
-        // The last exercise's machine is at a gym the file doesn't hold.
+        // The very last entry in the file can't be read, after every row before it was.
         let file = try Self.fixedLibraryFile { json in
-            json[path: "exercises", 4, "machines", 0, "gym"] = UUID().uuidString
+            json[path: "exercises", 4, "machines", 0, "entries", 1, "intensity"] = "9.5"
         }
 
-        #expect(throws: Backup.Refusal.missingReference) {
+        #expect(throws: Backup.Refusal.damaged) {
             try Restore(reading: file, over: phone.store.container, defaults: phone.defaults)
         }
         #expect(try Self.snapshot(of: phone) == before)

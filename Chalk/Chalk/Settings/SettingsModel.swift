@@ -29,7 +29,7 @@ final class SettingsModel: Identifiable {
 
     /// What a restore over a library that is not empty asks before replacing it, or `nil`
     /// while nothing is waiting on an answer.
-    private(set) var restoreConfirmation: String?
+    var restoreConfirmation: String? { pendingRestore?.confirmation() }
 
     /// Why the last backup picked was not restored, in plain words. Nothing was changed.
     var restoreFailure: String?
@@ -38,7 +38,8 @@ final class SettingsModel: Identifiable {
     /// library as a relaunch would.
     private(set) var restored = false
 
-    @ObservationIgnored private var pendingRestore: Restore?
+    /// A restore waiting on the answer to its confirmation.
+    private var pendingRestore: Restore?
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let container: ModelContainer
 
@@ -63,12 +64,10 @@ final class SettingsModel: Identifiable {
     /// backup is made first**, not even here (ADR-0010).
     func restore(_ data: Data) {
         pendingRestore = nil
-        restoreConfirmation = nil
         do {
             let restore = try Restore(reading: data, over: container, defaults: defaults)
-            if let confirmation = restore.confirmation() {
+            if restore.confirmation() != nil {
                 pendingRestore = restore
-                restoreConfirmation = confirmation
             } else {
                 try replace(with: restore)
             }
@@ -90,7 +89,6 @@ final class SettingsModel: Identifiable {
     func confirmRestore() {
         guard let restore = pendingRestore else { return }
         pendingRestore = nil
-        restoreConfirmation = nil
         do {
             try replace(with: restore)
         } catch {
@@ -101,7 +99,6 @@ final class SettingsModel: Identifiable {
     /// Answers the question no. Nothing changes.
     func cancelRestore() {
         pendingRestore = nil
-        restoreConfirmation = nil
     }
 
     private func replace(with restore: Restore) throws {

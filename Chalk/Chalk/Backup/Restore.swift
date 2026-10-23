@@ -17,7 +17,7 @@ struct Restore {
     let backup: Backup
 
     /// What the library holds now, counted from the store as it stands.
-    private let replaced: Holding
+    private let libraryCounts: Counts
     /// Whether the restore unsets zones this device holds.
     private let clearsZones: Bool
     private let container: ModelContainer
@@ -27,7 +27,7 @@ struct Restore {
     /// hold. Throws a `Backup.Refusal` for a file Chalk can't restore, and writes nothing.
     init(reading data: Data, over container: ModelContainer, defaults: UserDefaults) throws {
         backup = try Backup(decoding: data)
-        replaced = try Holding(ModelContext(container))
+        libraryCounts = try Counts(ModelContext(container))
         clearsZones = backup.settings.heartRateZones == nil && HeartRateZones(defaults: defaults) != nil
         self.container = container
         self.defaults = defaults
@@ -41,14 +41,15 @@ struct Restore {
     /// never the file's metadata, which neither AirDrop nor a copy keeps reliably. Zones
     /// the restore unsets are named; changed boundaries are not.
     func confirmation(locale: Locale = .current, timeZone: TimeZone = .current) -> String? {
-        guard !replaced.isEmpty else { return nil }
-        let restored = Holding(backup)
-        let with = replaced.entries > 0 && restored.entries > 0
-            ? restored.entries.formatted(.number.locale(locale))
-            : restored.description(locale: locale)
+        guard !libraryCounts.isEmpty else { return nil }
+        let backupCounts = Counts(backup)
+        // `…1,240 entries with 980…`: the second side's noun goes when both count entries.
+        let backupSide = libraryCounts.entries > 0 && backupCounts.entries > 0
+            ? backupCounts.entries.formatted(.number.locale(locale))
+            : backupCounts.description(locale: locale)
         let date = backup.madeAt.formatted(Date.FormatStyle(locale: locale, timeZone: timeZone).day().month(.abbreviated).year())
         let zones = clearsZones ? ", and clears your heart-rate zones" : ""
-        return "This replaces \(replaced.description(locale: locale)) with \(with) from \(date)\(zones)"
+        return "This replaces \(libraryCounts.description(locale: locale)) with \(backupSide) from \(date)\(zones)"
     }
 
     /// Replaces everything with the backup.
@@ -72,7 +73,7 @@ struct Restore {
         context.autosaveEnabled = false
         do {
             try deleteEverything(in: context)
-            insert(backup, into: context)
+            insertBackup(into: context)
             try beforeSave()
             try context.save()
         } catch {
@@ -102,7 +103,7 @@ struct Restore {
 
     /// Inserts the backup's graph: groups and gyms first, then each exercise with its
     /// machines and the entries under each.
-    private func insert(_ backup: Backup, into context: ModelContext) {
+    private func insertBackup(into context: ModelContext) {
         var groups: [UUID: ExerciseGroup] = [:]
         for row in backup.groups {
             let group = ExerciseGroup(id: row.id, name: row.name, sortIndex: row.sortIndex)
@@ -144,7 +145,7 @@ struct Restore {
 }
 
 /// What one side of a restore holds, as its confirmation counts it.
-private struct Holding {
+private struct Counts {
     var entries = 0
     var exercises = 0
     var ergs = 0
@@ -165,7 +166,7 @@ private struct Holding {
     }
 
     init(_ backup: Backup) {
-        entries = backup.exercises.reduce(0) { $0 + $1.entries.count + $1.machines.reduce(0) { $0 + $1.entries.count } }
+        entries = backup.exercises.reduce(0) { $0 + $1.allEntries.count }
         ergs = backup.exercises.count { $0.unit != nil }
         exercises = backup.exercises.count - ergs
         gyms = backup.gyms.count

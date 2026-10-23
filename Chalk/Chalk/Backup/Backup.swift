@@ -72,6 +72,9 @@ struct Backup: Equatable, Sendable {
         var machines: [Machine]
         /// The entries logged on no machine.
         var entries: [Entry]
+
+        /// Every entry logged on it, on a machine or on none.
+        var allEntries: [Entry] { entries + machines.flatMap(\.entries) }
     }
 
     struct Machine: Equatable, Sendable {
@@ -156,14 +159,14 @@ extension Backup {
         } catch {
             throw Refusal.damaged
         }
-        try checkReferences()
+        try refuseRowsThatDontHangTogether()
     }
 
     /// Refuses a file whose rows don't hang together: a duplicate id within an entity, a
     /// `group` or `gym` the file doesn't hold, or an endurance goal with no zones.
-    private func checkReferences() throws {
+    private func refuseRowsThatDontHangTogether() throws {
         let machines = exercises.flatMap(\.machines)
-        let entries = exercises.flatMap { $0.entries + $0.machines.flatMap(\.entries) }
+        let entries = exercises.flatMap(\.allEntries)
         let ids = [groups.map(\.id), gyms.map(\.id), exercises.map(\.id), machines.map(\.id), entries.map(\.id)]
         guard ids.allSatisfy({ Set($0).count == $0.count }) else { throw Refusal.duplicateID }
 
@@ -212,10 +215,8 @@ extension Backup {
                 "This file isn't a Chalk backup."
             case .newerVersion:
                 "This backup was made by a newer version of Chalk. Update Chalk, then restore it."
-            case .unknownKey(let key):
-                "This backup holds “\(key)”, which this version of Chalk doesn't know, so it can't be restored exactly."
-            case .unknownValue(let value):
-                "This backup holds “\(value)”, which this version of Chalk doesn't know, so it can't be restored exactly."
+            case .unknownKey(let word), .unknownValue(let word):
+                "This backup holds “\(word)”, which this version of Chalk doesn't know, so it can't be restored exactly."
             case .invalidZones:
                 "This backup's heart-rate zones aren't four rising values between 40 and 230 bpm, so it can't be restored."
             case .missingReference:

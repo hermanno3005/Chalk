@@ -59,12 +59,12 @@ struct BackupFile: Transferable, Sendable {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
         var coordinationError: NSError?
-        var read: Result<Data, any Error> = .failure(CocoaError(.fileReadUnknown))
+        var contents: Result<Data, any Error> = .failure(CocoaError(.fileReadUnknown))
         NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordinationError) { url in
-            read = Result { try Data(contentsOf: url) }
+            contents = Result { try Data(contentsOf: url) }
         }
         if let coordinationError { throw coordinationError }
-        return try read.get()
+        return try contents.get()
     }
 
     /// Removes every shared file. A folder that is not there is already clear.
