@@ -1458,7 +1458,8 @@ overflow, in both halves**. It sits outside either half.
 
 - Four whole-bpm fields, Z2 to Z5. **Each is 40–230 and strictly higher than the one below.**
 - **Save needs all four**, and is disabled otherwise, so a half-typed set never exists.
-- **Edited, never cleared.** Once set, nothing that depends on zones is ever gated again.
+- **Edited, never cleared.** Once set, nothing on Settings unsets them. Only a restore of a
+  backup made before zones were set clears them (§15.1).
 - **It holds the zones and nothing else** — no export, no import, no share row (§2). Each further
   setting is its own decision, never a row added in passing.
 
@@ -1838,8 +1839,9 @@ the overflow.
 
 **Gates and edges.**
 
-- **No goal before zones are set** — no goal may name a zone that does not exist yet. Zones are
-  never cleared, so no goal ever loses them.
+- **No goal before zones are set** — no goal may name a zone that does not exist yet. Settings
+  never clears zones, and a restore that clears them replaces the goals too, from a backup that
+  has no zones and so no endurance goal (§15.1). No goal ever loses its zones.
 - **No goal on a gym-bound erg with no machine**, no goal on tiles, and never another machine's
   goal borrowed (§12.6).
 - **A unit change clears the goal and says so** (§13.6).
@@ -1979,6 +1981,12 @@ is adopted.
 - **A restore sets both units from the backup**, from Settings as from onboarding. When that
   switches a unit, the confirmation says so: `…from 12 Mar 2026, and switches weights to kg`.
   Over an empty library there is no confirmation, and the units simply follow the file.
+- **A restore sets the zones from the backup too**, so a backup made before zones were set
+  clears them. It is the only way zones are ever unset. Only the clear is named, not changed
+  boundaries: `…from 12 Mar 2026, and clears your heart-rate zones`, or with a unit switch,
+  `…from 12 Mar 2026, switches weights to kg and clears your heart-rate zones`. A file holding
+  an endurance goal but no zones is refused, since Chalk never writes one
+  ([#153](https://github.com/hermanno3005/Chalk/issues/153)).
 - **Make a backup before the team switch** and before a convert. This replaces *pull a
   container first*.
 

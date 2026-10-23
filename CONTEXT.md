@@ -193,9 +193,11 @@ _Avoid_: Export, archive, snapshot, dump, save file
 
 **Restore**:
 Loading a backup in place of everything Chalk holds — a replace, never a merge, so what
-you get back is exactly what the backup held, both units included. Over a library that
-is not empty it first says what will be lost, how old the backup is and any unit it
-switches, because a stale backup restored by mistake is the one way it can cost you.
+you get back is exactly what the backup held, both units and your zones included — a
+backup made before zones were set clears them, the one way zones are ever unset. Over a
+library that is not empty it first says what will be lost, how old the backup is, any
+unit it switches and zones it clears, because a stale backup restored by mistake is the
+one way it can cost you.
 _Avoid_: Import, merge, sync, recover
 
 ### What you're heading toward

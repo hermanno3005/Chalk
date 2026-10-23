@@ -40,3 +40,7 @@ screen's overflow in both halves, and for now it holds the zones and nothing els
   is one set across every erg on this device; once sync exists, a second device starts gated.
 - Zones are edited, never cleared, and a save needs all four numbers. Before the first save,
   logging works as normal and only the lookup is gated, by a row that opens Settings.
+  _Amended 2026-10-23:_ a restore sets the zones from the backup like everything else, so
+  restoring a backup made before zones were set clears them, and the lookup is gated again
+  until you type them. Its confirmation says so. Settings still never clears them
+  ([ADR-0010](0010-chalk-makes-and-restores-backups.md)).
