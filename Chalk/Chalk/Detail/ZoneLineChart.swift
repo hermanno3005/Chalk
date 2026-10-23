@@ -11,6 +11,8 @@ struct ZoneLineChart: View {
     let points: [ZoneLine.Point]
     let unit: ErgUnit
     let selectedDuration: Int
+    /// PROTOTYPE (#140): the selected zone's colour.
+    var color: Color = Palette.current.accent
     /// `chartXSelection` writes `nil` here on lift; the model ignores that and snaps
     /// every real value to a duration done, which is the sticky, snapping scrub.
     let onSelect: (Int?) -> Void
@@ -28,14 +30,14 @@ struct ZoneLineChart: View {
                 // so nothing is smoothed into one.
                 .interpolationMethod(.linear)
                 .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(color)
 
                 PointMark(
                     x: .value("Duration", point.duration),
                     y: .value("Intensity", plotted(point.intensity))
                 )
                 .symbolSize(point.duration == selectedDuration ? 90 : 26)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(color)
             }
 
             RuleMark(x: .value("Duration", selectedDuration))

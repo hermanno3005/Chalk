@@ -35,7 +35,7 @@ struct GoalDonut: View {
 extension Color {
     /// The goal colour, or grey once reached — **a reached goal is always grey**, on every
     /// surface that draws one (SPEC §12.5).
-    static func goal(reached: Bool) -> Color { reached ? .secondary : .goal }
+    static func goal(reached: Bool) -> Color { reached ? .secondary : Palette.current.goal }
 }
 
 /// The detail screen's goal line: `Goal 140 × 5 · 40 kg to go`, led by the donut, both

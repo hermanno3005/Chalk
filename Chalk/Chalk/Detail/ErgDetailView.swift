@@ -44,6 +44,7 @@ struct ErgDetailView: View {
                         points: points,
                         unit: model.unit ?? .speed,
                         selectedDuration: selection.duration,
+                        color: Palette.current.zone(selection.zone),
                         onSelect: model.select(duration:)
                     )
                 }
@@ -229,16 +230,27 @@ struct ErgDetailView: View {
                 Button {
                     model.select(zone: zone)
                 } label: {
+                    // PROTOTYPE (#140): the zone's own colour, where the palette gives one —
+                    // filled when selected, a bar under the label otherwise.
+                    let palette = Palette.current
                     Text("Z\(zone)")
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 40, height: 32)
                         .foregroundStyle(
-                            isSelected ? Color.white : hasLine ? Color.primary : Color.secondary.opacity(0.5)
+                            isSelected ? palette.onZone(zone) : hasLine ? Color.primary : Color.secondary.opacity(0.5)
                         )
                         .background(
-                            isSelected ? Color.accentColor : Color.secondary.opacity(hasLine ? 0.14 : 0.05),
+                            isSelected ? palette.zone(zone) : Color.secondary.opacity(hasLine ? 0.14 : 0.05),
                             in: .rect(cornerRadius: 8)
                         )
+                        .overlay(alignment: .bottom) {
+                            if palette.zones != nil, !isSelected {
+                                Capsule()
+                                    .fill(palette.zone(zone).opacity(hasLine ? 1 : 0.35))
+                                    .frame(width: 18, height: 3)
+                                    .padding(.bottom, 3)
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -274,10 +286,8 @@ struct ErgDetailView: View {
     /// mean heart rate and entry count. No ± band: the count is the uncertainty.
     private func readoutView(_ readout: ErgReading.Readout) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(readout.intensity)
-                .font(.system(size: 46, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .contentTransition(.numericText())
+            // PROTOTYPE (#140): the variant's number treatment.
+            BigNumber(text: readout.intensity, dimmed: false)
             if let pace = readout.pace {
                 Text(pace)
                     .font(.title3.weight(.medium))
@@ -310,6 +320,7 @@ struct ErgDetailView: View {
         } label: {
             Text("Log")
                 .font(.headline)
+                .foregroundStyle(Palette.current.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
         }

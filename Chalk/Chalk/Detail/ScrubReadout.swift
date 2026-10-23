@@ -12,16 +12,9 @@ struct ScrubReadout: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(weight)
-                .font(.system(size: 46, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                // The number moves digit by digit as the thumb crosses rep counts,
-                // rather than cross-fading whole.
-                .contentTransition(.numericText())
+            // PROTOTYPE (#140): the variant's number treatment.
+            BigNumber(text: weight, dimmed: readout.weight == nil)
                 .animation(.snappy(duration: 0.2), value: readout.weight)
-                // An unproven cell has no number to show, and nothing else's number
-                // will do (SPEC §4).
-                .foregroundStyle(readout.weight == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
 
             HStack(spacing: 4) {
                 Text("best for \(readout.reps) reps · \(entriesBehind)")

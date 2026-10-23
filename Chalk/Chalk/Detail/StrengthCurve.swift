@@ -45,14 +45,14 @@ struct StrengthCurve: View {
                 )
                 .interpolationMethod(.stepEnd)
                 .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Palette.current.accent)
 
                 PointMark(
                     x: .value("Reps", point.reps),
                     y: .value("Rep-max", point.weight)
                 )
                 .symbolSize(point.reps == selectedReps ? 90 : 22)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Palette.current.accent)
             }
 
             // Drawn wherever the scrub is, including over a rep count the curve has

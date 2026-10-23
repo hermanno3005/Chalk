@@ -20,7 +20,7 @@ struct ErgNoLineView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.accentColor, in: .rect(cornerRadius: 4))
+                        .background(Palette.current.accent, in: .rect(cornerRadius: 4))
                     Text(quote.clause)
                         .font(.subheadline)
                         .monospacedDigit()

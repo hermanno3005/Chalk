@@ -266,6 +266,7 @@ struct ExerciseDetailView: View {
         } label: {
             Text("Log")
                 .font(.headline)
+                .foregroundStyle(Palette.current.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
         }

@@ -18,13 +18,8 @@ struct ChalkApp: App {
 
     var body: some Scene {
         WindowGroup {
-            switch root {
-            case .library(let container, let model):
-                LibraryView(model: model)
-                    .modelContainer(container)
-            case .unavailable(let storePath):
-                StoreUnavailableView(storePath: storePath)
-            }
+            // PROTOTYPE (#140): rooted at the identity prototype, not the library.
+            IdentityPrototypeRoot()
         }
     }
 
