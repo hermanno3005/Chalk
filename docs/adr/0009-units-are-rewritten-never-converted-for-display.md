@@ -46,8 +46,10 @@ puts the rounding in one place, at a moment you chose.
   0.1 on both speed scales brings every mph speed home and leaves about four in ten km/h speeds
   0.1 off, and 0.1 is what a console sets in either unit. A convert is one-way; a backup is the
   undo ([#132](https://github.com/hermanno3005/Chalk/issues/132)).
-- **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb. The plate set used by a
-  plate breakdown follows it too.
+- **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb, the smallest change a pair
+  of the scale's smallest standard plates makes. The plate set used by a plate breakdown
+  follows it too, so its smallest plate is 1.25 kg or 2.5 lb; the rest of the lb set is the
+  plate breakdown prototype's ([#133](https://github.com/hermanno3005/Chalk/issues/133)).
 - **The erg's Unit is untouched.** It stays the *kind* of number an erg speaks. The distance
   unit only says which scale a speed is on, and watts, splits and levels have no scale to
   change.
