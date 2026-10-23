@@ -39,6 +39,13 @@ puts the rounding in one place, at a moment you chose.
 - **A convert can move a derived number by a hair.** A `best[n]`, a goal's reached state or
   the entry flagged in a history sheet may shift by one grid step. That follows from the
   derivation and needs no repair, exactly as an edited entry does.
+- **A convert there and back can land one step off.** No pair of grids round-trips both
+  ways: kg numbers come home only when the lb step is finer than 0.45 of the kg step, and lb
+  numbers only when it is coarser. 0.5 kg and 1 lb bring every kg number home and leave 19 of
+  the 201 weights on the 5 lb grid up to 1000 lb a pound off (`135 lb` → `61 kg` → `134 lb`).
+  0.1 on both speed scales brings every mph speed home and leaves about four in ten km/h speeds
+  0.1 off, and 0.1 is what a console sets in either unit. A convert is one-way; a backup is the
+  undo ([#132](https://github.com/hermanno3005/Chalk/issues/132)).
 - **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb. The plate set used by a
   plate breakdown follows it too.
 - **The erg's Unit is untouched.** It stays the *kind* of number an erg speaks. The distance
