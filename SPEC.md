@@ -512,6 +512,10 @@ arithmetic, which is the common case.
 
 - **2.5 kg is a UI constant, global and hard-coded.** Not per-exercise, not per-machine, not a
   setting. No schema field, and nothing new is asked at create time.
+- **On the lb scale the grid is 5 lb** (§15.2). The weight unit alone picks it, and it is still
+  not a setting: a microplate or an odd stack step is keypad distance. **The grid is the smallest
+  change a pair of the scale's smallest standard plates makes**, 1.25 kg or 2.5 lb
+  ([#133](https://github.com/hermanno3005/Chalk/issues/133)).
 - `−` **clamps at 0** for weight and **at 1** for reps. Never negative.
 - **Tap only. No hold-to-repeat, no acceleration** — auto-repeat on a thumb target overshoots,
   and the correction overshoots back. Any distance worth accelerating is keypad distance.
@@ -1985,7 +1989,10 @@ is adopted.
   distance convert rewrites speed-erg entries and speed goals. Incline, watts, splits (always per
   500 m), levels, durations, heart rates and zones have no scale and are untouched
   ([#132](https://github.com/hermanno3005/Chalk/issues/132)).
-- **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb.
+- **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb, a pair of the smallest
+  standard plates, and it is not a setting (§6.2,
+  [#133](https://github.com/hermanno3005/Chalk/issues/133)). The goal sheet steps on the same
+  grid, and VoiceOver says `Up to the next 5 pounds`.
 
 ### 15.3 Onboarding
 
