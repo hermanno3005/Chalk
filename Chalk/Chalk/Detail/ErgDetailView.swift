@@ -29,6 +29,8 @@ struct ErgDetailView: View {
             if model.isEmpty {
                 empty
                 goalLine
+            } else if !model.needsZones, let selection = model.selection, Palette.current.style == .layout {
+                tradeRepublicLayout(selection)
             } else if !model.needsZones, let selection = model.selection {
                 zoneBar(selection)
                 if let readout = model.readout {
@@ -71,7 +73,9 @@ struct ErgDetailView: View {
         .padding(.horizontal)
         .padding(.top, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .navigationTitle(model.name)
+        .tradeRepublicText()
+        // PROTOTYPE (#140): E says the name above the number instead.
+        .navigationTitle(Palette.current.style == .layout ? "" : model.name)
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) { logBar }
         .sheet(item: $logging) { LapListSheet(model: $0) }
@@ -222,8 +226,85 @@ struct ErgDetailView: View {
 
     /// `Z1`–`Z5`, with the incline menu at the trailing end on a speed erg. **A zone with
     /// no line here is dimmed but still tappable.**
+    /// PROTOTYPE (#140), E: Trade Republic's stock screen. The name in grey, the number
+    /// with the duration and zone beside it, the goal, the zones as their range tabs over
+    /// the chart, and the rest of the readout in rows under it.
+    @ViewBuilder
+    private func tradeRepublicLayout(_ selection: ErgReading.Selection) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let readout = model.readout {
+                // `6:00 in Z4 · 161 bpm · 3 entries`, taken apart for the rows.
+                let parts = readout.detail.components(separatedBy: " · ")
+                NamedNumber(name: model.name, number: readout.intensity, aside: parts.first, dimmed: false)
+                goalLine
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+                tabs(selection)
+                    .padding(.top, 32)
+                if let points = model.reading.line?.points, !points.isEmpty {
+                    ZoneLineChart(
+                        points: points,
+                        unit: model.unit ?? .speed,
+                        selectedDuration: selection.duration,
+                        color: Palette.current.zone(selection.zone),
+                        onSelect: model.select(duration:)
+                    )
+                    .padding(.leading, -16)
+                    .padding(.top, 20)
+                }
+                VStack(spacing: 0) {
+                    if let pace = readout.pace {
+                        FactRow(label: "Pace", value: pace)
+                    }
+                    if parts.count > 1 {
+                        FactRow(label: "Heart rate", value: parts[1])
+                    }
+                    if let entries = parts.last, parts.count > 2 {
+                        FactRow(
+                            label: "Entries",
+                            value: entries.replacingOccurrences(of: " entries", with: "")
+                                .replacingOccurrences(of: " entry", with: ""),
+                            opens: true,
+                            action: { history = model.historySheet() }
+                        )
+                    }
+                }
+                .padding(.top, 24)
+            } else {
+                Text(model.name)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                tabs(selection)
+                    .padding(.vertical, 16)
+                if let noLine = model.noLine {
+                    ErgNoLineView(noLine: noLine)
+                }
+                goalLine
+            }
+        }
+    }
+
+    /// PROTOTYPE (#140): the zones as text tabs, the incline menu at the trailing end.
+    private func tabs(_ selection: ErgReading.Selection) -> some View {
+        HStack(spacing: 0) {
+            TextTabs(
+                titles: ZoneLine.zones.map { "Z\($0)" },
+                selected: selection.zone - 1,
+                isLive: { model.hasLine($0 + 1) },
+                onSelect: { model.select(zone: $0 + 1) }
+            )
+            Spacer(minLength: 0)
+            if model.unit?.hasIncline == true {
+                inclineMenu(selection)
+            }
+        }
+    }
+
     private func zoneBar(_ selection: ErgReading.Selection) -> some View {
-        HStack(spacing: 6) {
+        if Palette.current.isTradeRepublic {
+            return AnyView(tabs(selection))
+        }
+        return AnyView(HStack(spacing: 6) {
             ForEach(ZoneLine.zones, id: \.self) { zone in
                 let isSelected = zone == selection.zone
                 let hasLine = model.hasLine(zone)
@@ -259,7 +340,7 @@ struct ErgDetailView: View {
             if model.unit?.hasIncline == true {
                 inclineMenu(selection)
             }
-        }
+        })
     }
 
     private func inclineMenu(_ selection: ErgReading.Selection) -> some View {

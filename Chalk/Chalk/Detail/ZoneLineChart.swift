@@ -19,6 +19,9 @@ struct ZoneLineChart: View {
 
     static let height: CGFloat = 150
 
+    /// PROTOTYPE (#140): whether round two's chart treatment applies.
+    private static var tr: Bool { Palette.current.isTradeRepublic }
+
     var body: some View {
         Chart {
             ForEach(points, id: \.duration) { point in
@@ -29,14 +32,14 @@ struct ZoneLineChart: View {
                 // Straight segments: nothing between two points is a number you held,
                 // so nothing is smoothed into one.
                 .interpolationMethod(.linear)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .lineStyle(StrokeStyle(lineWidth: Self.tr ? 3.5 : 2.5, lineCap: .round, lineJoin: .round))
                 .foregroundStyle(color)
 
                 PointMark(
                     x: .value("Duration", point.duration),
                     y: .value("Intensity", plotted(point.intensity))
                 )
-                .symbolSize(point.duration == selectedDuration ? 90 : 26)
+                .symbolSize(point.duration == selectedDuration ? 90 : Self.tr ? 0 : 26)
                 .foregroundStyle(color)
             }
 
@@ -54,17 +57,19 @@ struct ZoneLineChart: View {
         .chartYScale(domain: yDomain)
         .chartXAxis {
             AxisMarks(values: [0, 300, 600, 900, 1200]) { value in
-                AxisGridLine()
+                if !Self.tr { AxisGridLine() }
                 AxisValueLabel {
                     if let seconds = value.as(Int.self) {
                         Text(EnduranceText.clock(seconds))
+                            .font(Self.tr ? .system(size: 13, weight: .semibold) : nil)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
         }
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine()
+                if !Self.tr { AxisGridLine() }
                 AxisValueLabel {
                     if let plotted = value.as(Double.self) {
                         Text(EnduranceText.intensityNumber(unplotted(plotted), unit))
@@ -72,8 +77,9 @@ struct ZoneLineChart: View {
                 }
             }
         }
+        .chartYAxis(Palette.current.style == .layout ? .hidden : .automatic)
         .chartXSelection(value: Binding<Int?>(get: { selectedDuration }, set: { onSelect($0) }))
-        .frame(height: Self.height)
+        .frame(height: Palette.current.style == .layout ? 210 : Self.height)
         .accessibilityLabel("Zone line")
     }
 

@@ -12,12 +12,16 @@ import UIKit
 
 enum IdentityVariant: String, CaseIterable {
     case a = "A", b = "B", c = "C"
+    /// Round two, after none of A–C landed: Trade Republic's design language.
+    case d = "D", e = "E"
 
     var name: String {
         switch self {
         case .a: "Chalk on slate"
         case .b: "Chalk bag"
         case .c: "Cue chalk"
+        case .d: "TR styling"
+        case .e: "TR layout"
         }
     }
 
@@ -26,6 +30,8 @@ enum IdentityVariant: String, CaseIterable {
         case .a: .slate
         case .b: .chalkBag
         case .c: .cueChalk
+        case .d: .tradeRepublic(.styling)
+        case .e: .tradeRepublic(.layout)
         }
     }
 }
@@ -44,6 +50,22 @@ struct Palette {
     let number: NumberTreatment
     /// Whether the big number is drawn in the accent rather than in the primary label.
     let numberInAccent: Bool
+    /// How far a variant goes past colour and type. Round one changes neither.
+    var style: Style = .chalk
+    /// What `.secondary` resolves to. Nil: the system's grey.
+    var secondaryText: Color? = nil
+
+    enum Style {
+        /// Round one: colour and the number only.
+        case chalk
+        /// D: Trade Republic's styling over Chalk's layout — text tabs, no chart chrome.
+        case styling
+        /// E: its layout too — the name above the number, tabs over a full-bleed chart,
+        /// the detail in rows under it.
+        case layout
+    }
+
+    var isTradeRepublic: Bool { style != .chalk }
 
     nonisolated(unsafe) static var current = Palette.slate
 
@@ -71,9 +93,30 @@ enum NumberTreatment {
     case compressed
     /// Bold serif figures with a quiet italic unit.
     case serif
+    /// Bold grotesk at a modest size, unit in the same weight and size: Trade Republic's
+    /// `218,40 €`. SF Pro stands in for Trade Republic Sans Display, which is theirs.
+    case grotesk
 }
 
 extension Palette {
+    /// **D and E — Trade Republic.** Pure white or pure black, black or white as the only
+    /// accent, cool grey labels, and colour only where it means something: the goal takes
+    /// their purple. Colours sampled from their App Store screenshots; the dark greys are
+    /// a guess, since no screenshot shows the app in dark.
+    static func tradeRepublic(_ style: Style) -> Palette {
+        Palette(
+            ground: .proto(light: 0xFFFFFF, dark: 0x000000),
+            accent: .proto(light: 0x000000, dark: 0xFFFFFF),
+            onAccent: .proto(light: 0xFFFFFF, dark: 0x000000),
+            goal: .proto(light: 0x5F28FF, dark: 0x8F6BFF),
+            zones: nil,
+            number: .grotesk,
+            numberInAccent: false,
+            style: style,
+            secondaryText: .proto(light: 0xA2A7AC, dark: 0x8A8F96)
+        )
+    }
+
     /// **A — Chalk on slate.** The icon itself: warm chalk on slate, no hue at all. The
     /// accent is ink in light and chalk in dark; the goal is yellow chalk, the only
     /// colour on the screen. The zones take no colour.
@@ -141,14 +184,15 @@ struct BigNumber: View {
             if let unit = parts.unit {
                 Text(palette.number == .compressed ? unit.uppercased() : unit)
                     .font(unitFont)
-                    .foregroundStyle(.secondary)
+                    .tracking(palette.number == .grotesk ? -0.8 : 0)
+                    .foregroundStyle(palette.number == .grotesk ? numberStyle : AnyShapeStyle(.secondary))
             }
         }
     }
 
     @ViewBuilder
     private func figures(_ number: String) -> some View {
-        let text = Text(number).font(numberFont).monospacedDigit()
+        let text = Text(number).font(numberFont).tracking(palette.number == .grotesk ? -0.8 : 0).monospacedDigit()
         switch palette.number {
         case .chalkGrain:
             text
@@ -160,7 +204,7 @@ struct BigNumber: View {
                         .allowsHitTesting(false)
                 }
                 .contentTransition(.numericText())
-        case .compressed, .serif:
+        case .compressed, .serif, .grotesk:
             text
                 .foregroundStyle(numberStyle)
                 .contentTransition(.numericText())
@@ -177,6 +221,7 @@ struct BigNumber: View {
         case .chalkGrain: .system(size: 52, weight: .heavy, design: .rounded)
         case .compressed: .system(size: 72, weight: .black).width(.compressed)
         case .serif: .system(size: 50, weight: .bold, design: .serif)
+        case .grotesk: .system(size: 40, weight: .bold)
         }
     }
 
@@ -185,11 +230,16 @@ struct BigNumber: View {
         case .chalkGrain: .system(size: 24, weight: .bold, design: .rounded)
         case .compressed: .system(size: 22, weight: .heavy).width(.compressed)
         case .serif: .system(size: 24, weight: .regular, design: .serif).italic()
+        case .grotesk: .system(size: 40, weight: .bold)
         }
     }
 
     private var unitSpacing: CGFloat {
-        palette.number == .compressed ? 6 : 5
+        switch palette.number {
+        case .compressed: 6
+        case .grotesk: 8
+        default: 5
+        }
     }
 
     private var split: (number: String, unit: String?) {

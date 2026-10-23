@@ -31,7 +31,9 @@ struct ExerciseDetailView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            if model.hasCurve {
+            if model.hasCurve, Palette.current.style == .layout, let readout = model.readout {
+                tradeRepublicLayout(readout)
+            } else if model.hasCurve {
                 if let readout = model.readout {
                     // The one way into raw history (SPEC §5.6). A plain tap on the
                     // readout, not a `Button`: the number keeps its own colour, and
@@ -57,7 +59,9 @@ struct ExerciseDetailView: View {
         .padding(.horizontal)
         .padding(.top, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .navigationTitle(model.name)
+        .tradeRepublicText()
+        // PROTOTYPE (#140): E says the name above the number instead.
+        .navigationTitle(Palette.current.style == .layout ? "" : model.name)
         .navigationBarTitleDisplayMode(.inline)
         // The back button is the `NavigationStack`'s own — nothing here hides it, and
         // nothing here draws a second one.
@@ -176,6 +180,39 @@ struct ExerciseDetailView: View {
             Label(model.machine?.name ?? "No machine", systemImage: "square.stack.3d.up")
         }
         .disabled(model.machines.isEmpty)
+    }
+
+    /// PROTOTYPE (#140), E: Trade Republic's stock screen. The name in grey, the number
+    /// with the rep count beside it as their `▲ 10,55 %`, the goal, the chart bled off the
+    /// leading edge, and what the subhead said moved into a row under it.
+    private func tradeRepublicLayout(_ readout: ExerciseDetailModel.Readout) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            NamedNumber(
+                name: model.name,
+                number: readout.weight.map { "\($0.kilogramsText) kg" } ?? "—",
+                aside: "× \(readout.reps)",
+                dimmed: readout.weight == nil
+            )
+            .contentShape(.rect)
+            .onTapGesture { history = model.historySheet() }
+            goalLine
+                .padding(.top, 12)
+            StrengthCurve(
+                curve: model.curve,
+                selectedReps: model.selectedReps,
+                onSelect: model.select
+            )
+            .padding(.leading, -16)
+            .padding(.top, 40)
+            FactRow(
+                label: "Entries at \(readout.reps)+ reps",
+                value: "\(readout.entriesBehind)",
+                opens: readout.weight != nil,
+                action: readout.weight == nil ? nil : { history = model.historySheet() }
+            )
+            .padding(.top, 28)
+            FactRow(label: "Logged", value: "\(model.entryCount) entries")
+        }
     }
 
     /// The goal, one line under the readout's subhead — or under the empty state's text

@@ -17,6 +17,9 @@ struct StrengthCurve: View {
     /// rather than as an exercise (SPEC §5.1).
     static let height: CGFloat = 150
 
+    /// PROTOTYPE (#140): whether round two's chart treatment applies.
+    private static var tr: Bool { Palette.current.isTradeRepublic }
+
     var body: some View {
         Chart {
             // The ghost is drawn first so the solid curve sits over it, and
@@ -28,11 +31,13 @@ struct StrengthCurve: View {
                     series: .value("Series", "ghost")
                 )
                 .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 2, dash: [4, 5]))
+                // PROTOTYPE (#140): round two dots it, as Trade Republic dots its
+                // reference line.
+                .lineStyle(Self.tr ? StrokeStyle(lineWidth: 2, lineCap: .round, dash: [0.1, 6]) : StrokeStyle(lineWidth: 2, dash: [4, 5]))
                 // Grey and dashed against a solid tinted line, rather than a paler
                 // shade of the same thing: the first scaffolding drew both as thin
                 // dashed grey and failed both halves of the rule (SPEC §5.2).
-                .foregroundStyle(Color.secondary.opacity(0.55))
+                .foregroundStyle(Self.tr ? Palette.current.secondaryText ?? .secondary : Color.secondary.opacity(0.55))
             }
 
             // Stepped, with a point on every rep count: monotonic backfill repeats the
@@ -44,14 +49,15 @@ struct StrengthCurve: View {
                     series: .value("Series", "best")
                 )
                 .interpolationMethod(.stepEnd)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .lineStyle(StrokeStyle(lineWidth: Self.tr ? 3.5 : 2.5, lineCap: .round, lineJoin: .round))
                 .foregroundStyle(Palette.current.accent)
 
                 PointMark(
                     x: .value("Reps", point.reps),
                     y: .value("Rep-max", point.weight)
                 )
-                .symbolSize(point.reps == selectedReps ? 90 : 22)
+                // PROTOTYPE (#140): round two marks only the selected point.
+                .symbolSize(point.reps == selectedReps ? 90 : Self.tr ? 0 : 22)
                 .foregroundStyle(Palette.current.accent)
             }
 
@@ -77,21 +83,30 @@ struct StrengthCurve: View {
         .chartYScale(domain: yDomain)
         .chartXAxis {
             AxisMarks(preset: .aligned, values: [1, 3, 5, 8, 12]) { value in
-                AxisGridLine()
+                // PROTOTYPE (#140): round two draws no grid.
+                if !Self.tr { AxisGridLine() }
                 AxisValueLabel {
                     if let reps = value.as(Int.self) {
                         Text("\(reps)")
+                            .font(Self.tr ? .system(size: 13, weight: .semibold) : nil)
+                            .foregroundStyle(Self.tr && reps == selectedReps ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                     }
                 }
             }
         }
         .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 3))
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { _ in
+                if !Self.tr { AxisGridLine() }
+                AxisValueLabel()
+                    .font(Self.tr ? .system(size: 12, weight: .semibold) : .caption2)
+            }
         }
+        // PROTOTYPE (#140): E draws no y axis at all.
+        .chartYAxis(Palette.current.style == .layout ? .hidden : .automatic)
         // Charts' own selection. A `DragGesture` in a `chartOverlay` with a tap gesture
         // over it is the failure this replaces: the two fight and the drag does nothing.
         .chartXSelection(value: Binding<Int?>(get: { selectedReps }, set: { onSelect($0) }))
-        .frame(height: Self.height)
+        .frame(height: Palette.current.style == .layout ? 210 : Self.height)
         .accessibilityLabel("Strength curve")
     }
 
