@@ -315,6 +315,11 @@ final class LibraryFixture {
         libraryModel().settings()
     }
 
+    /// Onboarding over this store, as a launch with no units stored opens it.
+    func onboardingModel() -> OnboardingModel {
+        OnboardingModel(defaults: defaults, container: store.container)
+    }
+
     /// The same file read through a second container, so what a test asserts is what
     /// reached the disk rather than what is sitting in this context's cache.
     func afterRelaunch() throws -> ModelContext {

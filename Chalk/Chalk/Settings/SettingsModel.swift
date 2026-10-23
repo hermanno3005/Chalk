@@ -34,14 +34,17 @@ final class SettingsModel: Identifiable {
 
     /// What a restore over a library that is not empty asks before replacing it, or `nil`
     /// while nothing is waiting on an answer.
-    var restoreConfirmation: String? { pendingRestore?.confirmation() }
+    var restoreConfirmation: String? { restoreFlow.confirmation }
 
     /// Why the last backup picked was not restored, in plain words. Nothing was changed.
-    var restoreFailure: String?
+    var restoreFailure: String? {
+        get { restoreFlow.failure }
+        set { restoreFlow.failure = newValue }
+    }
 
     /// Set once a restore has replaced everything, so the app can reopen on the restored
     /// library as a relaunch would.
-    private(set) var restored = false
+    var restored: Bool { restoreFlow.restored }
 
     /// Set once a convert has rewritten a scale, so the app can reopen on the converted
     /// library as a restore does: every screen behind Settings holds the old rows.
@@ -66,14 +69,15 @@ final class SettingsModel: Identifiable {
     /// A convert waiting on the answer to its confirmation, or `nil` while nothing is.
     private(set) var pendingConvert: Convert?
 
-    /// A restore waiting on the answer to its confirmation.
-    private var pendingRestore: Restore?
+    /// *Restore from a backup*, from the file picked to the library replaced.
+    private var restoreFlow: RestoreFlow
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let container: ModelContainer
 
     init(defaults: UserDefaults, container: ModelContainer) {
         self.defaults = defaults
         self.container = container
+        restoreFlow = RestoreFlow(over: container, defaults: defaults)
         backup = BackupFile(container: container, settings: Backup.Settings(defaults: defaults))
         weightUnit = WeightUnit(defaults: defaults)
         distanceUnit = DistanceUnit(defaults: defaults)
@@ -162,52 +166,22 @@ final class SettingsModel: Identifiable {
     /// asks. A file Chalk can't restore changes nothing and says why. **No automatic
     /// backup is made first**, not even here (ADR-0010).
     func restore(_ data: Data) {
-        pendingRestore = nil
-        do {
-            let restore = try Restore(reading: data, over: container, defaults: defaults)
-            if restore.confirmation() != nil {
-                pendingRestore = restore
-            } else {
-                try replace(with: restore)
-            }
-        } catch {
-            fail(error)
-        }
+        restoreFlow.restore(data)
     }
 
     /// Restores the backup the importer picked, as `restore(_:)` does.
     func restore(contentsOf url: URL) {
-        do {
-            restore(try BackupFile.read(url))
-        } catch {
-            restoreFailure = "Chalk couldn't open this file. Nothing was changed."
-        }
+        restoreFlow.restore(contentsOf: url)
     }
 
     /// Answers the question yes: replaces everything with the backup it asked about.
     func confirmRestore() {
-        guard let restore = pendingRestore else { return }
-        pendingRestore = nil
-        do {
-            try replace(with: restore)
-        } catch {
-            fail(error)
-        }
+        restoreFlow.confirm()
     }
 
     /// Answers the question no. Nothing changes.
     func cancelRestore() {
-        pendingRestore = nil
-    }
-
-    private func replace(with restore: Restore) throws {
-        try restore.replace()
-        restored = true
-    }
-
-    private func fail(_ error: any Error) {
-        restoreFailure = (error as? Backup.Refusal)?.message
-            ?? "Chalk couldn't restore this backup. Nothing was changed."
+        restoreFlow.cancel()
     }
 
     /// Settings has closed, and the share sheet with it: no destination is still copying
