@@ -100,15 +100,16 @@ enum NumberTreatment {
 
 extension Palette {
     /// **D and E — Trade Republic.** Pure white or pure black, black or white as the only
-    /// accent, cool grey labels, and colour only where it means something: the goal takes
-    /// their purple. Colours sampled from their App Store screenshots; the dark greys are
-    /// a guess, since no screenshot shows the app in dark.
+    /// accent, cool grey labels, and colour only where it means something. The goal keeps
+    /// Chalk's orange (`Goal.colorset`), the dev's pick over their purple: the one warm
+    /// touch on the screen. Colours sampled from their App Store screenshots; the dark
+    /// greys are a guess, since no screenshot shows the app in dark.
     static func tradeRepublic(_ style: Style) -> Palette {
         Palette(
             ground: .proto(light: 0xFFFFFF, dark: 0x000000),
             accent: .proto(light: 0x000000, dark: 0xFFFFFF),
             onAccent: .proto(light: 0xFFFFFF, dark: 0x000000),
-            goal: .proto(light: 0x5F28FF, dark: 0x8F6BFF),
+            goal: .proto(light: 0xFF9500, dark: 0xFF9F0A),
             zones: nil,
             number: .grotesk,
             numberInAccent: false,

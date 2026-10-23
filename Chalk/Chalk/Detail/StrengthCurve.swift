@@ -106,7 +106,13 @@ struct StrengthCurve: View {
         // Charts' own selection. A `DragGesture` in a `chartOverlay` with a tap gesture
         // over it is the failure this replaces: the two fight and the drag does nothing.
         .chartXSelection(value: Binding<Int?>(get: { selectedReps }, set: { onSelect($0) }))
-        .frame(height: Palette.current.style == .layout ? 210 : Self.height)
+        // PROTOTYPE (#140): E's chart is the one thing on the screen that gives way. It
+        // takes up to 210 pt and shrinks to 110 before anything is pushed off: the
+        // screen never scrolls, and the Log bar is always on it.
+        .frame(
+            minHeight: Palette.current.style == .layout ? 110 : Self.height,
+            maxHeight: Palette.current.style == .layout ? 210 : Self.height
+        )
         .accessibilityLabel("Strength curve")
     }
 

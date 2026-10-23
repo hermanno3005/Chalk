@@ -240,7 +240,7 @@ struct ErgDetailView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 12)
                 tabs(selection)
-                    .padding(.top, 32)
+                    .padding(.top, 24)
                 if let points = model.reading.line?.points, !points.isEmpty {
                     ZoneLineChart(
                         points: points,
@@ -250,7 +250,7 @@ struct ErgDetailView: View {
                         onSelect: model.select(duration:)
                     )
                     .padding(.leading, -16)
-                    .padding(.top, 20)
+                    .padding(.top, 16)
                 }
                 VStack(spacing: 0) {
                     if let pace = readout.pace {
@@ -269,7 +269,7 @@ struct ErgDetailView: View {
                         )
                     }
                 }
-                .padding(.top, 24)
+                .padding(.top, 16)
             } else {
                 Text(model.name)
                     .font(.system(size: 17, weight: .semibold))
