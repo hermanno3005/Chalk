@@ -1978,6 +1978,13 @@ is adopted.
   worded acts on Settings. A relabel keeps every number. A convert rewrites every number and
   goal onto the new scale, rounded to 0.5 kg, 1 lb or 0.1 km/h or mph, and is confirmed with a
   count.
+- **A convert rounds to the nearest step, ties up, and never to the stepper grid**, so a
+  converted `220 lb` waits between steps until the next `+` snaps it to `225` (§6.2). Goals round
+  on the same grid as entries. A weight convert rewrites strength entries, strength goals at both
+  scopes, and a bar if plate breakdown ships (`20 kg` → `44 lb`, never snapped to a preset). A
+  distance convert rewrites speed-erg entries and speed goals. Incline, watts, splits (always per
+  500 m), levels, durations, heart rates and zones have no scale and are untouched
+  ([#132](https://github.com/hermanno3005/Chalk/issues/132)).
 - **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb.
 
 ### 15.3 Onboarding
