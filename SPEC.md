@@ -351,7 +351,8 @@ Laid out as Trade Republic's stock screen, from the identity prototype (§15.4,
    **The goal line** sits directly under the number when the scope has a goal (§12.4), and
    nothing takes its place when it has none.
 2. **The strength curve**, **110–210 pt**: the one thing on the screen that gives way, so the
-   screen never scrolls. It **bleeds off the leading edge** to the trailing margin.
+   screen does not scroll while it fits (§15.4). It **bleeds off the leading edge** to the
+   trailing margin.
 3. **Two rows**, grey label and bold value: **`Entries at N+ reps M ›`**, where `M` is the count
    of entries with `reps >= N` in scope and the row opens §5.6's sheet (no `›` and no sheet on
    an unproven cell), and **`Logged K entries`**, every entry in scope.
@@ -361,8 +362,9 @@ Laid out as Trade Republic's stock screen, from the identity prototype (§15.4,
    goal, which lives in the goal line and never on the chart (§12.4).
 5. **Log bar** — full width, pinned at the bottom. Opens the log sheet (§6).
 
-**The screen never scrolls.** Every control, the Log bar included, is always on it, down to the
-smallest current iPhone (§15.4).
+**The screen never scrolls while it fits.** At the default text size every control, the Log bar
+included, is on it, down to the smallest current iPhone. Only at a text size it cannot fit with
+the curve at 110 pt does it scroll, with the Log bar pinned (§15.4).
 
 **Toolbar:** back to the library (supplied by `NavigationStack`, not hand-drawn); the machine
 qualifier menu (§5.3, gym-bound only); an overflow menu (§5.5). **No title**: the name is the
@@ -1696,8 +1698,8 @@ round two).
    **A zone with no line on this scope and incline is dimmed but still tappable** — you see where
    you have never landed, and can still ask.
 3. **The zone line, 110–210 pt**, in the accent colour, joined by straight segments, with a point
-   on the selected duration only. It gives way first, so the screen never scrolls, and bleeds off
-   the leading edge as §5.1's curve does.
+   on the selected duration only. It gives way first, so the screen does not scroll while it
+   fits, and bleeds off the leading edge as §5.1's curve does.
 4. **Rows**, grey label and bold value: **`Pace 4:00 /km`** on a speed erg, **`Heart rate 164
    bpm`**, the point's mean, and **`Entries 12 ›`**, opening §13.9's sheet. **The entry count is
    the uncertainty: no ± band is drawn**, because a band is a number Chalk computed and you never
@@ -1705,7 +1707,7 @@ round two).
 5. **Empty space**, as §5.1 leaves it.
 6. **Log bar**, opening the lap-list sheet (§13.7).
 
-**The screen never scrolls**, as §5.1's doesn't.
+**The screen never scrolls while it fits**, as §5.1's doesn't (§15.4).
 
 **Toolbar:** back; the machine qualifier menu on a gym-bound erg (§5.3, unchanged, including which
 machine the screen opens on); an overflow. **No title**: the name is the readout's.
@@ -2061,8 +2063,24 @@ the phone's update, and it never risks a relabel
     aside beside it, the zones as text tabs, a chart with no y axis or grid bled off the leading
     edge, and the rest of the readout in label-and-value rows. **The rest of the app takes the
     palette and the type, not the layout.**
-  - **A detail screen never scrolls.** Every control is on it, down to the smallest current
-    iPhone. The chart is the one thing that gives way.
+  - **A detail screen never scrolls while it fits.** At the default text size every control is
+    on it, down to the smallest current iPhone, and the chart is the one thing that gives way,
+    from 210 to 110 pt. Large text can outgrow the screen, so the rule is what gives way and in
+    what order ([What gives way when a detail screen can't fit at the largest text sizes?](https://github.com/hermanno3005/Chalk/issues/165)):
+    1. **The chart shrinks to 110 pt.** It never goes below that and never disappears.
+    2. **Then the screen scrolls**, only when it cannot fit with the chart at 110 pt, whatever
+       the text size. **The Log bar stays pinned** outside the scroll, so it is always on
+       screen. **While it scrolls, the chart takes its full 210 pt**: space is no longer what
+       it is short of.
+    3. **No text is capped to avoid the scroll.** The big number and its unit scale with the
+       large title, about 70 pt at the largest size. **The aside wraps under the number** when
+       they cannot share a line, and the number is never shrunk to fit or truncated.
+  - **At large text, a label-and-value row stacks**, label over value, grey over bold with its
+    `›`, when the two cannot share a line. Each row decides alone.
+  - **Three things stop growing at xxxLarge**, because they cannot fit the width past it: the
+    zone tabs and the incline menu, which show the Large Content Viewer on a long press, and the
+    chart's axis labels. The readout says the selected value at full size, and the audio graph
+    carries the chart (§15.6).
 - **The library tiles stop truncating** their last entry, and the grid stops leaving half its
   width empty.
 - **Haptics in three places only:** a tick at each scrub detent (a rep count on the curve, a
@@ -2110,7 +2128,8 @@ the phone's update, and it never risks a relabel
 - **Every string in a String Catalog**, plurals and number formats included. English only.
 - **VoiceOver** labels throughout, and chart descriptions so the curve and the zone line can be
   heard as audio graphs.
-- **Dynamic Type** that the big readouts survive, and dark mode checked on the phone.
+- **Dynamic Type** that the big readouts survive, up to the largest accessibility size, with the
+  detail screens giving way as §15.4 orders it, and dark mode checked on the phone.
 - **A privacy manifest**, and the store listing's screenshots and copy, ready for the day.
 
 ### 15.7 Decided against, or parked
