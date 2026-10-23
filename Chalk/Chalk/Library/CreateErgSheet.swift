@@ -19,6 +19,8 @@ struct CreateErgSheet: View {
     let onCreate: (NewErg) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    /// The scale the speed choice names, `Speed (km/h)` or `Speed (mph)`.
+    @AppStorage(DistanceUnit.key) private var distanceUnit: DistanceUnit = .km
     @State private var draft: NewErg
     @FocusState private var nameFocused: Bool
     private let seedName: String
@@ -53,7 +55,7 @@ struct CreateErgSheet: View {
                         // Starts here, and Add waits until it is left.
                         Text("Choose").tag(ErgUnit?.none)
                         ForEach(ErgUnit.allCases, id: \.self) { unit in
-                            Text(unit.pickerTitle).tag(ErgUnit?.some(unit))
+                            Text(unit.pickerTitle(distanceUnit)).tag(ErgUnit?.some(unit))
                         }
                     }
                 } footer: {
@@ -95,10 +97,10 @@ struct CreateErgSheet: View {
 }
 
 extension ErgUnit {
-    /// The unit as the create sheet's picker offers it.
-    var pickerTitle: String {
+    /// The unit as the create sheet's picker offers it, a speed in the distance unit.
+    func pickerTitle(_ distance: DistanceUnit) -> String {
         switch self {
-        case .speed: "Speed (km/h)"
+        case .speed: "Speed (\(distance.speedSymbol))"
         case .watts: "Watts"
         case .split: "Split (/500 m)"
         case .level: "Level"

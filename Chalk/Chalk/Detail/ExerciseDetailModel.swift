@@ -201,8 +201,9 @@ final class ExerciseDetailModel {
     }
 
     /// `Change kind` over this exercise — the words the confirmation and the machine
-    /// prompt say (SPEC §8).
-    var kindChange: KindChange { KindChange(exercise: exercise) }
+    /// prompt say (SPEC §8). A lift's goal holds no speed, so the distance unit never
+    /// reaches its words.
+    var kindChange: KindChange { KindChange(exercise: exercise, distanceUnit: .km) }
 
     /// **Free-weight → gym-bound**, with the one machine the existing entries belong to
     /// (SPEC §8). The machine is created at `gym` — a free-weight exercise has none to

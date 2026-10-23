@@ -59,8 +59,9 @@ struct RestoreTests {
 
     /// `Fixtures/Chalk-backup-2.json` is the fixed library's backup at version 2, on lb:
     /// the version-1 file with the weight unit added. **Every later Chalk must still
-    /// restore it**, as it does version 1.
-    @Test("The frozen version-2 backup restores, on lb, and goes out again byte for byte")
+    /// restore it**, as it does version 1. It goes out again at version 3, so its bytes are
+    /// version 3's to hold.
+    @Test("The frozen version-2 backup restores, on lb")
     func theFrozenVersion2BackupRestores() throws {
         let url = try #require(Bundle(for: LibraryFixture.self).url(forResource: "Chalk-backup-2", withExtension: "json"))
         let file = try Data(contentsOf: url)
@@ -72,6 +73,28 @@ struct RestoreTests {
         let restored = try phone.afterRelaunch()
         try BackupTests.expect(try Backup(decoding: file), holdsExactly: restored)
         #expect(WeightUnit.stored(in: phone.defaults) == .lb)
+        #expect(DistanceUnit.stored(in: phone.defaults) == .km)
+        #expect(phone.heldZones()?.lowerBounds == [117, 140, 158, 170])
+    }
+
+    // MARK: - Version 3, frozen
+
+    /// `Fixtures/Chalk-backup-3.json` is the fixed library's backup at version 3, on lb
+    /// and miles: the version-2 file with the distance unit added. **Every later Chalk
+    /// must still restore it**, as it does versions 1 and 2.
+    @Test("The frozen version-3 backup restores, on lb and miles, and goes out again byte for byte")
+    func theFrozenVersion3BackupRestores() throws {
+        let url = try #require(Bundle(for: LibraryFixture.self).url(forResource: "Chalk-backup-3", withExtension: "json"))
+        let file = try Data(contentsOf: url)
+        let phone = try LibraryFixture()
+        try Self.differentLibrary(in: phone)
+
+        try Restore(reading: file, over: phone.store.container, defaults: phone.defaults).replace()
+
+        let restored = try phone.afterRelaunch()
+        try BackupTests.expect(try Backup(decoding: file), holdsExactly: restored)
+        #expect(WeightUnit.stored(in: phone.defaults) == .lb)
+        #expect(DistanceUnit.stored(in: phone.defaults) == .mi)
         #expect(phone.heldZones()?.lowerBounds == [117, 140, 158, 170])
         let backup = try Backup(of: restored, defaults: phone.defaults, madeAt: BackupTests.madeAt)
         #expect(String(decoding: try backup.encoded(), as: UTF8.self) == String(decoding: file, as: UTF8.self))
@@ -256,6 +279,67 @@ struct RestoreTests {
         #expect(WeightUnit.stored(in: phone.defaults) == .lb)
     }
 
+    // MARK: - The distance unit
+
+    @Test("A backup on miles, over a phone on km, says it switches distances to miles, and sets miles")
+    func aBackupOnMilesSwitchesDistancesToMiles() throws {
+        let phone = try LibraryFixture()
+        try Self.differentLibrary(in: phone)
+        let file = try Self.fixedLibraryFile { $0[path: "settings", "distanceUnit"] = "mi" }
+
+        let restore = try Restore(reading: file, over: phone.store.container, defaults: phone.defaults)
+
+        #expect(restore.confirmation(locale: Self.britain, timeZone: .gmt) == "This replaces 3 entries with 8 from 29 Oct 2026, and switches distances to miles")
+        try restore.replace()
+        #expect(DistanceUnit.stored(in: phone.defaults) == .mi)
+    }
+
+    @Test("A frozen version-1 or version-2 backup restores over a phone on miles as km, and says so", arguments: [1, 2])
+    func anOlderBackupRestoresAsKilometres(version: Int) throws {
+        let url = try #require(Bundle(for: LibraryFixture.self).url(forResource: "Chalk-backup-\(version)", withExtension: "json"))
+        let phone = try LibraryFixture()
+        try Self.differentLibrary(in: phone)
+        // The file's own weight unit, so the distance is the one switch.
+        phone.weightUnit(version == 1 ? .kg : .lb)
+        phone.distanceUnit(.mi)
+
+        let restore = try Restore(reading: try Data(contentsOf: url), over: phone.store.container, defaults: phone.defaults)
+
+        #expect(restore.confirmation(locale: Self.britain, timeZone: .gmt) == "This replaces 3 entries with 8 from 29 Oct 2026, and switches distances to km")
+        try restore.replace()
+        #expect(DistanceUnit.stored(in: phone.defaults) == .km)
+    }
+
+    @Test("Both units switching are one clause", arguments: [
+        ([117, 140, 158, 170], "This replaces 3 entries with nothing from 12 Mar 2026, and switches weights to lb and distances to miles"),
+        (nil, "This replaces 3 entries with nothing from 12 Mar 2026, switches weights to lb and distances to miles and clears your heart-rate zones"),
+    ])
+    func bothUnitsAreOneClause(zones: [Int]?, expected: String) throws {
+        let phone = try LibraryFixture()
+        try Self.differentLibrary(in: phone)
+        let file = try Backup(
+            madeAt: Self.twelfthOfMarch,
+            settings: .init(heartRateZones: zones, weightUnit: .lb, distanceUnit: .mi),
+            groups: [], gyms: [], exercises: []
+        ).encoded()
+
+        let restore = try Restore(reading: file, over: phone.store.container, defaults: phone.defaults)
+
+        #expect(restore.confirmation(locale: Self.britain, timeZone: .gmt) == expected)
+    }
+
+    @Test("A restore over an empty library takes the backup's distance unit without asking")
+    func anEmptyLibraryTakesTheDistanceUnitWithoutAsking() throws {
+        let phone = try LibraryFixture()
+        let file = try Self.fixedLibraryFile { $0[path: "settings", "distanceUnit"] = "mi" }
+
+        let restore = try Restore(reading: file, over: phone.store.container, defaults: phone.defaults)
+
+        #expect(restore.confirmation() == nil)
+        try restore.replace()
+        #expect(DistanceUnit.stored(in: phone.defaults) == .mi)
+    }
+
     // MARK: - All or nothing
 
     @Test("A restore that fails after its deletes and before the commit leaves the library as it was")
@@ -306,8 +390,12 @@ struct RestoreTests {
             json[path: "exercises", 1, "machines", 0, "bar"] = 20
             return nil
         },
-        Refused("An unknown setting", .unknownKey("distanceUnit")) { json in
-            json[path: "settings", "distanceUnit"] = "km"
+        Refused("An unknown setting", .unknownKey("barWeight")) { json in
+            json[path: "settings", "barWeight"] = 20
+            return nil
+        },
+        Refused("A distance unit outside its enum", .unknownValue("furlong")) { json in
+            json[path: "settings", "distanceUnit"] = "furlong"
             return nil
         },
         Refused("A weight unit outside its enum", .unknownValue("stone")) { json in

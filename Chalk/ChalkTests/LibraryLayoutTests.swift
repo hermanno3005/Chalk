@@ -15,7 +15,8 @@ struct LibraryLayoutTests {
         LibraryLayout(
             exercises: try fixture.allExercises(),
             groups: try fixture.allGroups(),
-            weightUnit: .kg
+            weightUnit: .kg,
+            distanceUnit: .km
         )
     }
 

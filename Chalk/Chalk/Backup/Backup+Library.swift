@@ -36,7 +36,8 @@ extension Backup.Settings {
     init(defaults: UserDefaults) {
         self.init(
             heartRateZones: HeartRateZones(defaults: defaults)?.lowerBounds,
-            weightUnit: WeightUnit(defaults: defaults)
+            weightUnit: WeightUnit(defaults: defaults),
+            distanceUnit: DistanceUnit(defaults: defaults)
         )
     }
 }

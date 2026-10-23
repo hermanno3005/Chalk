@@ -42,7 +42,7 @@ final class ErgDetailModel {
     /// incline, every zone's line, the readout and the over-20:00 caption. **Re-derived on
     /// every refresh** — a write, a machine switch, zones set in Settings — with the
     /// selection carried over, so the screen stays where you left it (SPEC §5.2).
-    private(set) var reading = ErgReading(entries: [], zones: nil, unit: nil, keeping: nil)
+    private(set) var reading = ErgReading(entries: [], zones: nil, unit: nil, distanceUnit: .km, keeping: nil)
 
     /// The goal on the scope in view — the erg, or the machine the qualifier is on —
     /// judged against the same entries and live zones the line is (SPEC §13.10). Re-read
@@ -128,7 +128,9 @@ final class ErgDetailModel {
 
         // Named in the old unit, before it goes — and said, since nothing else would.
         let scopes = [GoalScope.exercise(erg)] + (erg.machines ?? []).map(GoalScope.machine)
-        clearedGoalNotice = EnduranceGoal.clearedNotice(scopes.compactMap { $0.enduranceGoal(zones: reading.zones) })
+        clearedGoalNotice = EnduranceGoal.clearedNotice(scopes.compactMap {
+            $0.enduranceGoal(zones: reading.zones, distanceUnit: reading.distanceUnit)
+        })
 
         erg.unit = newUnit.rawValue
         scopes.forEach { $0.clear() }
@@ -142,7 +144,7 @@ final class ErgDetailModel {
 
     /// `Change kind` over this erg — the words the confirmation and *Which machine is
     /// this on?* say. **Only the scope changes**: unit and incline are untouched.
-    var kindChange: KindChange { KindChange(exercise: erg) }
+    var kindChange: KindChange { KindChange(exercise: erg, distanceUnit: reading.distanceUnit) }
 
     /// **Transferable → gym-bound**: every entry moves to one new machine at `gym`, and
     /// the screen opens on it — the only one there is.
@@ -203,6 +205,9 @@ final class ErgDetailModel {
     var selection: ErgReading.Selection? { reading.selection }
 
     var readout: ErgReading.Readout? { reading.readout }
+
+    /// The scale every speed on this screen is written on, read live on every refresh.
+    var distanceUnit: DistanceUnit { reading.distanceUnit }
 
     /// Zones not set: a *Set your heart-rate zones* row, opening Settings, stands in place
     /// of the zone buttons, readout and line (SPEC §13.8). The Log bar works as normal.
@@ -300,6 +305,7 @@ final class ErgDetailModel {
             scope: goalScope,
             selection: selection,
             zones: reading.zones,
+            distanceUnit: reading.distanceUnit,
             context: context
         ) { [weak self] in
             self?.refresh()
@@ -382,15 +388,17 @@ final class ErgDetailModel {
             machineMenu = MachineMenu(machines: [])
         }
 
-        // The zones are read live, never cached (ADR-0005).
+        // The zones and the distance unit are read live, never cached (ADR-0005):
+        // Settings can move both behind this screen.
         reading = ErgReading(
             entries: MachineScope.entries(of: erg, on: machine),
             zones: HeartRateZones(defaults: defaults),
             unit: unit,
+            distanceUnit: DistanceUnit(defaults: defaults),
             keeping: reading.selection
         )
-        hint = ErgMachineHint.lookUp(erg, scopedTo: machine, zones: reading.zones)
-        goal = goalScope?.enduranceGoal(zones: reading.zones)
+        hint = ErgMachineHint.lookUp(erg, scopedTo: machine, zones: reading.zones, distanceUnit: reading.distanceUnit)
+        goal = goalScope?.enduranceGoal(zones: reading.zones, distanceUnit: reading.distanceUnit)
     }
 
     private func save() {

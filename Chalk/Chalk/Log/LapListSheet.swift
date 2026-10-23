@@ -111,7 +111,7 @@ struct LapListSheet: View {
         Grid(horizontalSpacing: 5, verticalSpacing: 6) {
             GridRow {
                 ForEach(model.columns, id: \.self) { field in
-                    Text(field.columnTitle(model.unit))
+                    Text(field.columnTitle(model.unit, model.distanceUnit))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }

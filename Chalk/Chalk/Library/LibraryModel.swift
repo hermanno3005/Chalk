@@ -71,7 +71,7 @@ final class LibraryModel {
         for half in Half.allCases {
             SuggestedGroups.seedIfNeeded(half, in: context, defaults: defaults)
         }
-        Self.storeKilogramsOverAnExistingLibrary(in: context, defaults: defaults)
+        Self.storeUnitsOverAnExistingLibrary(in: context, defaults: defaults)
         self.groups = GroupsModel(context: context, half: half)
         // Wired after `init`, not through it: a stored property cannot capture the
         // owner that is still initialising it.
@@ -79,18 +79,22 @@ final class LibraryModel {
         refresh()
     }
 
-    /// **The phone's update** (SPEC §15.3): a launch with no weight unit stored, over a
-    /// library that is not empty, stores kg silently, because every weight an install from
-    /// before units wrote is kg. It never risks a relabel. An empty library stays unset,
-    /// for onboarding to ask, and a stored unit is never touched.
-    private static func storeKilogramsOverAnExistingLibrary(in context: ModelContext, defaults: UserDefaults) {
+    /// **The phone's update** (SPEC §15.3): a launch with no unit stored, over a library
+    /// that is not empty, stores **kg and km** silently, because every weight an install
+    /// from before units wrote is kg and every speed km/h. It never risks a relabel. An
+    /// empty library stays unset, for onboarding to ask, and a stored unit is never
+    /// touched.
+    private static func storeUnitsOverAnExistingLibrary(in context: ModelContext, defaults: UserDefaults) {
+        let weightIsUnset = WeightUnit.stored(in: defaults) == nil
+        let distanceIsUnset = DistanceUnit.stored(in: defaults) == nil
         // As elsewhere: v1 has no error state past §3's container failure, so a count
-        // that can't be read leaves the unit as it was, which still reads as kg.
-        guard WeightUnit.stored(in: defaults) == nil,
+        // that can't be read leaves the units as they were, which still read as kg and km.
+        guard weightIsUnset || distanceIsUnset,
               let counts = try? LibraryCounts(context),
               !counts.isEmpty
         else { return }
-        WeightUnit.kg.save(to: defaults)
+        if weightIsUnset { WeightUnit.kg.save(to: defaults) }
+        if distanceIsUnset { DistanceUnit.km.save(to: defaults) }
     }
 
     /// Switches the home screen to `half`, and remembers it for the next launch.
@@ -366,7 +370,8 @@ final class LibraryModel {
             exercises: exercises,
             groups: groups.groups,
             zones: HeartRateZones(defaults: defaults),
-            weightUnit: WeightUnit(defaults: defaults)
+            weightUnit: WeightUnit(defaults: defaults),
+            distanceUnit: DistanceUnit(defaults: defaults)
         )
         resume = layout.resume
 

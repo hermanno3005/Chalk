@@ -132,11 +132,11 @@ struct ErgDetailView: View {
         }
         .confirmationDialog("Change unit", isPresented: $changingUnit, titleVisibility: .visible) {
             ForEach(ErgUnit.allCases.filter { $0 != model.unit }, id: \.self) { unit in
-                Button(unit.pickerTitle) { model.changeUnit(to: unit) }
+                Button(unit.pickerTitle(model.distanceUnit)) { model.changeUnit(to: unit) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Now \(model.unit?.pickerTitle ?? "none"). The unit locks once you log on this erg.")
+            Text("Now \(model.unit?.pickerTitle(model.distanceUnit) ?? "none"). The unit locks once you log on this erg.")
         }
         .confirmationDialog(
             model.deleteConfirmation,

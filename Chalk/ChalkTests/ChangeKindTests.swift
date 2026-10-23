@@ -24,7 +24,7 @@ struct ChangeKindTests {
             fixture.log(fixture.machine(for: bench, at: gym, label: label), reps: 5, weight: 100)
         }
 
-        let change = KindChange(exercise: bench)
+        let change = KindChange(exercise: bench, distanceUnit: .km)
 
         #expect(change.direction == .toFreeWeight)
         #expect(change.question == "Bench Press has entries on 3 machines. They'll merge into one curve.")
@@ -40,7 +40,7 @@ struct ChangeKindTests {
         let machine = fixture.machine(for: bench, at: fixture.gym("Fitness X"))
         fixture.log(machine, reps: 5, weight: 100)
 
-        let change = KindChange(exercise: bench)
+        let change = KindChange(exercise: bench, distanceUnit: .km)
 
         #expect(change.question == "Bench Press has entries on one machine. They'll become the exercise's own curve.")
     }
@@ -51,7 +51,7 @@ struct ChangeKindTests {
         let bench = fixture.exercise("Bench Press", kind: .gymBound)
         fixture.machine(for: bench, at: fixture.gym("Fitness X"))
 
-        let change = KindChange(exercise: bench)
+        let change = KindChange(exercise: bench, distanceUnit: .km)
 
         #expect(change.question == "Make Bench Press free-weight?")
         #expect(change.detail.contains("1 machine"))
@@ -64,7 +64,7 @@ struct ChangeKindTests {
         fixture.log(bench, reps: 5, weight: 100)
         fixture.log(bench, reps: 8, weight: 90)
 
-        let change = KindChange(exercise: bench)
+        let change = KindChange(exercise: bench, distanceUnit: .km)
 
         #expect(change.direction == .toGymBound)
         #expect(change.needsAMachine)
@@ -77,7 +77,7 @@ struct ChangeKindTests {
         let fixture = try LibraryFixture()
         let bench = fixture.exercise("Bench Press")
 
-        let change = KindChange(exercise: bench)
+        let change = KindChange(exercise: bench, distanceUnit: .km)
 
         #expect(!change.needsAMachine)
         #expect(change.question == "Make Bench Press gym-bound?")
@@ -312,7 +312,7 @@ struct ChangeKindTests {
         let bench = fixture.exercise("Bench Press")
         GoalScope.exercise(bench).set(reps: 5, weight: 140)
 
-        let change = KindChange(exercise: bench)
+        let change = KindChange(exercise: bench, distanceUnit: .km)
 
         #expect(change.needsAMachine)
         #expect(change.prompt == "Which machine is this on?")
@@ -326,7 +326,7 @@ struct ChangeKindTests {
         fixture.log(bench, reps: 5, weight: 100)
         GoalScope.exercise(bench).set(reps: 5, weight: 140)
 
-        let change = KindChange(exercise: bench)
+        let change = KindChange(exercise: bench, distanceUnit: .km)
 
         #expect(change.prompt == "Which machine are these entries on?")
         #expect(change.promptDetail == "Bench Press becomes gym-bound, and 1 entry and your goal of 140 × 5 move to the machine you pick.")
@@ -472,16 +472,16 @@ struct ChangeKindTests {
         for machine in machines { fixture.log(machine, reps: 5, weight: 100) }
         let base = "Bench Press has entries on 3 machines. They'll merge into one curve."
 
-        #expect(KindChange(exercise: bench).question == base)
+        #expect(KindChange(exercise: bench, distanceUnit: .km).question == base)
 
         GoalScope.machine(machines[0]).set(reps: 5, weight: 140, at: .days(ago: 1))
-        #expect(KindChange(exercise: bench).question == base)
+        #expect(KindChange(exercise: bench, distanceUnit: .km).question == base)
 
         GoalScope.machine(machines[1]).set(reps: 3, weight: 150, at: .days(ago: 4))
-        #expect(KindChange(exercise: bench).question == "\(base) Your goal of 140 × 5 is kept; 1 other goal is cleared.")
+        #expect(KindChange(exercise: bench, distanceUnit: .km).question == "\(base) Your goal of 140 × 5 is kept; 1 other goal is cleared.")
 
         GoalScope.machine(machines[2]).set(reps: 8, weight: 120, at: .days(ago: 6))
-        #expect(KindChange(exercise: bench).question == "\(base) Your goal of 140 × 5 is kept; 2 other goals are cleared.")
+        #expect(KindChange(exercise: bench, distanceUnit: .km).question == "\(base) Your goal of 140 × 5 is kept; 2 other goals are cleared.")
     }
 
     @Test("With nothing logged the entry sentence goes and the clause stands alone")
@@ -494,7 +494,7 @@ struct ChangeKindTests {
         GoalScope.machine(hammer).set(reps: 5, weight: 140, at: .days(ago: 1))
         GoalScope.machine(cybex).set(reps: 3, weight: 150, at: .days(ago: 4))
 
-        #expect(KindChange(exercise: bench).question == "Your goal of 140 × 5 is kept; 1 other goal is cleared.")
+        #expect(KindChange(exercise: bench, distanceUnit: .km).question == "Your goal of 140 × 5 is kept; 1 other goal is cleared.")
     }
 
     @Test("The clause is one sentence, shared word for word with the merge")

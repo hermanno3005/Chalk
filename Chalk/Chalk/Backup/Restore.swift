@@ -3,8 +3,8 @@ import SwiftData
 
 /// A **restore** (ADR-0010): a backup read, checked and counted, waiting to replace
 /// everything Chalk holds. A replace, never a merge: entries, exercises, ergs, groups,
-/// gyms, machines, goals, zones and the weight unit all come from the file, and nothing
-/// else survives.
+/// gyms, machines, goals, zones and both units all come from the file, and nothing else
+/// survives.
 ///
 /// **Everything is decided before anything is touched.** Making a `Restore` decodes and
 /// checks the whole file, so a file Chalk can't restore exactly is refused here, with
@@ -23,6 +23,8 @@ struct Restore {
     private let clearsZones: Bool
     /// Whether the restore moves weights onto another scale than the one they read in now.
     private let switchesWeights: Bool
+    /// Whether the restore moves speeds onto another scale than the one they read in now.
+    private let switchesDistances: Bool
     private let container: ModelContainer
     private let defaults: UserDefaults
 
@@ -33,6 +35,7 @@ struct Restore {
         libraryCounts = try LibraryCounts(ModelContext(container))
         clearsZones = backup.settings.heartRateZones == nil && HeartRateZones(defaults: defaults) != nil
         switchesWeights = backup.settings.weightUnit != WeightUnit(defaults: defaults)
+        switchesDistances = backup.settings.distanceUnit != DistanceUnit(defaults: defaults)
         self.container = container
         self.defaults = defaults
     }
@@ -42,10 +45,9 @@ struct Restore {
     /// `This replaces 1,240 entries with 980 from 12 Mar 2026`.
     ///
     /// **Each side is counted by what it holds**, and the date is the file's own `madeAt`,
-    /// never the file's metadata, which neither AirDrop nor a copy keeps reliably. A weight
-    /// unit the restore switches is named, and so are zones it unsets; changed boundaries
-    /// are not: `…from 12 Mar 2026, switches weights to kg and clears your heart-rate
-    /// zones`.
+    /// never the file's metadata, which neither AirDrop nor a copy keeps reliably. A unit
+    /// the restore switches is named, and so are zones it unsets; changed boundaries are
+    /// not: `…from 12 Mar 2026, switches weights to kg and clears your heart-rate zones`.
     func confirmation(locale: Locale = .current, timeZone: TimeZone = .current) -> String? {
         guard !libraryCounts.isEmpty else { return nil }
         let backupCounts = LibraryCounts(backup)
@@ -58,11 +60,16 @@ struct Restore {
     }
 
     /// What the restore changes beyond the rows, as the confirmation's last clause: empty,
-    /// `, and switches weights to kg`, or `, switches weights to kg and clears your
-    /// heart-rate zones`.
+    /// `, and switches weights to kg`, `, and switches weights to lb and distances to
+    /// miles`, or `, switches weights to kg and clears your heart-rate zones`. Both units
+    /// switch in one clause, and the zones clause joins after it.
     private var changes: String {
+        let units = [
+            switchesWeights ? "weights to \(backup.settings.weightUnit.symbol)" : nil,
+            switchesDistances ? "distances to \(backup.settings.distanceUnit.name)" : nil,
+        ].compactMap(\.self)
         let clauses = [
-            switchesWeights ? "switches weights to \(backup.settings.weightUnit.symbol)" : nil,
+            listed(units).map { "switches \($0)" },
             clearsZones ? "clears your heart-rate zones" : nil,
         ].compactMap(\.self)
         guard let listed = listed(clauses) else { return "" }
@@ -79,9 +86,9 @@ struct Restore {
     /// commits at once as a batch delete that `rollback()` does not undo, so it is never
     /// used here.
     ///
-    /// The zones and the weight unit are written only after the store commits, since
+    /// The zones and both units are written only after the store commits, since
     /// `UserDefaults` can't join the transaction and can't fail. Every restore sets the
-    /// unit, over an empty library as over a full one. Both seed flags are set, so the
+    /// units, over an empty library as over a full one. Both seed flags are set, so the
     /// first-launch seed never adds its suggested groups on top of a restored library.
     ///
     /// `beforeSave` runs after the deletes and inserts and before the commit. It is there
@@ -105,6 +112,7 @@ struct Restore {
             HeartRateZones.clear(from: defaults)
         }
         backup.settings.weightUnit.save(to: defaults)
+        backup.settings.distanceUnit.save(to: defaults)
         for half in Half.allCases {
             defaults.set(true, forKey: SuggestedGroups.seededKey(for: half))
         }

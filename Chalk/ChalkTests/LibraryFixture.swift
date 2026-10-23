@@ -300,6 +300,11 @@ final class LibraryFixture {
         unit.save(to: defaults)
     }
 
+    /// Stores `unit` as this fixture's distance unit, as onboarding or a restore would.
+    func distanceUnit(_ unit: DistanceUnit) {
+        unit.save(to: defaults)
+    }
+
     /// The zones this fixture holds, read the one way the app reads them.
     func heldZones() -> HeartRateZones? {
         HeartRateZones(defaults: defaults)

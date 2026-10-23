@@ -63,6 +63,8 @@ final class LapListModel: Identifiable {
     let id = UUID()
     let erg: Exercise
     let unit: ErgUnit
+    /// The scale a speed is typed and its column titled in (SPEC §15.2).
+    let distanceUnit: DistanceUnit
     /// The grid's columns, in the watch's order: `Time | km/h | % | Avg | Peak` on a speed
     /// erg, `Time | <unit> | Avg | Peak` on the others.
     let columns: [EnduranceField]
@@ -104,7 +106,8 @@ final class LapListModel: Identifiable {
     @ObservationIgnored private let context: ModelContext
     /// The gyms, shared with the library.
     @ObservationIgnored let gyms: GymsModel
-    /// Where the heart-rate zones are held — read live, never cached (ADR-0005).
+    /// Where the heart-rate zones are held — read live, never cached (ADR-0005). The
+    /// distance unit is read from it once, at open: nothing behind the sheet changes it.
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let onSave: () -> Void
 
@@ -129,6 +132,7 @@ final class LapListModel: Identifiable {
         guard let unit = erg.ergUnit else { return nil }
         self.erg = erg
         self.unit = unit
+        self.distanceUnit = DistanceUnit(defaults: defaults)
         self.columns = EnduranceField.columns(for: unit)
         self.context = context
         self.gyms = gyms

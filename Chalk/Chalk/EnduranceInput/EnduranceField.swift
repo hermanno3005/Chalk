@@ -14,8 +14,9 @@ enum EnduranceField: CaseIterable, Hashable {
         unit.hasIncline ? allCases : allCases.filter { $0 != .incline }
     }
 
-    /// The grid's column title: `Time | km/h | % | Avg | Peak`, or the unit's own word.
-    func columnTitle(_ unit: ErgUnit) -> String {
+    /// The grid's column title: `Time | km/h | % | Avg | Peak`, a speed in the distance
+    /// unit (`mph`), or the unit's own word.
+    func columnTitle(_ unit: ErgUnit, _ distance: DistanceUnit) -> String {
         switch self {
         case .duration: "Time"
         case .incline: "%"
@@ -23,7 +24,7 @@ enum EnduranceField: CaseIterable, Hashable {
         case .peakHeartRate: "Peak"
         case .intensity:
             switch unit {
-            case .speed: "km/h"
+            case .speed: distance.speedSymbol
             case .watts: "W"
             case .split: "/500 m"
             case .level: "Level"

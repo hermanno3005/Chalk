@@ -11,9 +11,13 @@ import Foundation
 ///
 /// A plain struct over `[Entry]`, beside `ZoneLine` and read off it. **Scoping is the
 /// caller's job**, exactly as it is there: every entry for a transferable erg, one
-/// machine's entries for a gym-bound one. The zones are passed in, read live.
+/// machine's entries for a gym-bound one. The zones and the distance unit are passed in,
+/// read live.
 struct EnduranceGoal: Equatable {
     let unit: ErgUnit
+    /// The scale a speed goal is written on (SPEC §15.2). Read by the words only: the
+    /// goal's numbers are plain numbers on whatever scale is chosen now.
+    let distanceUnit: DistanceUnit
     /// 1…5 — a zone, never a bpm, so the goal follows your boundaries when they move.
     let zone: Int
     /// Whole seconds. Over 20:00 is an ordinary goal, read against a point that is never
@@ -48,11 +52,13 @@ struct EnduranceGoal: Equatable {
         entries: [Entry],
         zones: HeartRateZones?,
         unit: ErgUnit,
+        distanceUnit: DistanceUnit,
         calendar: Calendar = .current
     ) {
         guard let zone, let duration, let intensity, let setAt else { return nil }
         guard !unit.hasIncline || incline != nil else { return nil }
         self.unit = unit
+        self.distanceUnit = distanceUnit
         self.zone = zone
         self.duration = duration
         self.intensity = intensity
@@ -113,13 +119,13 @@ struct EnduranceGoal: Equatable {
     /// `15.5 km/h · 6:00 in Z4 · 1 %`, `L12 · 10:00 in Z3` — the goal as every surface
     /// names it: its goal line, the unit change's notice and the lost-goal clause.
     var text: String {
-        "\(EnduranceText.goalIntensity(intensity, unit)) · \(pointText)"
+        "\(EnduranceText.goalIntensity(intensity, unit, distanceUnit)) · \(pointText)"
     }
 
     /// What follows the goal on its line: `0.4 km/h to go`, `reached`, or `not held yet`.
     var status: String {
         guard let gap else { return "not held yet" }
-        return gap == 0 ? "reached" : "\(EnduranceText.steps(gap, unit)) to go"
+        return gap == 0 ? "reached" : "\(EnduranceText.steps(gap, unit, distanceUnit)) to go"
     }
 
     /// What a unit change says of the goals it clears (SPEC §13.6): *Your goal of 260 W ·
@@ -144,12 +150,12 @@ struct EnduranceGoal: Equatable {
 extension EnduranceText {
 
     /// A difference of `steps` in the unit's own step, never a converted one: `0.4 km/h`,
-    /// `12 W`, `2 s` (a split's tenths, trimmed), `2 levels`.
-    static func steps(_ steps: Int, _ unit: ErgUnit) -> String {
+    /// `0.4 mph`, `12 W`, `2 s` (a split's tenths, trimmed), `2 levels`.
+    static func steps(_ steps: Int, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
         let amount = Double(steps) * unit.step
         switch unit {
         case .speed:
-            return "\(amount.formatted(.number.precision(.fractionLength(1)).grouping(.never))) km/h"
+            return "\(amount.formatted(.number.precision(.fractionLength(1)).grouping(.never))) \(distance.speedSymbol)"
         case .watts:
             return "\(steps) W"
         case .split:

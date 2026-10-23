@@ -104,7 +104,7 @@ struct EnduranceGoalSheet: View {
         switch field {
         case .incline: " %"
         // A level's row is already named `Level`.
-        case .intensity: model.unit == .level ? "" : " " + field.columnTitle(model.unit)
+        case .intensity: model.unit == .level ? "" : " " + field.columnTitle(model.unit, model.distanceUnit)
         default: ""
         }
     }

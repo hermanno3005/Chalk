@@ -92,7 +92,7 @@ struct BackupTests {
               170
             ]
           },
-          "version" : 2
+          "version" : 3
         }
         """)
     }
@@ -115,7 +115,26 @@ struct BackupTests {
         #expect(decoded.madeAt == Self.madeAt)
     }
 
-    @Test("A library on lb goes out at version 2 with its unit, and decodes identical")
+    @Test("A library on miles goes out at version 3 with its unit, and decodes identical")
+    func aLibraryOnMilesRoundTrips() throws {
+        let fixture = try LibraryFixture()
+        try Self.fixedLibrary(in: fixture)
+        fixture.distanceUnit(.mi)
+
+        let backup = try Backup(of: fixture.context, defaults: fixture.defaults, madeAt: Self.madeAt)
+        let file = try backup.encoded()
+        let json = try #require(try JSONSerialization.jsonObject(with: file) as? [String: Any])
+        let decoded = try Backup(decoding: file)
+
+        #expect(json["version"] as? Int == 3)
+        #expect((json["settings"] as? [String: Any])?["distanceUnit"] as? String == "mi")
+        #expect(decoded == backup)
+        #expect(try decoded.encoded() == file)
+        #expect(decoded.settings.distanceUnit == .mi)
+        try Self.expect(decoded, holdsExactly: fixture.context)
+    }
+
+    @Test("A library on lb goes out with its unit, and decodes identical")
     func aLibraryOnPoundsRoundTrips() throws {
         let fixture = try LibraryFixture()
         try Self.fixedLibrary(in: fixture)
@@ -126,7 +145,6 @@ struct BackupTests {
         let json = try #require(try JSONSerialization.jsonObject(with: file) as? [String: Any])
         let decoded = try Backup(decoding: file)
 
-        #expect(json["version"] as? Int == 2)
         #expect((json["settings"] as? [String: Any])?["weightUnit"] as? String == "lb")
         #expect(decoded == backup)
         #expect(try decoded.encoded() == file)
