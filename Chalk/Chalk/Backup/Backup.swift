@@ -126,7 +126,13 @@ extension Backup {
         return try encoder.encode(self)
     }
 
-    /// A backup read back from a file's bytes.
+    /// A backup read back from a file's bytes, **checked whole before anything uses it**.
+    ///
+    /// Throws a `Refusal` for any file Chalk can't restore exactly: one that is not a
+    /// backup, one from a newer Chalk, an unknown key at any level (which a newer writer
+    /// or a hand edit would otherwise lose without a word), a raw value outside its enum,
+    /// zones `HeartRateZones` rejects, a `group` or `gym` the file doesn't hold, two rows
+    /// of one entity with one id, and an endurance goal with no zones to read it by.
     init(decoding data: Data) throws {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
@@ -140,20 +146,108 @@ extension Backup {
             }
             return date
         }
-        self = try decoder.decode(Backup.self, from: data)
+        do {
+            self = try decoder.decode(Backup.self, from: data)
+        } catch let refusal as Refusal {
+            throw refusal
+        } catch DecodingError.dataCorrupted(let context) where context.codingPath.isEmpty {
+            // Not JSON at all.
+            throw Refusal.notABackup
+        } catch {
+            throw Refusal.damaged
+        }
+        try checkReferences()
+    }
+
+    /// Refuses a file whose rows don't hang together: a duplicate id within an entity, a
+    /// `group` or `gym` the file doesn't hold, or an endurance goal with no zones.
+    private func checkReferences() throws {
+        let machines = exercises.flatMap(\.machines)
+        let entries = exercises.flatMap { $0.entries + $0.machines.flatMap(\.entries) }
+        let ids = [groups.map(\.id), gyms.map(\.id), exercises.map(\.id), machines.map(\.id), entries.map(\.id)]
+        guard ids.allSatisfy({ Set($0).count == $0.count }) else { throw Refusal.duplicateID }
+
+        let groupIDs = Set(groups.map(\.id))
+        let gymIDs = Set(gyms.map(\.id))
+        guard exercises.allSatisfy({ $0.group.map(groupIDs.contains) ?? true }),
+              machines.allSatisfy({ $0.gym.map(gymIDs.contains) ?? true })
+        else { throw Refusal.missingReference }
+
+        // Chalk never writes a goal zone without zones, and without them it means nothing.
+        let goals = exercises.map(\.goal) + machines.map(\.goal)
+        if settings.heartRateZones == nil, goals.contains(where: { $0.goalZone != nil }) {
+            throw Refusal.enduranceGoalWithoutZones
+        }
+    }
+}
+
+// MARK: - Refusals
+
+extension Backup {
+
+    /// Why a file can't be restored, in plain words. A refused file changes nothing.
+    enum Refusal: Error, Equatable {
+        /// Not JSON, or JSON without the `format` a backup carries.
+        case notABackup
+        /// A `version` newer than this Chalk reads.
+        case newerVersion
+        /// A key this Chalk doesn't know, which it would otherwise drop without a word.
+        case unknownKey(String)
+        /// A `kind`, `unit` or `half` outside its enum.
+        case unknownValue(String)
+        /// Zones that aren't four rising whole bpm between 40 and 230.
+        case invalidZones
+        /// A `group` or `gym` the file doesn't hold.
+        case missingReference
+        /// Two rows of one entity with the same id.
+        case duplicateID
+        /// A goal zone with no zones to read it by, which Chalk never writes.
+        case enduranceGoalWithoutZones
+        /// Anything else the file gets wrong: a missing id, a number written as text.
+        case damaged
+
+        var message: String {
+            switch self {
+            case .notABackup:
+                "This file isn't a Chalk backup."
+            case .newerVersion:
+                "This backup was made by a newer version of Chalk. Update Chalk, then restore it."
+            case .unknownKey(let key):
+                "This backup holds “\(key)”, which this version of Chalk doesn't know, so it can't be restored exactly."
+            case .unknownValue(let value):
+                "This backup holds “\(value)”, which this version of Chalk doesn't know, so it can't be restored exactly."
+            case .invalidZones:
+                "This backup's heart-rate zones aren't four rising values between 40 and 230 bpm, so it can't be restored."
+            case .missingReference:
+                "This backup puts an exercise or a machine in a group or gym it doesn't hold, so it can't be restored."
+            case .duplicateID:
+                "This backup holds the same row twice, so it can't be restored."
+            case .enduranceGoalWithoutZones:
+                "This backup holds an endurance goal but no heart-rate zones, so it can't be restored."
+            case .damaged:
+                "This backup is damaged and can't be restored."
+            }
+        }
     }
 }
 
 extension Backup: Codable {
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case format, version, madeAt, settings, groups, gyms, exercises
     }
 
+    /// The header is read first, so a file that isn't a backup, or is from a newer Chalk,
+    /// says so rather than whatever else it gets wrong.
     init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        format = try container.decode(String.self, forKey: .format)
+        guard let container = try? decoder.container(keyedBy: CodingKeys.self),
+              let format = try? container.decode(String.self, forKey: .format),
+              format == Self.format
+        else { throw Refusal.notABackup }
+        self.format = format
         version = try container.decode(Int.self, forKey: .version)
+        guard version <= Self.currentVersion else { throw Refusal.newerVersion }
+        try decoder.refuseUnknownKeys(CodingKeys.names)
         madeAt = try container.decode(Date.self, forKey: .madeAt)
         settings = try container.decode(Settings.self, forKey: .settings, default: Settings())
         groups = try container.decode([Group].self, forKey: .groups, default: [])
@@ -175,13 +269,17 @@ extension Backup: Codable {
 
 extension Backup.Settings: Codable {
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case heartRateZones
     }
 
     init(from decoder: any Decoder) throws {
+        try decoder.refuseUnknownKeys(CodingKeys.names)
         let container = try decoder.container(keyedBy: CodingKeys.self)
         heartRateZones = try container.decodeIfPresent([Int].self, forKey: .heartRateZones)
+        if let heartRateZones, HeartRateZones(lowerBounds: heartRateZones) == nil {
+            throw Backup.Refusal.invalidZones
+        }
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -192,16 +290,18 @@ extension Backup.Settings: Codable {
 
 extension Backup.Group: Codable {
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case id, name, sortIndex, half
     }
 
     init(from decoder: any Decoder) throws {
+        try decoder.refuseUnknownKeys(CodingKeys.names)
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name, default: "")
         sortIndex = try container.decode(Int.self, forKey: .sortIndex, default: 0)
         half = try container.decode(String.self, forKey: .half, default: Half.strength.rawValue)
+        try Backup.refuseUnknown(half, as: Half.self)
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -215,11 +315,12 @@ extension Backup.Group: Codable {
 
 extension Backup.Gym: Codable {
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case id, name, isArchived
     }
 
     init(from decoder: any Decoder) throws {
+        try decoder.refuseUnknownKeys(CodingKeys.names)
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name, default: "")
@@ -236,16 +337,19 @@ extension Backup.Gym: Codable {
 
 extension Backup.Exercise: Codable {
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case id, name, kind, unit, group, machines, entries
     }
 
     init(from decoder: any Decoder) throws {
+        try decoder.refuseUnknownKeys(CodingKeys.names + Backup.GoalFields.CodingKeys.names)
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name, default: "")
         kind = try container.decode(String.self, forKey: .kind, default: ExerciseKind.freeWeight.rawValue)
+        try Backup.refuseUnknown(kind, as: ExerciseKind.self)
         unit = try container.decodeIfPresent(String.self, forKey: .unit)
+        if let unit { try Backup.refuseUnknown(unit, as: ErgUnit.self) }
         group = try container.decodeIfPresent(UUID.self, forKey: .group)
         goal = try Backup.GoalFields(from: decoder)
         machines = try container.decode([Backup.Machine].self, forKey: .machines, default: [])
@@ -267,11 +371,12 @@ extension Backup.Exercise: Codable {
 
 extension Backup.Machine: Codable {
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case id, manufacturer, label, gym, entries
     }
 
     init(from decoder: any Decoder) throws {
+        try decoder.refuseUnknownKeys(CodingKeys.names + Backup.GoalFields.CodingKeys.names)
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         manufacturer = try container.decodeIfPresent(String.self, forKey: .manufacturer)
@@ -294,15 +399,22 @@ extension Backup.Machine: Codable {
 
 /// Written into the exercise's or machine's own object rather than nested, since the store
 /// holds them flat.
-extension Backup.GoalFields: Codable {}
+extension Backup.GoalFields: Codable {
+
+    /// Named so the exercise and machine readers know these keys are theirs too.
+    enum CodingKeys: String, CodingKey, CaseIterable {
+        case goalReps, goalWeight, goalSetAt, goalZone, goalDuration, goalIntensity, goalIncline
+    }
+}
 
 extension Backup.Entry: Codable {
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case id, reps, weight, duration, intensity, incline, averageHeartRate, peakHeartRate, date
     }
 
     init(from decoder: any Decoder) throws {
+        try decoder.refuseUnknownKeys(CodingKeys.names)
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         reps = try container.decode(Int.self, forKey: .reps, default: 0)
@@ -345,5 +457,40 @@ private extension KeyedDecodingContainer {
     /// The value at `key`, or the schema default when the file leaves it out.
     func decode<T: Decodable>(_ type: T.Type, forKey key: Key, default schemaDefault: T) throws -> T {
         try decodeIfPresent(type, forKey: key) ?? schemaDefault
+    }
+}
+
+// MARK: - Unknown keys and values
+
+private extension Decoder {
+
+    /// Refuses an object holding a key outside `known`. A keyed container drops the keys
+    /// its `CodingKey` doesn't name, so the object is read again by any key at all.
+    func refuseUnknownKeys(_ known: [String]) throws {
+        let keys = try container(keyedBy: AnyKey.self).allKeys.map(\.stringValue)
+        if let unknown = keys.sorted().first(where: { !known.contains($0) }) {
+            throw Backup.Refusal.unknownKey(unknown)
+        }
+    }
+}
+
+private extension CaseIterable where Self: CodingKey {
+    /// Every key's name.
+    static var names: [String] { allCases.map(\.stringValue) }
+}
+
+/// Any key an object holds.
+private struct AnyKey: CodingKey {
+    let stringValue: String
+    var intValue: Int? { nil }
+    init(stringValue: String) { self.stringValue = stringValue }
+    init?(intValue: Int) { nil }
+}
+
+private extension Backup {
+
+    /// Refuses a raw value `type` doesn't have.
+    static func refuseUnknown<T: RawRepresentable<String>>(_ rawValue: String, as type: T.Type) throws {
+        guard T(rawValue: rawValue) != nil else { throw Refusal.unknownValue(rawValue) }
     }
 }

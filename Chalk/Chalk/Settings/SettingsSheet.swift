@@ -1,8 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// Settings (ADR-0005): the heart-rate zones, and *Make a backup* (ADR-0010), reached from
-/// *Settings…* in the home overflow and belonging to neither half.
+/// Settings (ADR-0005): the heart-rate zones, *Make a backup* and *Restore from a backup*
+/// (ADR-0010), reached from *Settings…* in the home overflow and belonging to neither half.
 ///
 /// Four whole-bpm fields, Z2 to Z5. Z1 is written out rather than typed, because it has no
 /// floor of its own — it is everything below Z2. Save stays disabled until the four make a
@@ -11,11 +11,17 @@ import SwiftUI
 /// *Make a backup* hands one readable file of everything Chalk holds to the share sheet. It
 /// backs up the zones as saved, not as typed: Save closes the sheet, so what is typed here
 /// is never saved while the row is on screen.
+///
+/// *Restore from a backup* picks a file from Files and replaces everything with it, asking
+/// first over a library that is not empty. Once it has, the app reopens on the restored
+/// library, which closes Settings.
 struct SettingsSheet: View {
     let model: SettingsModel
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.reopenLibrary) private var reopenLibrary
     @FocusState private var focused: Int?
+    @State private var pickingBackup = false
 
     var body: some View {
         NavigationStack {
@@ -46,9 +52,39 @@ struct SettingsSheet: View {
                     ShareLink(item: model.backup, preview: SharePreview("Chalk backup")) {
                         Label("Make a backup", systemImage: "square.and.arrow.up")
                     }
+                    Button("Restore from a backup…", systemImage: "square.and.arrow.down") {
+                        pickingBackup = true
+                    }
                 } footer: {
-                    Text("One file holding every entry, exercise, erg, gym, machine and goal, and your zones. Keep it off the phone, in Files or on a Mac.")
+                    Text("One file holding every entry, exercise, erg, gym, machine and goal, and your zones. Keep it off the phone, in Files or on a Mac. Restoring one replaces everything Chalk holds.")
                 }
+            }
+            .fileImporter(isPresented: $pickingBackup, allowedContentTypes: [.json]) { picked in
+                guard case .success(let url) = picked else { return }
+                model.restore(contentsOf: url)
+            }
+            .alert(
+                "Restore this backup?",
+                // Cleared by the buttons alone, so dismissing never races the answer.
+                isPresented: Binding(get: { model.restoreConfirmation != nil }, set: { _ in }),
+                presenting: model.restoreConfirmation
+            ) { _ in
+                Button("Restore", role: .destructive, action: model.confirmRestore)
+                Button("Cancel", role: .cancel, action: model.cancelRestore)
+            } message: { confirmation in
+                Text(confirmation)
+            }
+            .alert(
+                "Can't restore",
+                isPresented: Binding(get: { model.restoreFailure != nil }, set: { if !$0 { model.restoreFailure = nil } }),
+                presenting: model.restoreFailure
+            ) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { failure in
+                Text(failure)
+            }
+            .onChange(of: model.restored) {
+                if model.restored { reopenLibrary() }
             }
             .onDisappear(perform: model.close)
             .navigationTitle("Settings")

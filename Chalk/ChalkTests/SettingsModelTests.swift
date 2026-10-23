@@ -1,11 +1,13 @@
 import Foundation
+import SwiftData
 import Testing
 
 @testable import Chalk
 
-/// Settings (ADR-0005): Chalk's one settings screen, holding the heart-rate zones and
-/// nothing else. Four lower bounds, Z2 to Z5; a save needs all four, each 40–230 bpm and
-/// strictly rising; once saved they can be edited and never cleared.
+/// Settings (ADR-0005): Chalk's one settings screen, holding the heart-rate zones, and
+/// where a backup is made and restored (ADR-0010). Four lower bounds, Z2 to Z5; a save
+/// needs all four, each 40–230 bpm and strictly rising; once saved they can be edited and
+/// never cleared from here.
 @Suite("Settings model")
 struct SettingsModelTests {
 
@@ -105,5 +107,71 @@ struct SettingsModelTests {
         settings.save()
 
         #expect(fixture.heldZones() == nil)
+    }
+
+    // MARK: - Restore
+
+    @Test("Over a library holding only its seeded groups and zones, a picked backup restores without asking")
+    func restoresAnEmptyLibraryWithoutAsking() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(110, 130, 150, 165)
+        let settings = fixture.settingsModel()
+
+        settings.restore(try RestoreTests.fixedLibraryFile())
+
+        #expect(settings.restoreConfirmation == nil)
+        #expect(settings.restored)
+        #expect(try fixture.afterRelaunch().fetchCount(FetchDescriptor<Exercise>()) == 5)
+    }
+
+    @Test("Over a library that is not empty, it asks first and changes nothing until confirmed")
+    func asksBeforeReplacingALibrary() throws {
+        let fixture = try LibraryFixture()
+        try RestoreTests.differentLibrary(in: fixture)
+        let settings = fixture.settingsModel()
+        let before = try RestoreTests.snapshot(of: fixture)
+
+        settings.restore(try RestoreTests.fixedLibraryFile())
+
+        #expect(settings.restoreConfirmation?.hasPrefix("This replaces 3 entries with 8 from ") == true)
+        #expect(!settings.restored)
+        #expect(try RestoreTests.snapshot(of: fixture) == before)
+
+        settings.confirmRestore()
+
+        #expect(settings.restoreConfirmation == nil)
+        #expect(settings.restored)
+        #expect(try fixture.afterRelaunch().fetchCount(FetchDescriptor<Exercise>()) == 5)
+    }
+
+    @Test("Cancelling the question changes nothing")
+    func cancellingARestoreChangesNothing() throws {
+        let fixture = try LibraryFixture()
+        try RestoreTests.differentLibrary(in: fixture)
+        let settings = fixture.settingsModel()
+        let before = try RestoreTests.snapshot(of: fixture)
+
+        settings.restore(try RestoreTests.fixedLibraryFile())
+        settings.cancelRestore()
+        settings.confirmRestore()
+
+        #expect(settings.restoreConfirmation == nil)
+        #expect(!settings.restored)
+        #expect(try RestoreTests.snapshot(of: fixture) == before)
+    }
+
+    @Test("A file Chalk can't restore is refused in its plain words, with nothing changed")
+    func aRefusedFileSaysWhy() throws {
+        let fixture = try LibraryFixture()
+        try RestoreTests.differentLibrary(in: fixture)
+        let settings = fixture.settingsModel()
+        let before = try RestoreTests.snapshot(of: fixture)
+
+        settings.restore(Data("Bench Press 5 × 57.5".utf8))
+
+        #expect(settings.restoreFailure == Backup.Refusal.notABackup.message)
+        #expect(settings.restoreConfirmation == nil)
+        #expect(!settings.restored)
+        #expect(try RestoreTests.snapshot(of: fixture) == before)
     }
 }

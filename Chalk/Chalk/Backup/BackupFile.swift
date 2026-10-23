@@ -51,6 +51,22 @@ struct BackupFile: Transferable, Sendable {
         return url
     }
 
+    /// The bytes of a file picked to restore. The importer hands a security-scoped URL,
+    /// and the read is coordinated so a file provider fetches a file that isn't on the
+    /// phone yet, such as an evicted iCloud Drive file. Chalk reads it once and keeps no
+    /// bookmark.
+    static func read(_ url: URL) throws -> Data {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        var coordinationError: NSError?
+        var read: Result<Data, any Error> = .failure(CocoaError(.fileReadUnknown))
+        NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordinationError) { url in
+            read = Result { try Data(contentsOf: url) }
+        }
+        if let coordinationError { throw coordinationError }
+        return try read.get()
+    }
+
     /// Removes every shared file. A folder that is not there is already clear.
     static func clear(_ directory: URL = directory) {
         try? FileManager.default.removeItem(at: directory)

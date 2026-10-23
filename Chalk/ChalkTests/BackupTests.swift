@@ -180,14 +180,14 @@ struct BackupTests {
 
     // MARK: - The fixed library
 
-    private static let madeAt = Date(timeIntervalSinceReferenceDate: 815_000_000.987_654_3)
+    static let madeAt = Date(timeIntervalSinceReferenceDate: 815_000_000.987_654_3)
 
     /// Both halves, with every attribute of every entity away from its default on at least
     /// one row: a free-weight lift with a goal, a gym-bound lift with machines at two gyms
     /// (one archived) and a gym-less one, a transferable erg with a goal and no group, a
     /// gym-bound erg whose machine holds a goal, groups in both halves, the zones, and
     /// dates with sub-second fractions.
-    private static func fixedLibrary(in fixture: LibraryFixture) throws {
+    static func fixedLibrary(in fixture: LibraryFixture) throws {
         let push = fixture.group("Push/Pull", sortIndex: 2)
         fixture.group("Legs", sortIndex: 0)
         let treadmills = fixture.enduranceGroup("Treadmills", sortIndex: 1)
@@ -244,7 +244,7 @@ struct BackupTests {
     /// Checks `backup` against the store row by row, by id: every group, gym, exercise,
     /// machine and entry is in the file once, under the right parent, with every field
     /// equal to the stored one.
-    private static func expect(_ backup: Backup, holdsExactly context: ModelContext) throws {
+    static func expect(_ backup: Backup, holdsExactly context: ModelContext) throws {
         let groups = try context.fetch(FetchDescriptor<ExerciseGroup>())
         #expect(Set(backup.groups.map(\.id)) == Set(groups.map(\.id)))
         for group in groups {
