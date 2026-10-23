@@ -54,4 +54,35 @@ enum WeightUnit: String, CaseIterable, Sendable {
     func text(_ weight: Double) -> String {
         "\(weight.weightText) \(symbol)"
     }
+
+    /// `weight` on this scale, **converted** onto `unit`'s and rounded to its convert grid
+    /// (SPEC §15.2, ADR-0009): `100 kg` is `220 lb`, and `225 lb` is `102 kg`.
+    func converted(_ weight: Double, to unit: WeightUnit) -> Double {
+        unit.onConvertGrid(weight * kilograms / unit.kilograms)
+    }
+
+    /// `weight` rounded to the grid a convert writes on: **0.5 kg or 1 lb**, nearest step,
+    /// ties up. **Never the stepper grid**, so a converted `220 lb` waits between steps
+    /// until the next `+` snaps it to `225` (SPEC §6.2).
+    func onConvertGrid(_ weight: Double) -> Double {
+        // Every weight is positive, so ties away from zero are ties up. Whole steps are
+        // divided back, never multiplied by a fraction, so `n / 2` is exact.
+        (weight * stepsPerUnit).rounded() / stepsPerUnit
+    }
+
+    /// One of this unit in kilograms: a pound is exactly 0.45359237 kg, by definition.
+    private var kilograms: Double {
+        switch self {
+        case .kg: 1
+        case .lb: 0.45359237
+        }
+    }
+
+    /// How many convert-grid steps make one of this unit.
+    private var stepsPerUnit: Double {
+        switch self {
+        case .kg: 2
+        case .lb: 1
+        }
+    }
 }

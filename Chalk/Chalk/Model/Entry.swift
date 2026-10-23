@@ -22,8 +22,9 @@ final class Entry {
     var weight: Double = 0
     /// Whole seconds, exactly as typed and never snapped. > 0 on an interval.
     var duration: Int = 0
-    /// In the erg's unit, exactly as typed and never converted — a split as seconds per
-    /// 500 m. > 0 on an interval. Compared only in whole steps of its unit (`ErgUnit`).
+    /// In the erg's unit, exactly as typed and never converted at read time — a split as
+    /// seconds per 500 m; only a convert rewrites a speed (ADR-0009). > 0 on an interval.
+    /// Compared only in whole steps of its unit (`ErgUnit`).
     var intensity: Double = 0
     /// Percent, read on a speed erg only. 0 % is a real value, not a blank.
     var incline: Double = 0

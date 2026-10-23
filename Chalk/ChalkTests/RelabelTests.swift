@@ -73,15 +73,15 @@ struct RelabelTests {
         #expect(readout?.pace == "6:27 /mi")
     }
 
-    @Test("The question says, in words, that no number moves", arguments: [
+    @Test("The question says, in words, that a relabel moves no number", arguments: [
         (UnitChange.weights(.lb), "Write weights in lb?", "Relabel as lb",
-         "Relabel if you picked the wrong unit: every weight and goal keeps its number and is written in lb instead. No number is converted."),
+         "Relabel if you picked the wrong unit: every weight and goal keeps its number and is written in lb instead. Convert if your gym uses lb: every weight and goal is rewritten in lb."),
         (UnitChange.distances(.mi), "Write distances in miles?", "Relabel as miles",
-         "Relabel if you picked the wrong unit: every speed and goal keeps its number and is written in mph instead. No number is converted."),
+         "Relabel if you picked the wrong unit: every speed and goal keeps its number and is written in mph instead. Convert if your gym uses mph: every speed and goal is rewritten in mph."),
         (UnitChange.weights(.kg), "Write weights in kg?", "Relabel as kg",
-         "Relabel if you picked the wrong unit: every weight and goal keeps its number and is written in kg instead. No number is converted."),
+         "Relabel if you picked the wrong unit: every weight and goal keeps its number and is written in kg instead. Convert if your gym uses kg: every weight and goal is rewritten in kg."),
     ])
-    func theQuestionSaysNoNumberMoves(change: UnitChange, title: String, relabel: String, message: String) {
+    func theQuestionSaysARelabelMovesNoNumber(change: UnitChange, title: String, relabel: String, message: String) {
         #expect(change.title == title)
         #expect(change.relabelLabel == relabel)
         #expect(change.message == message)

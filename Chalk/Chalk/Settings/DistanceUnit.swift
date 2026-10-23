@@ -55,4 +55,26 @@ enum DistanceUnit: String, CaseIterable, Sendable {
         case .mi: "miles"
         }
     }
+
+    /// `speed` on this scale, **converted** onto `unit`'s and rounded to the nearest tenth
+    /// (SPEC §15.2, ADR-0009): `12.0 km/h` is `7.5 mph`.
+    func converted(_ speed: Double, to unit: DistanceUnit) -> Double {
+        unit.onConvertGrid(speed * kilometres / unit.kilometres)
+    }
+
+    /// `speed` rounded to the grid a convert writes on, **0.1 km/h or mph**, nearest step,
+    /// ties up.
+    func onConvertGrid(_ speed: Double) -> Double {
+        // Every speed is positive, so ties away from zero are ties up. A tenth is written
+        // `n / 10`, never `n * 0.1`, so the stored `Double` is the one nearest the decimal.
+        (speed * 10).rounded() / 10
+    }
+
+    /// One of this unit in kilometres: a mile is exactly 1.609344 km, by definition.
+    private var kilometres: Double {
+        switch self {
+        case .km: 1
+        case .mi: 1.609344
+        }
+    }
 }

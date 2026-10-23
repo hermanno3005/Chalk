@@ -14,7 +14,8 @@ import SwiftData
 /// that depends on them is gated again, short of restoring a backup made without them.
 ///
 /// **A unit change is made at once**, not on Save: while nothing is written on its scale it
-/// is just a change, and once there is it waits on one question, answered by a relabel.
+/// is just a change, and once there is it waits on one question, answered by a relabel or
+/// a convert, and a convert asks once more with its count.
 @Observable
 final class SettingsModel: Identifiable {
 
@@ -42,14 +43,28 @@ final class SettingsModel: Identifiable {
     /// library as a relaunch would.
     private(set) var restored = false
 
+    /// Set once a convert has rewritten a scale, so the app can reopen on the converted
+    /// library as a restore does: every screen behind Settings holds the old rows.
+    private(set) var converted = false
+
     /// The scale every strength weight and goal is written on.
     private(set) var weightUnit: WeightUnit
     /// The scale every speed and speed goal is written on.
     private(set) var distanceUnit: DistanceUnit
 
-    /// A unit change waiting on the answer to its relabel question, or `nil` while
-    /// nothing is.
+    /// A unit change waiting on the answer to its question, relabel or convert, or `nil`
+    /// while nothing is.
     private(set) var unitChange: UnitChange?
+
+    /// What a convert asks before it rewrites a scale, or `nil` while nothing is waiting
+    /// on an answer.
+    var convertConfirmation: String? { pendingConvert?.confirmation() }
+
+    /// Why the last convert didn't happen, in plain words. Nothing was changed.
+    var convertFailure: String?
+
+    /// A convert waiting on the answer to its confirmation, or `nil` while nothing is.
+    private(set) var pendingConvert: Convert?
 
     /// A restore waiting on the answer to its confirmation.
     private var pendingRestore: Restore?
@@ -99,6 +114,40 @@ final class SettingsModel: Identifiable {
     func cancelUnitChange() {
         unitChange = nil
     }
+
+    /// Answers the unit change's question with a convert, which asks once more, with a
+    /// count, before it rewrites anything.
+    func askToConvert() {
+        guard let change = unitChange else { return }
+        unitChange = nil
+        do {
+            pendingConvert = try Convert(change, over: container, defaults: defaults)
+        } catch {
+            convertFailure = Self.convertFailed
+        }
+    }
+
+    /// Answers the convert's confirmation yes: every number on the scale is rewritten onto
+    /// the new one, and the scale moves. A convert that fails changes nothing and says so.
+    func convert() {
+        guard let convert = pendingConvert else { return }
+        pendingConvert = nil
+        do {
+            try convert.convert()
+            converted = true
+        } catch {
+            convertFailure = Self.convertFailed
+        }
+        weightUnit = WeightUnit(defaults: defaults)
+        distanceUnit = DistanceUnit(defaults: defaults)
+    }
+
+    /// Answers the convert's confirmation no. The unit and every number stay as they are.
+    func cancelConvert() {
+        pendingConvert = nil
+    }
+
+    private static let convertFailed = "Chalk couldn't convert. Nothing was changed."
 
     /// Holds `change` for the question, and makes it at once while nothing is written on
     /// its scale: with no number to keep, a relabel is just a change.

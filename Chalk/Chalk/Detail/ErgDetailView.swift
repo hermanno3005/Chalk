@@ -76,7 +76,7 @@ struct ErgDetailView: View {
         .sheet(item: $logging) { LapListSheet(model: $0) }
         .sheet(item: $history) { ErgHistorySheet(model: $0) }
         // Entries logged before the zones join the lines the moment they are set, and a
-        // relabel there moves the scale this screen and the grid behind it write in.
+        // relabel or a convert there moves the scale this screen and the grid behind it write in.
         .sheet(item: $settings, onDismiss: model.settingsClosed) { SettingsSheet(model: $0) }
         .sheet(item: $goalSheet) { EnduranceGoalSheet(model: $0) }
         // A unit change says so when it clears a goal (SPEC §13.6).

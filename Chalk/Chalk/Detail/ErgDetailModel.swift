@@ -280,7 +280,7 @@ final class ErgDetailModel {
     }
 
     /// Settings has closed: re-reads, and puts the grid behind back in step, since a
-    /// relabel there moves the scale both write in.
+    /// relabel or a convert there moves the scale both write in.
     func settingsClosed() {
         refresh()
         onLibraryChange()

@@ -4,9 +4,10 @@ import SwiftData
 /// A change to the weight or distance unit asked for on Settings (SPEC §15.2, ADR-0009),
 /// waiting to be made.
 ///
-/// **Relabel** is the one act it offers so far: every stored number stays as it is and
-/// only the scale changes, which repairs a wrong pick at onboarding. Nothing in the store
-/// is touched, because nothing converts at read time.
+/// It offers two acts. **Relabel**: every stored number stays as it is and only the scale
+/// changes, which repairs a wrong pick at onboarding. Nothing in the store is touched,
+/// because nothing converts at read time. **Convert** (`Convert`): every number on the
+/// scale is rewritten onto the new one, which moving to a gym on the other scale asks for.
 enum UnitChange: Equatable {
     case weights(WeightUnit)
     case distances(DistanceUnit)
@@ -15,19 +16,49 @@ enum UnitChange: Equatable {
     /// goal for weights, and a speed erg's interval or speed goal for distances, each at
     /// either scope. Until there is, a change is just a change, with nothing to relabel.
     func isWritten(in context: ModelContext) throws -> Bool {
+        let written = try self.written(in: context)
+        return written.entries + written.goals > 0
+    }
+
+    /// How many entries and goals are written on the scale this change moves, which is
+    /// what a convert rewrites and counts in its confirmation: every lift and strength goal,
+    /// or every speed erg's interval and speed goal, each goal at either scope.
+    func written(in context: ModelContext) throws -> (entries: Int, goals: Int) {
         switch self {
         case .weights:
-            return try context.fetchCount(FetchDescriptor<Entry>(predicate: #Predicate { $0.exercise != nil && $0.reps >= 1 && $0.weight > 0 })) > 0
-                || context.fetchCount(FetchDescriptor<Exercise>(predicate: #Predicate { $0.goalWeight != nil })) > 0
-                || context.fetchCount(FetchDescriptor<Machine>(predicate: #Predicate { $0.goalWeight != nil })) > 0
+            return try (
+                context.fetchCount(Self.lifts),
+                context.fetchCount(Self.exercisesWithAWeightGoal) + context.fetchCount(Self.machinesWithAWeightGoal)
+            )
         case .distances:
-            let speed = ErgUnit.speed.rawValue
-            return try context.fetch(FetchDescriptor<Exercise>(predicate: #Predicate { $0.unit == speed })).contains { erg in
-                erg.goalIntensity != nil
-                    || (erg.entries ?? []).contains { $0.intensity > 0 }
-                    || (erg.machines ?? []).contains { $0.goalIntensity != nil }
-            }
+            let ergs = try context.fetch(Self.speedErgs)
+            return (
+                ergs.reduce(0) { $0 + ($1.entries ?? []).count { $0.intensity > 0 } },
+                ergs.reduce(0) { $0 + ($1.goalIntensity == nil ? 0 : 1) + ($1.machines ?? []).count { $0.goalIntensity != nil } }
+            )
         }
+    }
+
+    /// Every lift: the entries whose weight is written on the weight unit's scale.
+    static var lifts: FetchDescriptor<Entry> {
+        FetchDescriptor(predicate: #Predicate { $0.exercise != nil && $0.reps >= 1 && $0.weight > 0 })
+    }
+
+    /// Every exercise holding a strength goal.
+    static var exercisesWithAWeightGoal: FetchDescriptor<Exercise> {
+        FetchDescriptor(predicate: #Predicate { $0.goalWeight != nil })
+    }
+
+    /// Every machine holding a strength goal.
+    static var machinesWithAWeightGoal: FetchDescriptor<Machine> {
+        FetchDescriptor(predicate: #Predicate { $0.goalWeight != nil })
+    }
+
+    /// Every speed erg: the ergs whose intervals and goals are written on the distance
+    /// unit's scale.
+    static var speedErgs: FetchDescriptor<Exercise> {
+        let speed = ErgUnit.speed.rawValue
+        return FetchDescriptor(predicate: #Predicate { $0.unit == speed })
     }
 
     /// The question a change asks once its scale has numbers, naming the scale as a
@@ -39,15 +70,41 @@ enum UnitChange: Equatable {
         }
     }
 
-    /// What the question says, in words that leave no doubt no number moves. Relabel is
-    /// named as the repair for a wrong pick, which is what it is for (SPEC §15.2).
+    /// What the question says, in words that leave no doubt which act moves a number.
+    /// Relabel is named as the repair for a wrong pick and convert as the move to a gym on
+    /// the other scale, which is what each is for (SPEC §15.2).
     var message: String {
-        "Relabel if you picked the wrong unit: every \(noun) and goal keeps its number and is written in \(symbol) instead. No number is converted."
+        "Relabel if you picked the wrong unit: every \(noun) and goal keeps its number and is written in \(symbol) instead. Convert if your gym uses \(symbol): every \(noun) and goal is rewritten in \(symbol)."
     }
 
     /// The answer that relabels: `Relabel as lb`, `Relabel as miles`.
     var relabelLabel: String {
         "Relabel as \(scaleName)"
+    }
+
+    /// The answer that converts, which asks once more before it does: `Convert to lb…`,
+    /// `Convert to miles…`.
+    var convertLabel: String {
+        "Convert to \(scaleName)…"
+    }
+
+    /// What a convert's confirmation asks: `Convert weights to lb?`, `Convert distances to
+    /// miles?`.
+    var convertTitle: String {
+        switch self {
+        case .weights: "Convert weights to \(scaleName)?"
+        case .distances: "Convert distances to \(scaleName)?"
+        }
+    }
+
+    /// The grid a convert rounds to, in words: `the nearest half kilogram`, `the nearest
+    /// pound`, `the nearest 0.1 mph`.
+    var convertGrid: String {
+        switch self {
+        case .weights(.kg): "the nearest half kilogram"
+        case .weights(.lb): "the nearest pound"
+        case .distances(let unit): "the nearest 0.1 \(unit.speedSymbol)"
+        }
     }
 
     /// What the scale holds: `weight` or `speed`.
@@ -67,7 +124,7 @@ enum UnitChange: Equatable {
     }
 
     /// The scale's symbol as a number is written in it: `kg`, `lb`, `km/h` or `mph`.
-    private var symbol: String {
+    var symbol: String {
         switch self {
         case .weights(let unit): unit.symbol
         case .distances(let unit): unit.speedSymbol

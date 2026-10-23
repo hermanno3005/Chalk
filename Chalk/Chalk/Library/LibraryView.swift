@@ -146,7 +146,7 @@ struct LibraryView: View {
                     // behind the sheet is already in step when it closes.
                     ManageGymsSheet(gyms: model.gyms)
                 }
-                // A relabel there moves the scale every tile and the resume card write in.
+                // A relabel or a convert there moves the scale every tile and the resume card write in.
                 .sheet(item: $settings, onDismiss: model.refresh) { settings in
                     SettingsSheet(model: settings)
                 }

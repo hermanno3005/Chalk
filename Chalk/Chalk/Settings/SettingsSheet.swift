@@ -15,8 +15,11 @@ import SwiftUI
 ///
 /// *Units* shows the weight unit and the distance unit and changes either. With nothing yet
 /// written on that scale, a pick is just a change. Once there is, it asks first and offers
-/// **relabel**, which keeps every number (SPEC §15.2, ADR-0009); declining leaves the
-/// picker where it was, since it only ever shows the unit stored.
+/// **relabel**, which keeps every number, or **convert**, which rewrites every number and
+/// asks once more with a count, since only a backup takes it back (SPEC §15.2, ADR-0009),
+/// then reopens the app on the converted library as a restore does.
+/// Declining either leaves the picker where it was, since it only ever shows the unit
+/// stored.
 ///
 /// *Restore from a backup* picks a file from Files and replaces everything with it, asking
 /// first over a library that is not empty. Once it has, the app reopens on the restored
@@ -86,9 +89,30 @@ struct SettingsSheet: View {
                 presenting: model.unitChange
             ) { change in
                 Button(change.relabelLabel, action: model.relabel)
+                Button(change.convertLabel, action: model.askToConvert)
                 Button("Cancel", role: .cancel, action: model.cancelUnitChange)
             } message: { change in
                 Text(change.message)
+            }
+            .alert(
+                model.pendingConvert?.change.convertTitle ?? "",
+                // Cleared by the buttons alone, as the restore question is.
+                isPresented: Binding(get: { model.pendingConvert != nil }, set: { _ in }),
+                presenting: model.convertConfirmation
+            ) { _ in
+                Button("Convert", role: .destructive, action: model.convert)
+                Button("Cancel", role: .cancel, action: model.cancelConvert)
+            } message: { confirmation in
+                Text(confirmation)
+            }
+            .alert(
+                "Can't convert",
+                isPresented: Binding(get: { model.convertFailure != nil }, set: { if !$0 { model.convertFailure = nil } }),
+                presenting: model.convertFailure
+            ) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { failure in
+                Text(failure)
             }
             .alert(
                 "Restore this backup?",
@@ -110,8 +134,9 @@ struct SettingsSheet: View {
             } message: { failure in
                 Text(failure)
             }
-            .onChange(of: model.restored) {
-                if model.restored { reopenLibrary() }
+            // A restore or a convert rewrites rows every screen behind Settings holds.
+            .onChange(of: model.restored || model.converted) {
+                if model.restored || model.converted { reopenLibrary() }
             }
             .onDisappear(perform: model.close)
             .navigationTitle("Settings")
