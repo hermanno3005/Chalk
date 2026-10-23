@@ -184,9 +184,9 @@ _Avoid_: Export, archive, snapshot, dump, save file
 
 **Restore**:
 Loading a backup in place of everything Chalk holds — a replace, never a merge, so what
-you get back is exactly what the backup held. Over a library that is not empty it first
-says what will be lost and how old the backup is, because a stale backup restored by
-mistake is the one way it can cost you.
+you get back is exactly what the backup held, both units included. Over a library that
+is not empty it first says what will be lost, how old the backup is and any unit it
+switches, because a stale backup restored by mistake is the one way it can cost you.
 _Avoid_: Import, merge, sync, recover
 
 ### What you're heading toward
@@ -305,6 +305,13 @@ is created and changed whenever you like. Its job is structure, not navigation, 
 why it never has to beat search.
 _Avoid_: Category, muscle group, tag
 _Note_: the Swift type is `ExerciseGroup`, to leave SwiftUI's `Group` view alone.
+
+**Empty library**:
+A library holding no exercise, no erg and no gym — nothing you made. Groups do not count,
+since Chalk suggests them on a fresh install, and neither do your zones or units, which
+are settings rather than library. One line for two questions: whether an install that
+has no units yet is new, and whether a restore must say what it replaces.
+_Avoid_: Fresh install, new user, no data
 
 **Ungrouped**:
 The state of an exercise or erg that sits in no group — a named place, not a missing
