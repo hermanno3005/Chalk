@@ -1954,7 +1954,7 @@ and may be revised. Nothing in this spec waits on it, and an icon is made, not d
 
 From the launch-polish grilling of 2026-10-22, which has no ticket yet. The words are in
 `CONTEXT.md`: **Weight unit**, **Distance unit**, **Relabel**, **Convert**, **Backup**,
-**Restore**, **Bar**, **Plate breakdown**. Read
+**Restore**, **Bar**, **Plate breakdown**, **Rep-max card**. Read
 [ADR-0009](docs/adr/0009-units-are-rewritten-never-converted-for-display.md) and
 [ADR-0010](docs/adr/0010-chalk-makes-and-restores-backups.md) before touching units or backups.
 
@@ -2029,8 +2029,19 @@ the phone's update, and it never risks a relabel
 
 ### 15.5 Features
 
-- **Spotlight and App Shortcuts.** Every exercise and erg is findable from the system search and
-  opens on its detail screen.
+- **Spotlight and Shortcuts.** Every exercise and erg is findable from the system search and
+  from Shortcuts, and opens on its detail screen. A result shows the name alone, so logging
+  never touches the index. *Open Bench Press in Chalk* and *Open Rower in Chalk* give each one
+  a Spotlight tile and a voice opener
+  ([Does Chalk ship App Shortcuts, given they bring Siri phrases?](https://github.com/hermanno3005/Chalk/issues/151)).
+- **Rep-max cards**, the second item cut, after plate breakdown. *Bench press rep maxes in
+  Chalk*, or *What's my 5 rep max on bench press in Chalk*, asked of Siri or run from its
+  Spotlight tile, answers with a **rep-max card** without opening Chalk: the twelve rep-maxes of
+  the scope the detail screen would open on, a dash where nothing is proven, and the machine
+  named when the exercise is gym-bound. A phrase carries one value, the exercise, so the card
+  holds every rep count rather than the one you said, and can never answer the wrong one.
+  Tapping it opens the detail screen. Strength only: an erg has no single number to read out.
+  Every phrase names Chalk, and Chalk declares no other name for itself.
 - **Plate breakdown**, the first item cut if this list grows too long, and prototyped before it
   is built. An exercise may have a **bar**, set only by you at create or from the overflow
   (*No bar*, 20, 15 or 10 kg, or a typed weight), and has none until you set one. Under a readout
@@ -2054,6 +2065,9 @@ the phone's update, and it never risks a relabel
 - **Opening the curve anywhere but 5 reps.**
 - **HealthKit or watch import.** Typing an endurance block after the session is fine (§13.14
   stands).
-- **Siri lookups**, and **swiping between exercises**.
+- **Asking Siri without saying *Chalk***, until Apple offers a schema that fits a strength log.
+  Siri reaches the same intents then, so nothing built for rep-max cards changes. A synonym
+  such as *rep max* is refused, since App Review rejects generic aliases.
+- **Swiping between exercises.**
 - **A log widget**, parked rather than rejected.
 - **A second language at launch.**

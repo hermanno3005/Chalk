@@ -52,6 +52,15 @@ The twelve rep-maxes for one exercise, `best[1]` through `best[12]`, drawn on a 
 axis so shapes are comparable between exercises.
 _Avoid_: Graph, chart, progression
 
+**Rep-max card**:
+One scope's strength curve read out as numbers rather than drawn, shown outside Chalk —
+by Siri, or from a Spotlight result — without opening it. Twelve rep-maxes, a dash where
+nothing is proven, and the machine named when the exercise is gym-bound; the scope is the
+one the exercise's detail screen would open on, so tapping the card shows the same
+numbers. It answers whichever rep count you asked about by holding all twelve, so it can
+never answer the wrong one. Strength only: an erg has no single number to read out.
+_Avoid_: Snippet, lookup, Siri card, PR card
+
 **Scope**:
 What a number is derived over and what a goal is set on: the exercise or erg itself when
 it is free-weight or transferable, one machine when it is gym-bound. The boundary is
