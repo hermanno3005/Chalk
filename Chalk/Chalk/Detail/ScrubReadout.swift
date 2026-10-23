@@ -12,7 +12,7 @@ struct ScrubReadout: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(weight)
+            Text(readout.weightWithUnit)
                 .font(.system(size: 46, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 // The number moves digit by digit as the thumb crosses rep counts,
@@ -38,13 +38,8 @@ struct ScrubReadout: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(weight), best for \(readout.reps) reps, \(entriesBehind)")
+        .accessibilityLabel("\(readout.weightWithUnit), best for \(readout.reps) reps, \(entriesBehind)")
         .accessibilityHint(readout.weight == nil ? "" : "Shows these entries")
-    }
-
-    private var weight: String {
-        guard let weight = readout.weight else { return "—" }
-        return "\(weight.kilogramsText) kg"
     }
 
     /// `record` is the screen's word, quoted from SPEC §5.1; the thing counted is an
@@ -56,8 +51,8 @@ struct ScrubReadout: View {
 
 #Preview {
     VStack(spacing: 32) {
-        ScrubReadout(readout: .init(reps: 5, weight: 52.5, entriesBehind: 8))
-        ScrubReadout(readout: .init(reps: 9, weight: nil, entriesBehind: 0))
+        ScrubReadout(readout: .init(reps: 5, weight: 52.5, entriesBehind: 8, weightUnit: .kg))
+        ScrubReadout(readout: .init(reps: 9, weight: nil, entriesBehind: 0, weightUnit: .kg))
     }
     .padding()
 }

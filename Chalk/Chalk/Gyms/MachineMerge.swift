@@ -18,6 +18,9 @@ struct MachineMerge {
     /// The machine they land on — the sibling that survives.
     let sibling: Machine
 
+    /// The scale the question writes a speed goal in (SPEC §15.2).
+    let distanceUnit: DistanceUnit
+
     /// The machines `Merge into…` offers for `machine`: **same gym, same exercise
     /// siblings only**, most recently logged first. Merging across gyms is incoherent by
     /// construction — a gym-bound exercise's load does not transfer — and merging across
@@ -47,7 +50,7 @@ struct MachineMerge {
     /// The two machines' goals — **the most recently set one ends up on the sibling**
     /// (SPEC §7.5, #68), the same rule as a kind change (§8). Which machine is the loser
     /// plays no part, so direction cannot cost you your only goal.
-    private var machineGoals: MachineGoals { MachineGoals([loser, sibling]) }
+    private var machineGoals: MachineGoals { MachineGoals([loser, sibling], distanceUnit: distanceUnit) }
 
     /// Whether the loser's goal is the one kept — and so has to be written onto the
     /// sibling before the delete cascades over it.

@@ -63,9 +63,9 @@ struct TwoStageNumberInput: View {
         }
     }
 
-    /// **±1 rep, ±2.5 kg**, and on weight the step snaps to the grid rather than adding
-    /// (SPEC §6.2). Tap only — no hold-to-repeat and no acceleration, so these are plain
-    /// buttons and nothing here recognises a long press.
+    /// **±1 rep, ±one step of the grid**, and on weight the step snaps to the grid rather
+    /// than adding (SPEC §6.2). Tap only — no hold-to-repeat and no acceleration, so these
+    /// are plain buttons and nothing here recognises a long press.
     private var steppers: some View {
         HStack(spacing: 16) {
             stepper(-1, symbol: "minus")
@@ -83,14 +83,6 @@ struct TwoStageNumberInput: View {
         }
         .buttonStyle(.bordered)
         .buttonBorderShape(.roundedRectangle(radius: 16))
-        .accessibilityLabel(stepperLabel(direction))
-    }
-
-    private func stepperLabel(_ direction: Int) -> String {
-        let up = direction > 0
-        switch number.stage {
-        case .reps: return up ? "One rep more" : "One rep fewer"
-        case .weight: return up ? "Up to the next 2.5 kilograms" : "Down to the next 2.5 kilograms"
-        }
+        .accessibilityLabel(number.stepperLabel(direction))
     }
 }

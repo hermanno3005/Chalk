@@ -13,23 +13,25 @@ struct LastEntryTests {
         Calendar.current.date(byAdding: .day, value: -count, to: now)!
     }
 
-    @Test("The lift reads reps × weight in kilograms, with no trailing zero")
+    @Test("The lift reads reps × weight in the unit, with no trailing zero")
     func theLiftReadsRepsByWeight() {
         // The half plate is written the way the reader's locale writes a decimal
         // (`WeightText`), so the expectation asks for that rather than for a `.`.
-        #expect(LastEntry(reps: 8, weight: 52.5, date: now).text(asOf: now)
-            == "8 × \(52.5.kilogramsText) kg · today")
-        #expect(LastEntry(reps: 1, weight: 60, date: now).text(asOf: now)
+        #expect(LastEntry(reps: 8, weight: 52.5, date: now).text(in: .kg, asOf: now)
+            == "8 × \(52.5.weightText) kg · today")
+        #expect(LastEntry(reps: 1, weight: 60, date: now).text(in: .kg, asOf: now)
             == "1 × 60 kg · today")
+        #expect(LastEntry(reps: 5, weight: 225, date: now).text(in: .lb, asOf: now)
+            == "5 × 225 lb · today")
     }
 
     @Test("Yesterday and the days before it are named, not dated")
     func recentDaysAreNamed() {
-        #expect(LastEntry(reps: 5, weight: 60, date: days(1)).text(asOf: now)
+        #expect(LastEntry(reps: 5, weight: 60, date: days(1)).text(in: .kg, asOf: now)
             == "5 × 60 kg · yesterday")
-        #expect(LastEntry(reps: 5, weight: 60, date: days(2)).text(asOf: now)
+        #expect(LastEntry(reps: 5, weight: 60, date: days(2)).text(in: .kg, asOf: now)
             == "5 × 60 kg · 2 days ago")
-        #expect(LastEntry(reps: 5, weight: 60, date: days(6)).text(asOf: now)
+        #expect(LastEntry(reps: 5, weight: 60, date: days(6)).text(in: .kg, asOf: now)
             == "5 × 60 kg · 6 days ago")
     }
 
@@ -38,7 +40,7 @@ struct LastEntryTests {
         let old = days(30)
         let dated = old.formatted(.dateTime.day().month(.abbreviated))
 
-        #expect(LastEntry(reps: 5, weight: 60, date: old).text(asOf: now)
+        #expect(LastEntry(reps: 5, weight: 60, date: old).text(in: .kg, asOf: now)
             == "5 × 60 kg · \(dated)")
     }
 
@@ -47,7 +49,7 @@ struct LastEntryTests {
         let old = Calendar.current.date(byAdding: .year, value: -2, to: now)!
         let dated = old.formatted(.dateTime.day().month(.abbreviated).year())
 
-        #expect(LastEntry(reps: 5, weight: 60, date: old).text(asOf: now)
+        #expect(LastEntry(reps: 5, weight: 60, date: old).text(in: .kg, asOf: now)
             == "5 × 60 kg · \(dated)")
     }
 
@@ -55,7 +57,7 @@ struct LastEntryTests {
     func futureDatesReadAsToday() {
         let ahead = Calendar.current.date(byAdding: .day, value: 3, to: now)!
 
-        #expect(LastEntry(reps: 5, weight: 60, date: ahead).text(asOf: now)
+        #expect(LastEntry(reps: 5, weight: 60, date: ahead).text(in: .kg, asOf: now)
             == "5 × 60 kg · today")
     }
 

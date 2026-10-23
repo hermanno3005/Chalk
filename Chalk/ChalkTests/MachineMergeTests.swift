@@ -80,7 +80,7 @@ struct MachineMergeTests {
             fixture.log(sibling, reps: 5, weight: 105, on: .days(ago: day))
         }
 
-        let merge = MachineMerge(loser: loser, sibling: sibling)
+        let merge = MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km)
 
         #expect(merge.movingCount == 8)
         #expect(merge.resultingCount == 11)
@@ -97,7 +97,7 @@ struct MachineMergeTests {
         let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
         fixture.log(loser, reps: 5, weight: 100)
 
-        let merge = MachineMerge(loser: loser, sibling: sibling)
+        let merge = MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km)
 
         #expect(merge.question == "Move 1 entry to Hammer Strength and delete Green?")
         #expect(merge.detail == "Hammer Strength holds 1 entry afterwards. This cannot be undone.")
@@ -112,7 +112,7 @@ struct MachineMergeTests {
         let sibling = fixture.machine(for: legPress, at: gym, label: "Hammer Strength")
         fixture.log(sibling, reps: 5, weight: 105)
 
-        let merge = MachineMerge(loser: loser, sibling: sibling)
+        let merge = MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km)
 
         #expect(merge.question == "Delete Green?")
         #expect(merge.detail == "Green holds no entries. Hammer Strength keeps its 1 entry. This cannot be undone.")
@@ -147,7 +147,7 @@ struct MachineMergeTests {
             GoalScope.machine(sibling).set(reps: 3, weight: 150, at: .days(ago: 9))
         }
 
-        #expect(MachineMerge(loser: loser, sibling: sibling).question == question)
+        #expect(MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km).question == question)
     }
 
     @Test("The clause names the goal that is kept, even when it is the sibling's")
@@ -161,7 +161,7 @@ struct MachineMergeTests {
         GoalScope.machine(loser).set(reps: 3, weight: 150, at: .days(ago: 9))
         GoalScope.machine(sibling).set(reps: 5, weight: 140, at: .days(ago: 2))
 
-        #expect(MachineMerge(loser: loser, sibling: sibling).question == "Move 1 entry to Hammer Strength and delete Unlabelled? Your goal of 140 × 5 is kept; 1 other goal is cleared.")
+        #expect(MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km).question == "Move 1 entry to Hammer Strength and delete Unlabelled? Your goal of 140 × 5 is kept; 1 other goal is cleared.")
     }
 
     @Test("Goals set at the same moment still pick one winner, whichever way round")
@@ -175,7 +175,7 @@ struct MachineMergeTests {
         GoalScope.machine(unlabelled).set(reps: 5, weight: 140, at: moment)
         GoalScope.machine(hammer).set(reps: 3, weight: 150, at: moment)
 
-        #expect(MachineGoals([unlabelled, hammer]).keeping === MachineGoals([hammer, unlabelled]).keeping)
+        #expect(MachineGoals([unlabelled, hammer], distanceUnit: .km).keeping === MachineGoals([hammer, unlabelled], distanceUnit: .km).keeping)
     }
 
     @Test("An empty loser whose goal is kept over the sibling's says both")
@@ -189,7 +189,7 @@ struct MachineMergeTests {
         GoalScope.machine(loser).set(reps: 5, weight: 140, at: .days(ago: 2))
         GoalScope.machine(sibling).set(reps: 3, weight: 150, at: .days(ago: 9))
 
-        #expect(MachineMerge(loser: loser, sibling: sibling).question == "Move your goal of 140 × 5 to Unlabelled and delete Hammer Strength? Your goal of 140 × 5 is kept; 1 other goal is cleared.")
+        #expect(MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km).question == "Move your goal of 140 × 5 to Unlabelled and delete Hammer Strength? Your goal of 140 × 5 is kept; 1 other goal is cleared.")
     }
 
     @Test("An empty loser whose goal is kept says the goal moves")
@@ -202,7 +202,7 @@ struct MachineMergeTests {
         fixture.log(sibling, reps: 5, weight: 100)
         GoalScope.machine(loser).set(reps: 5, weight: 140)
 
-        let merge = MachineMerge(loser: loser, sibling: sibling)
+        let merge = MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km)
 
         #expect(merge.question == "Move your goal of 140 × 5 to Unlabelled and delete Hammer Strength?")
     }
@@ -218,7 +218,7 @@ struct MachineMergeTests {
         GoalScope.machine(loser).set(reps: 3, weight: 150, at: .days(ago: 9))
         GoalScope.machine(sibling).set(reps: 5, weight: 140, at: .days(ago: 2))
 
-        let merge = MachineMerge(loser: loser, sibling: sibling)
+        let merge = MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km)
 
         #expect(merge.question == "Delete Hammer Strength? Your goal of 140 × 5 is kept; 1 other goal is cleared.")
     }
@@ -436,7 +436,7 @@ struct MachineMergeTests {
         fixture.interval(treadmill, machine: excite, incline: 0, on: .days(ago: 1))
         try fixture.save()
 
-        let merge = MachineMerge(loser: unlabelled, sibling: excite)
+        let merge = MachineMerge(loser: unlabelled, sibling: excite, distanceUnit: .km)
         #expect(merge.question == "Move 3 entries to Technogym Excite and delete Unlabelled?")
         #expect(merge.detail == "Technogym Excite holds 4 entries afterwards. This cannot be undone.")
         fixture.gymsModel().merge(unlabelled, into: excite)

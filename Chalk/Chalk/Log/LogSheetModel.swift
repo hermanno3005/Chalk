@@ -82,7 +82,7 @@ final class LogSheetModel: Identifiable {
     /// The giant number itself — staging, steppers, keypad — **shared with the goal
     /// sheet and carrying none of this sheet's meaning** (#73). Everything below reads
     /// it; only the seeding rules decide what goes into it.
-    var number = TwoStageNumber(reps: nil, weight: nil)
+    var number: TwoStageNumber
 
     @ObservationIgnored private let context: ModelContext
     /// The gyms, for the three things the sheet does with them: sectioning the picker,
@@ -115,6 +115,7 @@ final class LogSheetModel: Identifiable {
         editing: Entry? = nil,
         context: ModelContext,
         gyms: GymsModel,
+        weightUnit: WeightUnit,
         onSave: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
@@ -129,11 +130,13 @@ final class LogSheetModel: Identifiable {
         self.context = context
         self.gyms = gyms
         self.onSave = onSave
+        // Blank only until the seed below, which reads the entries this scopes.
+        number = TwoStageNumber(reps: nil, weight: nil, weightUnit: weightUnit)
         rescopeEntries()
 
         if let editing {
             // Seeded from *that* entry — the numbers you tapped, ready to be corrected.
-            number = TwoStageNumber(reps: editing.reps, weight: editing.weight)
+            number = TwoStageNumber(reps: editing.reps, weight: editing.weight, weightUnit: weightUnit)
         } else {
             number = TwoStageNumber(
                 // **Reps seed from your most recent entry on any machine** — rep counts
@@ -141,7 +144,8 @@ final class LogSheetModel: Identifiable {
                 reps: LastEntry.latest(in: entriesOnAnyMachine)?.reps ?? Self.defaultReps,
                 // **The weight only from this exact machine**, so no number you have
                 // never lifted *there* is ever one tap from Save.
-                weight: LastEntry.latest(in: entries)?.weight
+                weight: LastEntry.latest(in: entries)?.weight,
+                weightUnit: weightUnit
             )
         }
     }
@@ -156,7 +160,7 @@ final class LogSheetModel: Identifiable {
         // Off the same array the verdict derives against, so "nothing lifted here" means
         // one thing on this sheet: an edit whose only entry on this machine is the one
         // being corrected is a machine with nothing else to say.
-        hint = MachineHint.lookUp(exercise, scopedTo: machine, historyHere: entries)
+        hint = MachineHint.lookUp(exercise, scopedTo: machine, historyHere: entries, weightUnit: number.weightUnit)
         goal = GoalScope(exercise: exercise, machine: machine)?.goal(judgedAgainst: entries)
     }
 
@@ -223,12 +227,12 @@ final class LogSheetModel: Identifiable {
         // A blank weight compares as the nothing it is, which reads as "below".
         let weight = weight ?? 0
         if weight > best {
-            return .measured("Beats your \(reps)-rep best by \((weight - best).kilogramsText) kg")
+            return .measured("Beats your \(reps)-rep best by \(number.weightUnit.text(weight - best))")
         }
         if weight == best {
             return .measured("Matches your \(reps)-rep best")
         }
-        return .measured("Your \(reps)-rep best is \(best.kilogramsText) kg")
+        return .measured("Your \(reps)-rep best is \(number.weightUnit.text(best))")
     }
 
     var canAdvance: Bool { number.canAdvance }

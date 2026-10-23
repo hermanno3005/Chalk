@@ -116,7 +116,7 @@ struct ExerciseDetailModelTests {
         let model = fixture.detailModel(for: exercise)
         model.select(here)
 
-        #expect(model.hint?.text == "\(55.0.kilogramsText) kg × 5 on Hammer Strength")
+        #expect(model.hint?.text == "\(55.0.weightText) kg × 5 on Hammer Strength")
         // Text, never a dimmed curve: nothing the sibling lifted reaches the chart
         // (SPEC §5.4).
         #expect(model.hasCurve == false)
@@ -164,7 +164,7 @@ struct ExerciseDetailModelTests {
 
         model.select(fresh)
 
-        #expect(model.hint?.text == "\(55.0.kilogramsText) kg × 5 on By the window")
+        #expect(model.hint?.text == "\(55.0.weightText) kg × 5 on By the window")
     }
 
     // MARK: - The overflow menu

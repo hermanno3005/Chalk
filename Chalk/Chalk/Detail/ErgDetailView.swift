@@ -75,8 +75,9 @@ struct ErgDetailView: View {
         .safeAreaInset(edge: .bottom) { logBar }
         .sheet(item: $logging) { LapListSheet(model: $0) }
         .sheet(item: $history) { ErgHistorySheet(model: $0) }
-        // Entries logged before the zones join the lines the moment they are set.
-        .sheet(item: $settings, onDismiss: model.refresh) { SettingsSheet(model: $0) }
+        // Entries logged before the zones join the lines the moment they are set, and a
+        // relabel or a convert there moves the scale this screen and the grid behind it write in.
+        .sheet(item: $settings, onDismiss: model.settingsClosed) { SettingsSheet(model: $0) }
         .sheet(item: $goalSheet) { EnduranceGoalSheet(model: $0) }
         // A unit change says so when it clears a goal (SPEC §13.6).
         .alert(
@@ -132,11 +133,11 @@ struct ErgDetailView: View {
         }
         .confirmationDialog("Change unit", isPresented: $changingUnit, titleVisibility: .visible) {
             ForEach(ErgUnit.allCases.filter { $0 != model.unit }, id: \.self) { unit in
-                Button(unit.pickerTitle) { model.changeUnit(to: unit) }
+                Button(unit.pickerTitle(model.distanceUnit)) { model.changeUnit(to: unit) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Now \(model.unit?.pickerTitle ?? "none"). The unit locks once you log on this erg.")
+            Text("Now \(model.unit?.pickerTitle(model.distanceUnit) ?? "none"). The unit locks once you log on this erg.")
         }
         .confirmationDialog(
             model.deleteConfirmation,

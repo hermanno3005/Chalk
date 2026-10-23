@@ -18,6 +18,9 @@ final class EnduranceGoalSheetModel: Identifiable {
 
     let unit: ErgUnit
 
+    /// The scale a speed is typed and written in (SPEC §15.2).
+    let distanceUnit: DistanceUnit
+
     /// `Z1`–`Z5`, segmented. Nil only with nothing scrubbed to seed it from.
     var zone: Int?
 
@@ -48,17 +51,19 @@ final class EnduranceGoalSheetModel: Identifiable {
         scope: GoalScope,
         selection: ErgReading.Selection?,
         zones: HeartRateZones?,
+        distanceUnit: DistanceUnit,
         context: ModelContext,
         onChange: @escaping () -> Void = {}
     ) {
         guard let zones, let unit = scope.unit else { return nil }
         self.unit = unit
+        self.distanceUnit = distanceUnit
         self.scope = scope
         self.zones = zones
         self.context = context
         self.onChange = onChange
         entries = scope.entries
-        hasGoal = scope.enduranceGoal(zones: zones) != nil
+        hasGoal = scope.enduranceGoal(zones: zones, distanceUnit: distanceUnit) != nil
 
         // The point first, then the number at it — not the grid's watch order.
         rows = unit.hasIncline ? [.duration, .incline, .intensity] : [.duration, .intensity]
@@ -149,10 +154,10 @@ final class EnduranceGoalSheetModel: Identifiable {
         }
         guard goal.intensity > 0 else { return nil }
         if gap > 0 {
-            return .init(text: "\(EnduranceText.steps(gap, unit)) above your \(point)", isReached: false)
+            return .init(text: "\(EnduranceText.steps(gap, unit, distanceUnit)) above your \(point)", isReached: false)
         }
         return .init(
-            text: "Already reached — your \(point) is \(EnduranceText.intensity(current, unit, pace: false))",
+            text: "Already reached — your \(point) is \(EnduranceText.intensity(current, unit, distanceUnit, pace: false))",
             isReached: true
         )
     }
@@ -169,7 +174,8 @@ final class EnduranceGoalSheetModel: Identifiable {
             setAt: .now,
             entries: entries,
             zones: zones,
-            unit: unit
+            unit: unit,
+            distanceUnit: distanceUnit
         )
     }
 

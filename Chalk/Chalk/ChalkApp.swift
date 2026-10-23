@@ -3,17 +3,13 @@ import SwiftUI
 
 @main
 struct ChalkApp: App {
-    private let root: Root
+    @State private var root: Root
 
     init() {
-        switch ChalkStore.open() {
-        case .opened(let container):
-            // The library model is made once, here, rather than per body evaluation: it
-            // caches the library's ordering and seeds the suggested groups (SPEC §7.2).
-            root = .library(container, LibraryModel(context: container.mainContext))
-        case .failed(let storePath, _):
-            root = .unavailable(storePath)
-        }
+        // A backup shared before the app last quit is no longer being copied anywhere,
+        // and Chalk keeps none of its own (ADR-0010).
+        BackupFile.clear()
+        _root = State(initialValue: Self.open())
     }
 
     var body: some Scene {
@@ -22,15 +18,56 @@ struct ChalkApp: App {
             case .library(let container, let model):
                 LibraryView(model: model)
                     .modelContainer(container)
+                    // A new model is a new library screen, so nothing presented over the
+                    // old one, Settings included, survives a reopen.
+                    .id(ObjectIdentifier(model))
+                    .environment(\.reopenLibrary, ReopenLibraryAction { root = Self.open() })
+            case .onboarding(let model):
+                OnboardingView(model: model)
+                    .environment(\.reopenLibrary, ReopenLibraryAction { root = Self.open() })
             case .unavailable(let storePath):
                 StoreUnavailableView(storePath: storePath)
             }
         }
     }
 
+    /// Opens the store and the library on it, or onboarding while no units are stored.
+    /// Run at launch, and again after onboarding or a restore, so the restored library is
+    /// read fresh rather than through a context whose rows another context deleted.
+    private static func open() -> Root {
+        switch ChalkStore.open() {
+        case .opened(let container):
+            // The library model is made once per open, rather than per body evaluation:
+            // it caches the library's ordering and seeds the suggested groups (SPEC §7.2).
+            // It is made before onboarding is decided, since it stores kg and km over a
+            // library that isn't empty, which then never sees onboarding (SPEC §15.3).
+            let library = LibraryModel(context: container.mainContext)
+            return OnboardingModel.isShown(defaults: .standard, context: container.mainContext)
+                ? .onboarding(OnboardingModel(defaults: .standard, container: container))
+                : .library(container, library)
+        case .failed(let storePath, _):
+            return .unavailable(storePath)
+        }
+    }
+
     /// What the app opens into. A failed store is a value, not a trap (SPEC §3).
     private enum Root {
         case library(ModelContainer, LibraryModel)
+        case onboarding(OnboardingModel)
         case unavailable(String)
     }
+}
+
+/// Reopens the store and rebuilds the library on it, as a relaunch would. A restore calls
+/// it once the store has committed. Read from the environment, as `dismiss` is.
+struct ReopenLibraryAction {
+    fileprivate let reopen: () -> Void
+
+    func callAsFunction() {
+        reopen()
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var reopenLibrary = ReopenLibraryAction {}
 }

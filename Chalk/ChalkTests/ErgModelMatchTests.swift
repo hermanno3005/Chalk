@@ -166,7 +166,7 @@ struct ErgModelMatchTests {
 
         #expect(match.warning == "You have a Technogym Excite at FitX — same model?")
         // Merging across gyms is incoherent by construction.
-        #expect(match.merge(from: mine) == nil)
+        #expect(match.merge(from: mine, distanceUnit: .km) == nil)
     }
 
     @Test("On rename, a same-gym match offers Merge into that sibling, with Merge's confirmation")
@@ -183,7 +183,7 @@ struct ErgModelMatchTests {
 
         let match = try #require(ErgModelMatch.onRename(mine, to: "technogym excite"))
         #expect(match.isSameGym)
-        let merge = try #require(match.merge(from: mine))
+        let merge = try #require(match.merge(from: mine, distanceUnit: .km))
         #expect(merge.sibling === sibling)
         #expect(merge.question == "Move 2 entries to Technogym Excite and delete Unlabelled?")
 
@@ -264,7 +264,7 @@ struct ErgModelMatchTests {
         // Merge, after Merge's confirmation — which names both gyms, since the two
         // machines may well share a name.
         let match = try #require(ErgModelMatch.onMove(mine, to: fitX))
-        let merge = try #require(match.merge(from: mine))
+        let merge = try #require(match.merge(from: mine, distanceUnit: .km))
         #expect(merge.question == "Move 1 entry to Technogym Excite · FitX and delete Technogym excite · FitX Mitte?")
         gyms.move(merge.loser, mergingInto: merge.sibling)
 

@@ -34,7 +34,7 @@ struct EnduranceGoalTests {
     func aPartialSetIsNoGoal(zone: Int?, duration: Int?, intensity: Double?, setAt: Date?) {
         #expect(EnduranceGoal(
             zone: zone, duration: duration, intensity: intensity, incline: 1, setAt: setAt,
-            entries: [], zones: zones, unit: .speed
+            entries: [], zones: zones, unit: .speed, distanceUnit: .km
         ) == nil)
     }
 
@@ -250,7 +250,7 @@ struct EnduranceGoalTests {
     func noZonesNoPoint() throws {
         let goal = try #require(EnduranceGoal(
             zone: 4, duration: 360, intensity: 15.5, incline: 0, setAt: setAt,
-            entries: [interval(at: 16.0, day: 11)], zones: nil, unit: .speed, calendar: calendar
+            entries: [interval(at: 16.0, day: 11)], zones: nil, unit: .speed, distanceUnit: .km, calendar: calendar
         ))
         #expect(goal.current == nil)
     }
@@ -274,6 +274,7 @@ struct EnduranceGoalTests {
             entries: entries,
             zones: zones,
             unit: unit,
+            distanceUnit: .km,
             calendar: calendar
         )
     }

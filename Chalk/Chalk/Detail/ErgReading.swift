@@ -23,7 +23,7 @@ struct ErgReading {
         var incline: Double
     }
 
-    /// The scrub readout: `15.0 km/h`, `4:00 /km`, `6:00 in Z4 · 164 bpm · 12 entries`.
+    /// The scrub readout: `15.0 km/h`, `4:00 /km` (or `9.3 mph`, `6:27 /mi`), `6:00 in Z4 · 164 bpm · 12 entries`.
     /// **The entry count is the uncertainty** — no ± band is drawn (SPEC §13.8).
     struct Readout: Equatable {
         /// The point's mean intensity in its unit, the large number.
@@ -36,6 +36,9 @@ struct ErgReading {
     }
 
     let unit: ErgUnit?
+
+    /// The scale a speed is written on, read live by the caller as the zones are.
+    let distanceUnit: DistanceUnit
 
     /// Nil until zones are set — the zones gate: no buttons, readout or line (SPEC §13.8).
     let zones: HeartRateZones?
@@ -63,8 +66,15 @@ struct ErgReading {
     ///   across a write, a machine switch or a zones edit, as strength's scrub does
     ///   (SPEC §5.2). Nil opens on the zone, duration and incline of the scope's most
     ///   recent valid interval.
-    init(entries: [Entry], zones: HeartRateZones?, unit: ErgUnit?, keeping previous: Selection?) {
+    init(
+        entries: [Entry],
+        zones: HeartRateZones?,
+        unit: ErgUnit?,
+        distanceUnit: DistanceUnit,
+        keeping previous: Selection?
+    ) {
         self.unit = unit
+        self.distanceUnit = distanceUnit
         self.zones = zones
         intervals = entries.filter(\.isAnInterval)
         isEmpty = intervals.isEmpty
@@ -113,8 +123,8 @@ struct ErgReading {
         guard let selection, let point, let unit else { return nil }
         let entries = point.entryCount == 1 ? "1 entry" : "\(point.entryCount) entries"
         return Readout(
-            intensity: EnduranceText.intensity(point.intensity, unit, pace: false),
-            pace: unit == .speed && point.intensity > 0 ? EnduranceText.pace(point.intensity) : nil,
+            intensity: EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false),
+            pace: unit == .speed && point.intensity > 0 ? EnduranceText.pace(point.intensity, distanceUnit) : nil,
             detail: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone) · \(point.averageHeartRate) bpm · \(entries)"
         )
     }

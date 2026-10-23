@@ -77,7 +77,8 @@ final class ErgHistoryModel: Identifiable {
     @ObservationIgnored private let context: ModelContext
     /// Carried through to the log sheet an edited row opens; nothing here reads them.
     @ObservationIgnored private let gyms: GymsModel
-    /// Where the zones are held, read live on every refresh (ADR-0005).
+    /// Where the zones and the distance unit are held, read live on every refresh
+    /// (ADR-0005).
     @ObservationIgnored private let defaults: UserDefaults
     /// The screens behind the sheet — the detail screen and the library — which every
     /// write here has to put back in step.
@@ -168,24 +169,25 @@ final class ErgHistoryModel: Identifiable {
             zone: zone,
             incline: incline
         )
+        let distanceUnit = DistanceUnit(defaults: defaults)
         switch listing {
         case .point(let duration):
             let entries = line.entries(at: duration)
             let cutOff = line.cutOff(at: duration) ?? .distantPast
-            rows = entries.filter { $0.date >= cutOff }.map { row($0, unit, duration: false) }
-            older = entries.filter { $0.date < cutOff }.map { row($0, unit, duration: false) }
+            rows = entries.filter { $0.date >= cutOff }.map { row($0, unit, distanceUnit, duration: false) }
+            older = entries.filter { $0.date < cutOff }.map { row($0, unit, distanceUnit, duration: false) }
         case .overTheAxis:
-            rows = line.entriesOverTheAxis.map { row($0, unit, duration: true) }
+            rows = line.entriesOverTheAxis.map { row($0, unit, distanceUnit, duration: true) }
             older = []
         }
     }
 
-    private func row(_ entry: Entry, _ unit: ErgUnit, duration: Bool) -> Row {
+    private func row(_ entry: Entry, _ unit: ErgUnit, _ distanceUnit: DistanceUnit, duration: Bool) -> Row {
         Row(
             id: entry.id,
             day: RelativeDay.text(for: entry.date, asOf: .now),
             duration: duration ? EnduranceText.clock(entry.duration) : nil,
-            intensity: EnduranceText.intensity(entry.intensity, unit),
+            intensity: EnduranceText.intensity(entry.intensity, unit, distanceUnit),
             heartRate: "\(entry.averageHeartRate)/\(entry.peakHeartRate) bpm",
             entry: entry
         )

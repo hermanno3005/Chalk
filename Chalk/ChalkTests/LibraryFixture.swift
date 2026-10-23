@@ -183,7 +183,8 @@ final class LibraryFixture {
         ExerciseDetailModel(
             exercise: exercise,
             context: context,
-            gyms: gyms ?? gymsModel()
+            gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults)
         ) { library?.refresh() }
     }
 
@@ -219,6 +220,7 @@ final class LibraryFixture {
             editing: editing,
             context: context,
             gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults),
             onSave: onSave
         )
     }
@@ -262,6 +264,7 @@ final class LibraryFixture {
             atLeast: reps,
             context: context,
             gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults),
             onChange: onChange
         )
     }
@@ -279,6 +282,7 @@ final class LibraryFixture {
             scope: GoalScope(exercise: exercise, machine: machine)!,
             reps: reps,
             context: context,
+            weightUnit: WeightUnit(defaults: defaults),
             onChange: onChange
         )
     }
@@ -290,6 +294,17 @@ final class LibraryFixture {
         HeartRateZones(lowerBounds: [z2, z3, z4, z5])!.save(to: defaults)
     }
 
+    /// Sets this fixture's weight unit, in its own defaults suite. A fixture that never
+    /// calls this has none stored, which reads as kg.
+    func weightUnit(_ unit: WeightUnit) {
+        unit.save(to: defaults)
+    }
+
+    /// Stores `unit` as this fixture's distance unit, as onboarding or a restore would.
+    func distanceUnit(_ unit: DistanceUnit) {
+        unit.save(to: defaults)
+    }
+
     /// The zones this fixture holds, read the one way the app reads them.
     func heldZones() -> HeartRateZones? {
         HeartRateZones(defaults: defaults)
@@ -298,6 +313,11 @@ final class LibraryFixture {
     /// Settings, opened from the home overflow exactly as the app opens it.
     func settingsModel() -> SettingsModel {
         libraryModel().settings()
+    }
+
+    /// Onboarding over this store, as a launch with no units stored opens it.
+    func onboardingModel() -> OnboardingModel {
+        OnboardingModel(defaults: defaults, container: store.container)
     }
 
     /// The same file read through a second container, so what a test asserts is what

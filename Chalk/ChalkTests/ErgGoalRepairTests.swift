@@ -53,7 +53,7 @@ struct ErgGoalRepairTests {
         GoalScope.machine(loser).set(zone: 3, duration: 600, intensity: 12.0, incline: 0, at: .days(ago: 9))
         GoalScope.machine(sibling).set(zone: 4, duration: 360, intensity: 15.5, incline: 1, at: .days(ago: 2))
 
-        #expect(MachineMerge(loser: loser, sibling: sibling).question.decimalPoint == "Move 1 entry to Technogym Excite and delete Unlabelled? Your goal of 15.5 km/h · 6:00 in Z4 · 1 % is kept; 1 other goal is cleared.")
+        #expect(MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km).question.decimalPoint == "Move 1 entry to Technogym Excite and delete Unlabelled? Your goal of 15.5 km/h · 6:00 in Z4 · 1 % is kept; 1 other goal is cleared.")
     }
 
     @Test("An empty erg machine whose goal is kept says the goal moves")
@@ -66,7 +66,7 @@ struct ErgGoalRepairTests {
         fixture.interval(bike, machine: sibling, intensity: 240)
         GoalScope.machine(loser).set(zone: 3, duration: 600, intensity: 260, incline: nil)
 
-        let merge = MachineMerge(loser: loser, sibling: sibling)
+        let merge = MachineMerge(loser: loser, sibling: sibling, distanceUnit: .km)
 
         #expect(merge.losersGoalIsKept)
         #expect(merge.question == "Move your goal of 260 W · 10:00 in Z3 to Unlabelled and delete Wattbike?")
@@ -88,7 +88,7 @@ struct ErgGoalRepairTests {
         let reopened = try fixture.afterRelaunch()
         let moved = try #require(try reopened.fetch(FetchDescriptor<Machine>()).first)
         #expect(moved.gym?.name == "FitX")
-        #expect(GoalScope.machine(moved).enduranceGoal(zones: nil)?.text.decimalPoint == "15.5 km/h · 6:00 in Z4 · 1 %")
+        #expect(GoalScope.machine(moved).enduranceGoal(zones: nil, distanceUnit: .km)?.text.decimalPoint == "15.5 km/h · 6:00 in Z4 · 1 %")
         #expect(moved.goalSetAt == setAt)
     }
 
@@ -106,14 +106,14 @@ struct ErgGoalRepairTests {
         GoalScope.machine(mine).set(zone: 4, duration: 360, intensity: 15.5, incline: 1, at: latest)
         try fixture.save()
 
-        let merge = try #require(ErgModelMatch.onMove(mine, to: fitX)?.merge(from: mine))
+        let merge = try #require(ErgModelMatch.onMove(mine, to: fitX)?.merge(from: mine, distanceUnit: .km))
         #expect(merge.question.decimalPoint == "Move 1 entry to Technogym Excite · FitX and delete Technogym excite · FitX Mitte? Your goal of 15.5 km/h · 6:00 in Z4 · 1 % is kept; 1 other goal is cleared.")
         fixture.gymsModel().move(merge.loser, mergingInto: merge.sibling)
 
         let reopened = try fixture.afterRelaunch()
         let survivor = try #require(try reopened.fetch(FetchDescriptor<Machine>()).first)
         #expect(survivor.id == theirs.id)
-        #expect(GoalScope.machine(survivor).enduranceGoal(zones: nil)?.text.decimalPoint == "15.5 km/h · 6:00 in Z4 · 1 %")
+        #expect(GoalScope.machine(survivor).enduranceGoal(zones: nil, distanceUnit: .km)?.text.decimalPoint == "15.5 km/h · 6:00 in Z4 · 1 %")
         #expect(survivor.goalSetAt == latest)
     }
 
@@ -125,7 +125,7 @@ struct ErgGoalRepairTests {
         let bike = fixture.erg("Bike", unit: .watts, kind: .freeWeight)
         GoalScope.exercise(bike).set(zone: 3, duration: 600, intensity: 260, incline: nil)
 
-        let change = KindChange(exercise: bike)
+        let change = KindChange(exercise: bike, distanceUnit: .km)
 
         #expect(change.needsAMachine)
         #expect(change.prompt == "Which machine is this on?")
@@ -144,16 +144,16 @@ struct ErgGoalRepairTests {
 
         // The sentence has a comma of its own, so the locale's decimal is written in.
         let fifteenPointFive = "15\(WeightText.decimalSeparator)5"
-        #expect(KindChange(exercise: treadmill).promptDetail == "Treadmill becomes gym-bound, and 1 entry and your goal of \(fifteenPointFive) km/h · 6:00 in Z4 · 1 % move to the machine you pick.")
+        #expect(KindChange(exercise: treadmill, distanceUnit: .km).promptDetail == "Treadmill becomes gym-bound, and 1 entry and your goal of \(fifteenPointFive) km/h · 6:00 in Z4 · 1 % move to the machine you pick.")
         fixture.ergDetailModel(for: treadmill).makeGymBound(at: gym, named: "Technogym Excite")
 
         let reopened = try fixture.afterRelaunch()
         let erg = try #require(try reopened.fetch(FetchDescriptor<Exercise>()).first)
         let machine = try #require(erg.machines?.first)
-        #expect(GoalScope.machine(machine).enduranceGoal(zones: nil)?.text.decimalPoint == "15.5 km/h · 6:00 in Z4 · 1 %")
+        #expect(GoalScope.machine(machine).enduranceGoal(zones: nil, distanceUnit: .km)?.text.decimalPoint == "15.5 km/h · 6:00 in Z4 · 1 %")
         #expect(machine.goalSetAt == setAt)
         // A gym-bound erg holds no goal of its own.
-        #expect(GoalScope.exercise(erg).enduranceGoal(zones: nil) == nil)
+        #expect(GoalScope.exercise(erg).enduranceGoal(zones: nil, distanceUnit: .km) == nil)
         #expect(erg.goalSetAt == nil)
     }
 
@@ -173,7 +173,7 @@ struct ErgGoalRepairTests {
         model.makeGymBound(at: gym, named: "Wattbike")
 
         let machine = try #require(bike.machines?.first)
-        #expect(GoalScope.machine(machine).enduranceGoal(zones: nil)?.text == "260 W · 10:00 in Z3")
+        #expect(GoalScope.machine(machine).enduranceGoal(zones: nil, distanceUnit: .km)?.text == "260 W · 10:00 in Z3")
         #expect(model.goal?.text == "260 W · 10:00 in Z3")
     }
 
@@ -189,13 +189,13 @@ struct ErgGoalRepairTests {
         let base = "Bike has entries on 3 machines. They'll be read as one."
 
         GoalScope.machine(machines[0]).set(zone: 3, duration: 600, intensity: 260, incline: nil, at: .days(ago: 1))
-        #expect(KindChange(exercise: bike).question == base)
+        #expect(KindChange(exercise: bike, distanceUnit: .km).question == base)
 
         GoalScope.machine(machines[1]).set(zone: 4, duration: 300, intensity: 300, incline: nil, at: .days(ago: 4))
-        #expect(KindChange(exercise: bike).question == "\(base) Your goal of 260 W · 10:00 in Z3 is kept; 1 other goal is cleared.")
+        #expect(KindChange(exercise: bike, distanceUnit: .km).question == "\(base) Your goal of 260 W · 10:00 in Z3 is kept; 1 other goal is cleared.")
 
         GoalScope.machine(machines[2]).set(zone: 2, duration: 1200, intensity: 200, incline: nil, at: .days(ago: 6))
-        #expect(KindChange(exercise: bike).question == "\(base) Your goal of 260 W · 10:00 in Z3 is kept; 2 other goals are cleared.")
+        #expect(KindChange(exercise: bike, distanceUnit: .km).question == "\(base) Your goal of 260 W · 10:00 in Z3 is kept; 2 other goals are cleared.")
     }
 
     @Test("With nothing logged the endurance clause stands alone")
@@ -208,7 +208,7 @@ struct ErgGoalRepairTests {
         GoalScope.machine(wattbike).set(zone: 3, duration: 600, intensity: 260, incline: nil, at: .days(ago: 1))
         GoalScope.machine(keiser).set(zone: 4, duration: 300, intensity: 300, incline: nil, at: .days(ago: 4))
 
-        #expect(KindChange(exercise: bike).question == "Your goal of 260 W · 10:00 in Z3 is kept; 1 other goal is cleared.")
+        #expect(KindChange(exercise: bike, distanceUnit: .km).question == "Your goal of 260 W · 10:00 in Z3 is kept; 1 other goal is cleared.")
     }
 
     @Test("Pooling keeps the most recently set machine goal on the erg, set when it was, and clears the rest")
@@ -232,7 +232,7 @@ struct ErgGoalRepairTests {
         let reopened = try fixture.afterRelaunch()
         let erg = try #require(try reopened.fetch(FetchDescriptor<Exercise>()).first)
         #expect(!erg.isGymBound)
-        #expect(GoalScope.exercise(erg).enduranceGoal(zones: nil)?.text.decimalPoint == "15.5 km/h · 6:00 in Z4 · 1 %")
+        #expect(GoalScope.exercise(erg).enduranceGoal(zones: nil, distanceUnit: .km)?.text.decimalPoint == "15.5 km/h · 6:00 in Z4 · 1 %")
         #expect(erg.goalSetAt == latest)
         #expect(try reopened.fetchCount(FetchDescriptor<Machine>()) == 0)
         #expect(try reopened.fetchCount(FetchDescriptor<Entry>()) == 2)

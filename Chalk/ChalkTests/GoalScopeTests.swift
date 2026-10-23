@@ -113,10 +113,10 @@ struct GoalScopeTests {
 
         GoalScope.machine(machine).set(zone: 4, duration: 360, intensity: 15.5, incline: 0)
 
-        let goal = try #require(GoalScope.machine(machine).enduranceGoal(zones: fixture.heldZones()))
+        let goal = try #require(GoalScope.machine(machine).enduranceGoal(zones: fixture.heldZones(), distanceUnit: .km))
         #expect(goal.unit == .speed)
         #expect(goal.current == 15.1)
-        #expect(GoalScope.machine(sibling).enduranceGoal(zones: fixture.heldZones()) == nil)
+        #expect(GoalScope.machine(sibling).enduranceGoal(zones: fixture.heldZones(), distanceUnit: .km) == nil)
     }
 
     @Test("A strength goal is never read as an endurance goal, nor a lift's fields as one")
@@ -127,6 +127,6 @@ struct GoalScopeTests {
         exercise.goalIntensity = 15.5
         exercise.goalSetAt = setAt
 
-        #expect(GoalScope.exercise(exercise).enduranceGoal(zones: nil) == nil)
+        #expect(GoalScope.exercise(exercise).enduranceGoal(zones: nil, distanceUnit: .km) == nil)
     }
 }

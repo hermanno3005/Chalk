@@ -92,8 +92,8 @@ _Avoid_: Log screen, entry list, records list
 The number an endurance entry was done at, in its erg's unit — a speed on a treadmill,
 watts on a bike, a split on a rower, a level on a Stairmaster. It is what you set or hold
 on the machine, and what endurance exists to tell you. Stored exactly as you typed it and
-never converted; the only number ever worked out from it is a speed's pace, shown beside
-it.
+never converted at read time; only a **Convert** of the distance unit rewrites a speed. The
+only number ever worked out from it is a speed's pace, shown beside it.
 _Avoid_: Pace, speed, output, load, level, setting, workload
 
 **Unit**:

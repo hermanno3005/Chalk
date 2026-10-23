@@ -48,7 +48,7 @@ struct ErgNoLine: Equatable {
             else { return nil }
             return Quote(
                 zone: zone,
-                clause: "\(EnduranceText.clock(point.duration)) at \(EnduranceText.intensity(point.intensity, unit, pace: false)) — \(verdict)"
+                clause: "\(EnduranceText.clock(point.duration)) at \(EnduranceText.intensity(point.intensity, unit, reading.distanceUnit, pace: false)) — \(verdict)"
             )
         }
     }

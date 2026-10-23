@@ -13,6 +13,9 @@ struct GymMachinesView: View {
     let gym: Gym
     let gyms: GymsModel
 
+    /// The scale a merge's question writes a speed goal in.
+    @AppStorage(DistanceUnit.key) private var distanceUnit: DistanceUnit = .km
+
     /// The merge a tap has proposed, waiting on its confirmation — the pair itself
     /// rather than the two machines separately, because the direction is the thing
     /// people get wrong and the question is phrased from it.
@@ -142,7 +145,7 @@ struct GymMachinesView: View {
                 Menu("Merge into…", systemImage: "arrow.triangle.merge") {
                     ForEach(mergeTargets, id: \.id) { target in
                         Button(target.name) {
-                            merging = MachineMerge(loser: machine, sibling: target)
+                            merging = MachineMerge(loser: machine, sibling: target, distanceUnit: distanceUnit)
                         }
                     }
                 }
@@ -177,7 +180,7 @@ struct GymMachinesView: View {
     private func answers(to question: Question) -> some View {
         switch question {
         case .rename(let machine, let match):
-            if let merge = match.merge(from: machine) {
+            if let merge = match.merge(from: machine, distanceUnit: distanceUnit) {
                 Button("Merge into \(match.spelling)") { merging = merge }
             } else {
                 Button("Use \(match.spelling)") { gyms.rename(machine, to: match.spelling) }
@@ -185,7 +188,7 @@ struct GymMachinesView: View {
             // The cancel role, so dismissing it renames as typed: a warning, not a gate.
             Button("Keep “\(match.typed)”", role: .cancel) { gyms.rename(machine, to: match.typed) }
         case .move(let machine, let target, let match):
-            if let merge = match.merge(from: machine) {
+            if let merge = match.merge(from: machine, distanceUnit: distanceUnit) {
                 Button("Merge") { merging = merge }
             }
             Button("Move anyway") { gyms.move(machine, to: target) }

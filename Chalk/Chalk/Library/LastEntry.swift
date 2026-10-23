@@ -1,8 +1,8 @@
 import Foundation
 
 /// What you last did for an exercise, written the one way Chalk writes it:
-/// `8 × 52.5 kg · today` (SPEC §7.1). The tile subtitles and the resume card draw the
-/// same line, so they say it in the same words.
+/// `8 × 52.5 kg · today` (SPEC §7.1), on whichever scale the weight unit names. The tile
+/// subtitles and the resume card draw the same line, so they say it in the same words.
 ///
 /// A value copied off an `Entry` rather than the entry itself: the library holds it for
 /// as long as a screen is up, and an entry can be edited or deleted underneath it.
@@ -41,17 +41,17 @@ struct LastEntry: Equatable {
         entries.filter(\.isALift).max { $0.date < $1.date }
     }
 
-    /// The whole line. `asOf` is the day it is read on — passed rather than captured, so
-    /// the text is derived at draw time and a screen left open past midnight still says
-    /// today's word for a lift that is now yesterday's.
-    func text(asOf now: Date = .now) -> String {
-        "\(lift) · \(day(asOf: now))"
+    /// The whole line, with the weight on `unit`. `asOf` is the day it is read on —
+    /// passed rather than captured, so the text is derived at draw time and a screen left
+    /// open past midnight still says today's word for a lift that is now yesterday's.
+    func text(in unit: WeightUnit, asOf now: Date = .now) -> String {
+        "\(lift(in: unit)) · \(day(asOf: now))"
     }
 
     /// The numbers alone, without the date. The history sheet sets them apart from the
     /// day (SPEC §5.6) rather than running the two together as one line.
-    var lift: String {
-        "\(reps) × \(weight.kilogramsText) kg"
+    func lift(in unit: WeightUnit) -> String {
+        "\(reps) × \(unit.text(weight))"
     }
 
     /// The day alone, in the same words.

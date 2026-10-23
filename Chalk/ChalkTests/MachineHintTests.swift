@@ -16,7 +16,7 @@ struct MachineHintTests {
         let fixture = try LibraryFixture()
         let exercise = fixture.exercise("Squat")
 
-        #expect(MachineHint.lookUp(exercise, scopedTo: nil) == nil)
+        #expect(MachineHint.lookUp(exercise, scopedTo: nil, weightUnit: .kg) == nil)
     }
 
     @Test("The sibling is the most recently used machine, whatever it weighs")
@@ -30,7 +30,7 @@ struct MachineHintTests {
         fixture.log(heavier, reps: 5, weight: 200, on: .days(ago: 30))
         fixture.log(recent, reps: 5, weight: 55, on: .days(ago: 2))
 
-        let hint = try #require(MachineHint.lookUp(exercise, scopedTo: here))
+        let hint = try #require(MachineHint.lookUp(exercise, scopedTo: here, weightUnit: .kg))
 
         // The most recent one, not the best one: nothing in the spec ranks siblings
         // beyond `max(by:)` over the date.
@@ -48,7 +48,7 @@ struct MachineHintTests {
         fixture.log(sibling, reps: 5, weight: 55, on: .days(ago: 4))
         fixture.log(sibling, reps: 8, weight: 60, on: .days(ago: 2))
 
-        let hint = try #require(MachineHint.lookUp(exercise, scopedTo: here))
+        let hint = try #require(MachineHint.lookUp(exercise, scopedTo: here, weightUnit: .kg))
 
         #expect(hint.weight == 60)
         #expect(hint.text == "\(kg(60)) kg × 5 on Hammer Strength")
@@ -64,7 +64,7 @@ struct MachineHintTests {
         // Triples only: the backfill floors 1 through 3 and leaves best[5] unproven.
         fixture.log(sibling, reps: 3, weight: 100, on: .days(ago: 2))
 
-        #expect(MachineHint.lookUp(exercise, scopedTo: here) == nil)
+        #expect(MachineHint.lookUp(exercise, scopedTo: here, weightUnit: .kg) == nil)
     }
 
     @Test("The most recent sibling settles it — a quieter one is not tried instead")
@@ -80,7 +80,7 @@ struct MachineHintTests {
 
         // The screen shows one hint, never a list — and the one it would show has
         // nothing to say at 5 reps.
-        #expect(MachineHint.lookUp(exercise, scopedTo: here) == nil)
+        #expect(MachineHint.lookUp(exercise, scopedTo: here, weightUnit: .kg) == nil)
     }
 
     @Test("A machine with history of its own is not hinted at")
@@ -93,7 +93,7 @@ struct MachineHintTests {
         fixture.log(here, reps: 3, weight: 80, on: .days(ago: 1))
         fixture.log(sibling, reps: 5, weight: 55, on: .days(ago: 2))
 
-        #expect(MachineHint.lookUp(exercise, scopedTo: here) == nil)
+        #expect(MachineHint.lookUp(exercise, scopedTo: here, weightUnit: .kg) == nil)
     }
 
     @Test("No sibling, or none ever logged on, is silence")
@@ -103,11 +103,11 @@ struct MachineHintTests {
         let gym = fixture.gym("Fitness X")
         let here = fixture.machine(for: exercise, at: gym, label: "By the window")
 
-        #expect(MachineHint.lookUp(exercise, scopedTo: here) == nil)
+        #expect(MachineHint.lookUp(exercise, scopedTo: here, weightUnit: .kg) == nil)
 
         fixture.machine(for: exercise, at: gym, manufacturer: "Hammer Strength")
 
-        #expect(MachineHint.lookUp(exercise, scopedTo: here) == nil)
+        #expect(MachineHint.lookUp(exercise, scopedTo: here, weightUnit: .kg) == nil)
     }
 
     @Test("With no machine resolved yet, every machine is a sibling")
@@ -120,7 +120,7 @@ struct MachineHintTests {
 
         // The first log at a gym holding no machine for this exercise: nothing is
         // resolved, and the numbers you have are all somewhere else.
-        let hint = try #require(MachineHint.lookUp(exercise, scopedTo: nil))
+        let hint = try #require(MachineHint.lookUp(exercise, scopedTo: nil, weightUnit: .kg))
 
         #expect(hint.text == "\(kg(55)) kg × 5 on Hammer Strength")
     }
@@ -134,7 +134,7 @@ struct MachineHintTests {
         let sibling = fixture.machine(for: exercise, at: gym)
         fixture.log(sibling, reps: 5, weight: 55, on: .days(ago: 2))
 
-        let hint = try #require(MachineHint.lookUp(exercise, scopedTo: here))
+        let hint = try #require(MachineHint.lookUp(exercise, scopedTo: here, weightUnit: .kg))
 
         #expect(hint.text == "\(kg(55)) kg × 5 on \(Machine.unlabelled)")
     }
@@ -143,5 +143,5 @@ struct MachineHintTests {
 /// A weight as this device would write it — the tests assert the phrasing, not the
 /// decimal separator of whichever locale they happen to run in.
 private func kg(_ weight: Double) -> String {
-    weight.kilogramsText
+    weight.weightText
 }

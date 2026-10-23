@@ -60,25 +60,26 @@ struct LastInterval: Equatable {
         entries.filter(\.isAnInterval).max { $0.date < $1.date }
     }
 
-    /// The resume card's line: the whole written form, heart rates included, and the day.
-    func text(asOf now: Date = .now) -> String {
-        "\(written) · \(RelativeDay.text(for: date, asOf: now))"
+    /// The resume card's line: the whole written form, heart rates included, and the day,
+    /// a speed written in `distanceUnit`.
+    func text(in distanceUnit: DistanceUnit, asOf now: Date = .now) -> String {
+        "\(written(in: distanceUnit)) · \(RelativeDay.text(for: date, asOf: now))"
     }
 
     /// A tile's line: `6:00 at 15.0 km/h · today` — **no heart rates and no pace**, so it
     /// fits a tile's one line (SPEC §13.5).
-    func tileText(asOf now: Date = .now) -> String {
-        "\(setting(pace: false)) · \(RelativeDay.text(for: date, asOf: now))"
+    func tileText(in distanceUnit: DistanceUnit, asOf now: Date = .now) -> String {
+        "\(setting(in: distanceUnit, pace: false)) · \(RelativeDay.text(for: date, asOf: now))"
     }
 
     /// The written form (SPEC §13.2): average before peak, incline left out at 0 %.
-    var written: String {
-        "\(setting(pace: true)) · \(averageHeartRate)/\(peakHeartRate) bpm"
+    func written(in distanceUnit: DistanceUnit) -> String {
+        "\(setting(in: distanceUnit, pace: true)) · \(averageHeartRate)/\(peakHeartRate) bpm"
     }
 
     /// What you did and set: `6:00 at 15.0 km/h (4:00 /km) · 1 %`.
-    private func setting(pace: Bool) -> String {
-        var text = "\(EnduranceText.clock(duration)) at \(EnduranceText.intensity(intensity, unit, pace: pace))"
+    private func setting(in distanceUnit: DistanceUnit, pace: Bool) -> String {
+        var text = "\(EnduranceText.clock(duration)) at \(EnduranceText.intensity(intensity, unit, distanceUnit, pace: pace))"
         if unit.hasIncline, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
         return text
     }

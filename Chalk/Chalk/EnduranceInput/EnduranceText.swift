@@ -31,13 +31,15 @@ enum EnduranceText {
         }
     }
 
-    /// The intensity in its unit: `15.0 km/h (4:00 /km)`, `220 W`, `1:45 /500 m`,
-    /// `Level 12`. `pace` adds a speed's pace beside it.
-    static func intensity(_ value: Double, _ unit: ErgUnit, pace: Bool = true) -> String {
+    /// The intensity in its unit: `15.0 km/h (4:00 /km)`, `9.3 mph (6:27 /mi)`, `220 W`,
+    /// `1:45 /500 m`, `Level 12`. `pace` adds a speed's pace beside it. Only a speed reads
+    /// `distance`: the other units have no scale.
+    static func intensity(_ value: Double, _ unit: ErgUnit, _ distance: DistanceUnit, pace: Bool = true) -> String {
         let number = intensityNumber(value, unit)
         switch unit {
         case .speed:
-            return pace && value > 0 ? "\(number) km/h (\(Self.pace(value)))" : "\(number) km/h"
+            let speed = "\(number) \(distance.speedSymbol)"
+            return pace && value > 0 ? "\(speed) (\(Self.pace(value, distance)))" : speed
         case .watts: return "\(number) W"
         case .split: return "\(number) /500 m"
         case .level: return "Level \(number)"
@@ -46,14 +48,15 @@ enum EnduranceText {
 
     /// The intensity as a goal names it: no pace, so the line stays short, and a level
     /// written `L12` rather than `Level 12` (SPEC §13.2, §13.10).
-    static func goalIntensity(_ value: Double, _ unit: ErgUnit) -> String {
-        unit == .level ? "L\(intensityNumber(value, unit))" : intensity(value, unit, pace: false)
+    static func goalIntensity(_ value: Double, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
+        unit == .level ? "L\(intensityNumber(value, unit))" : intensity(value, unit, distance, pace: false)
     }
 
-    /// A speed's pace, `60 / km/h` to the whole second — the one number ever worked out
-    /// from an intensity, and for display only (SPEC §13.2).
-    static func pace(_ kmh: Double) -> String {
-        "\(clock(Int((3600 / kmh).rounded()))) /km"
+    /// A speed's pace, `60 / speed` minutes per km or per mile to the whole second — the
+    /// one number ever worked out from an intensity, and for display only (SPEC §13.2,
+    /// §15.2): `4:00 /km`, `6:00 /mi`.
+    static func pace(_ speed: Double, _ distance: DistanceUnit) -> String {
+        "\(clock(Int((3600 / speed).rounded()))) \(distance.paceSymbol)"
     }
 
     /// An incline: `0`, `1`, `1.5`.

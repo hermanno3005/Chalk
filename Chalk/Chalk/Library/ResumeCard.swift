@@ -73,7 +73,9 @@ struct ResumeCard: View {
                 resume: LibraryResume(
                     exercise: Exercise(name: "Bench Press"),
                     lastEntry: lastEntry,
-                    goal: goals[index]
+                    goal: goals[index],
+                    weightUnit: .kg,
+                    distanceUnit: .km
                 ),
                 onOpen: {},
                 onLogAgain: {}

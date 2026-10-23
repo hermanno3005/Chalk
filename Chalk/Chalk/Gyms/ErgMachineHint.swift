@@ -24,8 +24,13 @@ struct ErgMachineHint: Equatable {
     /// - a sibling with **no valid interval**, or whose most recent one is **not a point
     ///   on its line** (over 20:00) — never another point instead (§5.4's rule).
     ///
-    /// `zones` is passed in, read live by the caller (ADR-0005).
-    static func lookUp(_ erg: Exercise, scopedTo machine: Machine?, zones: HeartRateZones?) -> ErgMachineHint? {
+    /// `zones` and `distanceUnit` are passed in, read live by the caller (ADR-0005).
+    static func lookUp(
+        _ erg: Exercise,
+        scopedTo machine: Machine?,
+        zones: HeartRateZones?,
+        distanceUnit: DistanceUnit
+    ) -> ErgMachineHint? {
         guard erg.isErg, erg.isGymBound, let unit = erg.ergUnit, let zones else { return nil }
         guard !MachineScope.entries(of: erg, on: machine).contains(where: \.isAnInterval) else { return nil }
 
@@ -38,7 +43,7 @@ struct ErgMachineHint: Equatable {
         let line = ZoneLine(entries: sibling.entries ?? [], zones: zones, unit: unit, zone: zone, incline: latest.incline)
         guard let point = line.points.first(where: { $0.duration == latest.duration }) else { return nil }
 
-        var text = "\(EnduranceText.clock(point.duration)) in Z\(zone) at \(EnduranceText.intensity(point.intensity, unit, pace: false))"
+        var text = "\(EnduranceText.clock(point.duration)) in Z\(zone) at \(EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false))"
         // As the written form: incline on a speed erg only, and left out at 0 % (SPEC §13.2).
         let incline = ErgUnit.roundedIncline(latest.incline)
         if unit.hasIncline, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }

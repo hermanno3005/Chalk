@@ -102,11 +102,11 @@ struct ErgModelMatch {
     ///
     /// On Move the match is at the *target* gym, which the moving machine has not reached
     /// yet; the write for that is `GymsModel.move(_:mergingInto:)`.
-    func merge(from machine: Machine) -> MachineMerge? {
+    func merge(from machine: Machine, distanceUnit: DistanceUnit) -> MachineMerge? {
         guard isSameGym, existing !== machine, existing.exercise?.id == machine.exercise?.id else {
             return nil
         }
-        return MachineMerge(loser: machine, sibling: existing)
+        return MachineMerge(loser: machine, sibling: existing, distanceUnit: distanceUnit)
     }
 
     /// `Move to another gym…`'s check: **the target gym already has a passing machine for

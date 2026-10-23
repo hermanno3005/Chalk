@@ -25,7 +25,7 @@ struct ErgChangeKindTests {
             fixture.interval(treadmill, machine: fixture.machine(for: treadmill, at: gym, label: label))
         }
 
-        let change = KindChange(exercise: treadmill)
+        let change = KindChange(exercise: treadmill, distanceUnit: .km)
 
         #expect(change.direction == .toFreeWeight)
         #expect(change.question == "Treadmill has entries on 3 machines. They'll be read as one.")
@@ -40,7 +40,7 @@ struct ErgChangeKindTests {
         fixture.interval(rower, intensity: 120, on: .days(ago: 2))
         fixture.interval(rower, intensity: 118, on: .days(ago: 1))
 
-        let change = KindChange(exercise: rower)
+        let change = KindChange(exercise: rower, distanceUnit: .km)
 
         #expect(change.direction == .toGymBound)
         #expect(change.needsAMachine)
@@ -56,7 +56,7 @@ struct ErgChangeKindTests {
         fixture.interval(treadmill, machine: fixture.machine(for: treadmill, at: gym, label: "Technogym Excite"))
         fixture.machine(for: treadmill, at: gym, label: "Never used")
 
-        let change = KindChange(exercise: treadmill)
+        let change = KindChange(exercise: treadmill, distanceUnit: .km)
 
         #expect(change.question == "Treadmill has entries on one machine. They'll be read as the erg's own.")
         #expect(change.detail == "Every entry is kept. 2 machines are deleted, and this cannot be undone.")
@@ -69,8 +69,8 @@ struct ErgChangeKindTests {
         let treadmill = fixture.erg("Treadmill")
         fixture.machine(for: treadmill, at: fixture.gym("FitX"))
 
-        let toGymBound = KindChange(exercise: bike)
-        let toTransferable = KindChange(exercise: treadmill)
+        let toGymBound = KindChange(exercise: bike, distanceUnit: .km)
+        let toTransferable = KindChange(exercise: treadmill, distanceUnit: .km)
 
         #expect(!toGymBound.needsAMachine)
         #expect(toGymBound.question == "Make Bike gym-bound?")
@@ -94,7 +94,7 @@ struct ErgChangeKindTests {
             }
         }
 
-        for change in [KindChange(exercise: treadmill), KindChange(exercise: rower)] {
+        for change in [KindChange(exercise: treadmill, distanceUnit: .km), KindChange(exercise: rower, distanceUnit: .km)] {
             let words = [change.question, change.detail, change.confirmButton, change.prompt, change.promptDetail]
             #expect(words.allSatisfy { !$0.localizedCaseInsensitiveContains("curve") }, "\(words)")
             #expect(words.allSatisfy { !$0.localizedCaseInsensitiveContains("free-weight") }, "\(words)")

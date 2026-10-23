@@ -21,6 +21,9 @@ import Foundation
 struct KindChange {
     let exercise: Exercise
 
+    /// The scale the prompt writes a speed goal in (SPEC §15.2).
+    let distanceUnit: DistanceUnit
+
     /// Which way the flip runs — read off the kind the exercise is now. There is no
     /// third state and nothing to choose: the item on the overflow is one verb.
     enum Direction { case toGymBound, toFreeWeight }
@@ -45,12 +48,12 @@ struct KindChange {
     /// gym-bound carries onto the machine. Nil going the other way: a gym-bound exercise
     /// holds no goal of its own (SPEC §3).
     private var exerciseGoal: (any HeldGoal)? {
-        direction == .toGymBound ? GoalScope.exercise(exercise).heldGoal : nil
+        direction == .toGymBound ? GoalScope.exercise(exercise).heldGoal(distanceUnit: distanceUnit) : nil
     }
 
     /// The machines' goals — pooling keeps the most recently set (SPEC §8, #67), and the
     /// rest die with their machines. Either half's (§13.11).
-    private var machineGoals: MachineGoals { MachineGoals(machines) }
+    private var machineGoals: MachineGoals { MachineGoals(machines, distanceUnit: distanceUnit) }
 
     /// The machine whose goal pooling copies onto the exercise: the most recently set.
     var machineKeepingGoal: Machine? { machineGoals.keeping }
