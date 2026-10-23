@@ -1981,7 +1981,7 @@ and may be revised. Nothing in this spec waits on it, and an icon is made, not d
 
 From the launch-polish grilling of 2026-10-22, which has no ticket yet. The words are in
 `CONTEXT.md`: **Weight unit**, **Distance unit**, **Relabel**, **Convert**, **Backup**,
-**Restore**, **Bar**, **Plate breakdown**, **Rep-max card**. Read
+**Restore**, **Rep-max card**. Read
 [ADR-0009](docs/adr/0009-units-are-rewritten-never-converted-for-display.md) and
 [ADR-0010](docs/adr/0010-chalk-makes-and-restores-backups.md) before touching units or backups.
 
@@ -2026,10 +2026,9 @@ is adopted.
   count.
 - **A convert rounds to the nearest step, ties up, and never to the stepper grid**, so a
   converted `220 lb` waits between steps until the next `+` snaps it to `225` (§6.2). Goals round
-  on the same grid as entries. A weight convert rewrites strength entries, strength goals at both
-  scopes, and a bar if plate breakdown ships (`20 kg` → `44 lb`, never snapped to a preset). A
-  distance convert rewrites speed-erg entries and speed goals. Incline, watts, splits (always per
-  500 m), levels, durations, heart rates and zones have no scale and are untouched
+  on the same grid as entries. A weight convert rewrites strength entries and strength goals at
+  both scopes. A distance convert rewrites speed-erg entries and speed goals. Incline, watts,
+  splits (always per 500 m), levels, durations, heart rates and zones have no scale and are untouched
   ([#132](https://github.com/hermanno3005/Chalk/issues/132)).
 - **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb, a pair of the smallest
   standard plates, and it is not a setting (§6.2,
@@ -2108,7 +2107,7 @@ the phone's update, and it never risks a relabel
     changes?* in edit mode (§13.7). **Discard** closes everything and opens the result. **Keep
     editing** stays on the grid and drops the result. Nothing waits to fire when the sheet
     closes.
-- **Rep-max cards**, the second item cut, after plate breakdown. *Bench press rep maxes in
+- **Rep-max cards**, the first item cut if this list grows too long. *Bench press rep maxes in
   Chalk*, or *What's my 5 rep max on bench press in Chalk*, asked of Siri or run from its
   Spotlight tile, answers with a **rep-max card** without opening Chalk: the twelve rep-maxes of
   the scope the detail screen would open on, a dash where nothing is proven, and the machine
@@ -2116,12 +2115,6 @@ the phone's update, and it never risks a relabel
   holds every rep count rather than the one you said, and can never answer the wrong one.
   Tapping it opens the detail screen. Strength only: an erg has no single number to read out.
   Every phrase names Chalk, and Chalk declares no other name for itself.
-- **Plate breakdown**, the first item cut if this list grows too long, and prototyped before it
-  is built. An exercise may have a **bar**, set only by you at create or from the overflow
-  (*No bar*, 20, 15 or 10 kg, or a typed weight), and has none until you set one. Under a readout
-  with a bar, the plates per side come from the weight unit's standard set, or the nearest
-  loadable weight below when the exact one is not loadable. There is no plate inventory per gym,
-  and nothing for plate-loaded machines. It can be switched off on Settings.
 
 ### 15.6 Baseline
 
@@ -2145,4 +2138,9 @@ the phone's update, and it never risks a relabel
   such as *rep max* is refused, since App Review rejects generic aliases.
 - **Swiping between exercises.**
 - **A log widget**, parked rather than rejected.
+- **Plate breakdown**: the plates per side under a readout, for an exercise given a bar. Cut
+  after its prototype, as not worth the build (a stored bar, its backup field and convert rule,
+  presets per unit and a Settings switch, for arithmetic done at the rack) while the map was
+  trimmed ([How does a plate breakdown read under a readout, and does it stay?](https://github.com/hermanno3005/Chalk/issues/141),
+  [`docs/prototypes/plate-breakdown/`](docs/prototypes/plate-breakdown/README.md)).
 - **A second language at launch.**

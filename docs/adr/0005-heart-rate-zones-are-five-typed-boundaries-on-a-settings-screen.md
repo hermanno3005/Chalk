@@ -34,6 +34,8 @@ screen's overflow in both halves, and for now it holds the zones and nothing els
   weight and distance units ([ADR-0009](0009-units-are-rewritten-never-converted-for-display.md)),
   the plate-breakdown switch, and backup and restore
   ([ADR-0010](0010-chalk-makes-and-restores-backups.md)).
+  _Amended 2026-10-23:_ the plate-breakdown switch went with plate breakdown, cut after its
+  prototype ([#141](https://github.com/hermanno3005/Chalk/issues/141)).
 - Zones are read live. No entry stores a zone, nothing caches a boundary, and moving one
   recomputes everything on the next read — nothing migrates.
 - Zones are held per device, beside the store rather than in it (ADR-0008), so *one set*

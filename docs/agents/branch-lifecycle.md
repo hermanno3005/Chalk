@@ -37,7 +37,7 @@ Prototype branches are the standing case for the third option, and they split in
 
 The source does not land on `main`. Prototype code roots the app at a `…PrototypeRoot` view instead of the real `LibraryView`, and its variant files sit inside the app target, so merging it would both hijack the app's entry point and force throwaway code to compile against shipping code forever.
 
-Current archive tags: `prototype-log-entry-modal`, `prototype-exercise-detail`, `prototype-exercise-library`, `prototype-goals`, `prototype-endurance-home`, `prototype-endurance-log`, `prototype-endurance-detail`, `prototype-identity`.
+Current archive tags: `prototype-log-entry-modal`, `prototype-exercise-detail`, `prototype-exercise-library`, `prototype-goals`, `prototype-endurance-home`, `prototype-endurance-log`, `prototype-endurance-detail`, `prototype-identity`, `prototype-plate-breakdown`.
 
 ## Citations must be reachable from `main`
 
