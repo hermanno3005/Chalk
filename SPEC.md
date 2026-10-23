@@ -342,36 +342,51 @@ From [#7](https://github.com/hermanno3005/Chalk/issues/7), completed by
 
 ### 5.1 Layout
 
-Top to bottom:
+Laid out as Trade Republic's stock screen, from the identity prototype (§15.4,
+[`docs/prototypes/identity/`](docs/prototypes/identity/README.md)). Top to bottom:
 
-1. **The scrub readout.** One large number — the best weight at the selected rep count — with
-   `best for N reps · M entries ›` beneath it. `M` is the count of entries with `reps >= N` in
-   scope. The number animates on change (`.contentTransition(.numericText())`).
-   **The goal line** sits directly under that subhead when the scope has a goal (§12.4), and
+1. **The scrub readout.** The exercise's name in grey, then one large number, the best weight
+   at the selected rep count, with **`× N` beside it**: `102,5 kg × 5`. The number animates on
+   change (`.contentTransition(.numericText())`). Tapping the readout opens §5.6's sheet.
+   **The goal line** sits directly under the number when the scope has a goal (§12.4), and
    nothing takes its place when it has none.
-2. **The strength curve**, **150 pt tall**. Full-bleed was tried and rejected as making the screen
-   read as a chart rather than as an exercise.
-3. **Empty space.** It ships empty and that is deliberate
+2. **The strength curve**, **110–210 pt**: the one thing on the screen that gives way, so the
+   screen never scrolls. It **bleeds off the leading edge** to the trailing margin.
+3. **Two rows**, grey label and bold value: **`Entries at N+ reps M ›`**, where `M` is the count
+   of entries with `reps >= N` in scope and the row opens §5.6's sheet (no `›` and no sheet on
+   an unproven cell), and **`Logged K entries`**, every entry in scope.
+4. **Empty space.** Whatever is left under the rows stays empty
    ([#16](https://github.com/hermanno3005/Chalk/issues/16)): it keeps the Log bar high and
    thumb-reachable. Do not fill it with a recent-entries list or a rep-max strip — or with the
    goal, which lives in the goal line and never on the chart (§12.4).
-4. **Log bar** — full width, pinned at the bottom. Opens the log sheet (§6).
+5. **Log bar** — full width, pinned at the bottom. Opens the log sheet (§6).
+
+**The screen never scrolls.** Every control, the Log bar included, is always on it, down to the
+smallest current iPhone (§15.4).
 
 **Toolbar:** back to the library (supplied by `NavigationStack`, not hand-drawn); the machine
-qualifier menu (§5.3, gym-bound only); an overflow menu (§5.5).
+qualifier menu (§5.3, gym-bound only); an overflow menu (§5.5). **No title**: the name is the
+readout's.
+
+*Superseded by the identity:* the 150 pt curve (full-bleed was tried in
+[#16](https://github.com/hermanno3005/Chalk/issues/16) and rejected as making the screen read as
+a chart rather than as an exercise; it bleeds off one edge only now), and the
+`best for N reps · M entries ›` subhead, which became the `× N` aside and the first row.
 
 ### 5.2 The curve
 
 - Swift Charts line over a **fixed 1–12 rep x axis**, identical for every exercise so shapes are
-  comparable. Leading y axis visible.
-- **Y axis framed to the data, not anchored at 0** — real strength curves are shallow and a
+  comparable. Its labels are the only axis drawn: **no y axis and no grid** (§15.4). The
+  readout says the number.
+- **Y scale framed to the data, not anchored at 0** — real strength curves are shallow and a
   zero-based axis flattens them into the top third.
-- **Stepped interpolation, with a point mark on every rep count.** Monotonic backfill means every
-  untrained rep count repeats the value above it, so the curve is a **staircase, not a slope**.
-  Do not smooth it: the staircase is the honest picture of the derivation.
-- **The ghost curve sits behind it**, dashed and visibly see-through. It must be legible as
-  guidance and impossible to mistake for the solid curve — the first scaffolding failed both
-  halves by drawing both as thin dashed grey.
+- **Stepped interpolation, 3.5 pt, with a point on the selected rep count only.** Monotonic
+  backfill means every untrained rep count repeats the value above it, so the curve is a
+  **staircase, not a slope**. Do not smooth it: the staircase is the honest picture of the
+  derivation.
+- **The ghost curve sits behind it**, dotted and grey. It must be legible as guidance and
+  impossible to mistake for the solid curve — the first scaffolding failed both halves by drawing
+  both as thin dashed grey.
 
 **Scrubbing** uses Charts' own `chartXSelection` — do **not** hand-roll a `DragGesture` in a
 `chartOverlay` with a tap gesture layered on top; they fight and the drag does nothing. Dragging
@@ -449,8 +464,8 @@ There is deliberately **no "edit entries" item**: the curve is how you find a ba
 
 ### 5.6 History — the `reps >= n` sheet
 
-Tapping `best for N reps ›` on the readout opens it. This is the **only** entry point to raw
-history and the **only** place an entry can be edited or deleted.
+Tapping the readout, or its `Entries at N+ reps M ›` row (§5.1), opens it. This is the **only**
+entry point to raw history and the **only** place an entry can be edited or deleted.
 
 - Lists **every entry with `reps >= N`** in the current scope, **newest first**, showing date,
   `reps × weight`, and the machine where the exercise is gym-bound.
@@ -997,7 +1012,7 @@ Exercise detail (§5)
 ├── machine qualifier (gym-bound only)  → machine menu (§5.3)     menu
 ├── overflow → Rename / Change kind (§8) / Set a goal… / Delete exercise
 │   └── Set a goal… / Change goal…      → Goal sheet (§12.3)      sheet
-├── readout `best for N reps ›`         → History sheet (§5.6)    sheet
+├── readout / `Entries at N+ reps ›`   → History sheet (§5.6)    sheet
 │   ├── row tap                         → Log sheet, edit mode    sheet
 │   └── swipe                           → Delete (full-swipe off)
 ├── goal line (no ›)                    → Goal sheet (§12.3)      sheet
@@ -1019,7 +1034,7 @@ Erg detail (§13.8)
 │   ├── Set a goal… / Change goal…      → Endurance goal sheet (§13.10)   sheet
 │   └── Change unit…                    → unit choice; names a goal it clears
 ├── Set your heart-rate zones (no zones)→ Settings (§13.3)
-├── readout `N entries ›`               → Point sheet (§13.9)     sheet
+├── `Entries N ›` row                   → Point sheet (§13.9)     sheet
 │   ├── row tap                         → Lap-list sheet, edit mode       sheet
 │   └── swipe                           → Delete (full-swipe off)
 ├── `N entries over 20:00 ›`            → Over-20:00 list (§13.9) sheet
@@ -1261,14 +1276,14 @@ overflow (`Set a goal…` / `Change goal…`, §5.5) or by tapping the goal line
 
 From [#64](https://github.com/hermanno3005/Chalk/issues/64).
 
-- **One line directly under the scrub readout's subhead** (§5.1): `Goal 140 × 5 · 40 kg to go`,
+- **One line directly under the scrub readout's number** (§5.1): `Goal 140 × 5 · 40 kg to go`,
   led by the donut. On the zero-entry screen it sits under §5.4's text, and under the hint.
 - **Reached, the whole line and donut go grey**: `Goal 140 × 5 · reached`. The goal you crossed
   stays visible; nothing celebrates.
 - **No line at all when the scope has no goal.** On a gym-bound exercise, one machine's goal never
   appears under another machine's curve; switching the qualifier switches the line (§5.3).
-- **The line is tappable and opens the goal sheet, and carries no `›`** — unlike the history row
-  above it, so the two stacked tappable rows stay distinguishable.
+- **The line is tappable and opens the goal sheet, and carries no `›`** — unlike the
+  `Entries at N+ reps` row under the chart, which opens a list.
 - **The goal is never drawn on the chart.** No marker, no rule, no change to the ghost curve or
   the y-axis framing; §5.1's empty space stays empty.
 - `ExerciseDetailModel` exposes the scope's `Goal?` and the line's text and state, re-derived on
@@ -1670,30 +1685,37 @@ From [#98](https://github.com/hermanno3005/Chalk/issues/98). Prototype:
 [`docs/prototypes/endurance-detail/`](docs/prototypes/endurance-detail/README.md) (variant A,
 round two).
 
-**One zone at a time, laid out like §5.** Top to bottom:
+**One zone at a time, laid out like §5**, as Trade Republic's stock screen (§15.4,
+[`docs/prototypes/identity/`](docs/prototypes/identity/README.md)). Top to bottom:
 
-1. **Zone buttons, `Z1`–`Z5`**, with an **incline menu at the trailing end on a speed erg**. They
-   pick the effort and the grade you are about to train at. **A zone with no line on this scope
-   and incline is dimmed but still tappable** — you see where you have never landed, and can
-   still ask.
-2. **The scrub readout.** One large intensity (`15.0 km/h`), a speed's pace under it (`4:00
-   /km`), then **`6:00 in Z4 · 164 bpm · 12 entries ›`** — the point's duration, zone, mean heart
-   rate and entry count. **The entry count is the uncertainty: no ± band is drawn**, because a
-   band is a number Chalk computed and you never held. **The goal line** sits under it (§13.10).
-3. **The zone line, 150 pt**, in the accent colour, a point on every duration you have done,
-   joined by straight segments.
-4. **Empty space**, as §5.1 leaves it.
-5. **Log bar**, opening the lap-list sheet (§13.7).
+1. **The scrub readout.** The erg's name in grey, then one large intensity (`15.0 km/h`) with
+   **the point's duration and zone beside it**: `15.0 km/h 6:00 in Z4`. **The goal line** sits
+   under it (§13.10).
+2. **Zone tabs, `Z1`–`Z5`**, as text, grey off and black on, with an **incline menu at the
+   trailing end on a speed erg**. They pick the effort and the grade you are about to train at.
+   **A zone with no line on this scope and incline is dimmed but still tappable** — you see where
+   you have never landed, and can still ask.
+3. **The zone line, 110–210 pt**, in the accent colour, joined by straight segments, with a point
+   on the selected duration only. It gives way first, so the screen never scrolls, and bleeds off
+   the leading edge as §5.1's curve does.
+4. **Rows**, grey label and bold value: **`Pace 4:00 /km`** on a speed erg, **`Heart rate 164
+   bpm`**, the point's mean, and **`Entries 12 ›`**, opening §13.9's sheet. **The entry count is
+   the uncertainty: no ± band is drawn**, because a band is a number Chalk computed and you never
+   held.
+5. **Empty space**, as §5.1 leaves it.
+6. **Log bar**, opening the lap-list sheet (§13.7).
+
+**The screen never scrolls**, as §5.1's doesn't.
 
 **Toolbar:** back; the machine qualifier menu on a gym-bound erg (§5.3, unchanged, including which
-machine the screen opens on); an overflow.
+machine the screen opens on); an overflow. **No title**: the name is the readout's.
 
 **The chart.**
 
 - **The duration axis is linear and fixed at 0–20:00** on every erg and every zone, so lines
   compare and **switching zones never rescales the chart under your thumb**.
-- **The intensity axis is framed to the data**, as §5.2's is. **A split is plotted upside down**,
-  so harder is up on every erg.
+- **The intensity scale is framed to the data**, as §5.2's is, and drawn without an axis or
+  grid. **A split is plotted upside down**, so harder is up on every erg.
 - **Scrubbing snaps to durations you have done**: nothing between two points is a number you have
   held. `chartXSelection`, never a hand-rolled gesture, and **the selection is sticky** (§5.2).
 - **The screen opens on the zone, duration and incline of the scope's most recent valid
@@ -1748,7 +1770,7 @@ log, history and goal sheets' models.
 
 From [#103](https://github.com/hermanno3005/Chalk/issues/103).
 
-**The readout's `12 entries ›` is the only door from the chart**, as §5.6's is. Tapping a point
+**The `Entries 12 ›` row under the line is the only door from the chart**, as §5.6's is. Tapping a point
 does nothing; scrubbing only selects.
 
 - **It lists every entry at this duration, zone and incline on this scope, from all time, newest
@@ -2027,9 +2049,20 @@ the phone's update, and it never risks a relabel
 
 ### 15.4 Design
 
-- **The layouts stay.** Chalk gains an identity on top of them: a palette and a treatment for
-  the big numbers, taken from the chalk icon. **Two or three palettes are prototyped on the real
-  detail screen before one is chosen.**
+- **Chalk's identity is Trade Republic's design language**, chosen over three palettes taken from
+  the chalk icon ([Which palette and big-number treatment gives Chalk its identity?](https://github.com/hermanno3005/Chalk/issues/140),
+  [`docs/prototypes/identity/`](docs/prototypes/identity/README.md), variant E). The prototype
+  holds the tokens.
+  - **Monochrome**: white in light and black in dark, black or white as the accent, and one cool
+    grey for labels. **The goal stays orange**, the one warm touch, and the zones take no colour.
+  - **SF Pro, semibold by default.** The big number is bold, with its unit in the same size and
+    weight. Trade Republic's own face is theirs.
+  - **Both detail screens take its layout** (§5.1, §13.8): the name in grey above the number, an
+    aside beside it, the zones as text tabs, a chart with no y axis or grid bled off the leading
+    edge, and the rest of the readout in label-and-value rows. **The rest of the app takes the
+    palette and the type, not the layout.**
+  - **A detail screen never scrolls.** Every control is on it, down to the smallest current
+    iPhone. The chart is the one thing that gives way.
 - **The library tiles stop truncating** their last entry, and the grid stops leaving half its
   width empty.
 - **Haptics in three places only:** a tick at each scrub detent (a rep count on the curve, a
