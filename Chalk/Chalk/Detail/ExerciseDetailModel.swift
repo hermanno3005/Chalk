@@ -23,6 +23,13 @@ final class ExerciseDetailModel {
         let weight: Double?
         /// Entries with `reps >= N`, the `M` in `· M records ›`.
         let entriesBehind: Int
+        /// The scale `weight` is written on.
+        let weightUnit: WeightUnit
+
+        /// The large number with its unit, `52.5 kg`, or `—` on an unproven cell.
+        var weightWithUnit: String {
+            weight.map(weightUnit.text) ?? "—"
+        }
     }
 
     let exercise: Exercise
@@ -76,6 +83,10 @@ final class ExerciseDetailModel {
     /// never asks it (SPEC §6.4). Readable so the two doors this screen opens onto a gym
     /// — the log sheet and `Change kind`'s machine prompt — are handed the same one.
     @ObservationIgnored let gyms: GymsModel
+    /// The scale every weight on this screen is written on, handed on to every sheet it
+    /// opens (SPEC §15.2). Read by the library as the screen opens: nothing behind a
+    /// detail screen can change it.
+    @ObservationIgnored let weightUnit: WeightUnit
     @ObservationIgnored private let onLibraryChange: () -> Void
 
     /// The rep count the screen opens on (SPEC §5.2) — held even by an exercise with no
@@ -87,11 +98,13 @@ final class ExerciseDetailModel {
         exercise: Exercise,
         context: ModelContext,
         gyms: GymsModel,
+        weightUnit: WeightUnit,
         onLibraryChange: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
         self.context = context
         self.gyms = gyms
+        self.weightUnit = weightUnit
         self.onLibraryChange = onLibraryChange
         refresh()
     }
@@ -114,7 +127,8 @@ final class ExerciseDetailModel {
         return Readout(
             reps: selectedReps,
             weight: curve.best[selectedReps],
-            entriesBehind: curve.entriesBehind[selectedReps] ?? 0
+            entriesBehind: curve.entriesBehind[selectedReps] ?? 0,
+            weightUnit: weightUnit
         )
     }
 
@@ -124,7 +138,7 @@ final class ExerciseDetailModel {
         guard let goal else { return nil }
         let target = "Goal \(goal.text)"
         return GoalLine(
-            text: goal.isReached ? "\(target) · reached" : "\(target) · \(goal.gap.kilogramsText) kg to go",
+            text: goal.isReached ? "\(target) · reached" : "\(target) · \(weightUnit.text(goal.gap)) to go",
             isReached: goal.isReached,
             progress: goal.progress
         )
@@ -270,7 +284,8 @@ final class ExerciseDetailModel {
             exercise: exercise,
             machine: machine,
             context: context,
-            gyms: gyms
+            gyms: gyms,
+            weightUnit: weightUnit
         ) { [weak self] in
             self?.backInStep()
             onSave()
@@ -293,7 +308,8 @@ final class ExerciseDetailModel {
             machine: machine,
             atLeast: selectedReps,
             context: context,
-            gyms: gyms
+            gyms: gyms,
+            weightUnit: weightUnit
         ) { [weak self] in
             self?.backInStep()
         }
@@ -309,7 +325,8 @@ final class ExerciseDetailModel {
         return GoalSheetModel(
             scope: scope,
             reps: readout?.reps ?? Self.defaultReps,
-            context: context
+            context: context,
+            weightUnit: weightUnit
         ) { [weak self] in
             self?.backInStep()
         }
@@ -349,7 +366,7 @@ final class ExerciseDetailModel {
         }
 
         curve = RepMaxCurve(entries: MachineScope.entries(of: exercise, on: machine))
-        hint = MachineHint.lookUp(exercise, scopedTo: machine)
+        hint = MachineHint.lookUp(exercise, scopedTo: machine, weightUnit: weightUnit)
         goal = GoalScope(exercise: exercise, machine: machine)?.goal
     }
 

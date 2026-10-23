@@ -14,8 +14,8 @@ import Foundation
 /// `weight` and `date` and nothing else. The same rule is the versioning rule: a reader
 /// takes a missing key as the schema default, so a newer Chalk reads every older file.
 /// `version` is bumped whenever a writer can emit a key the previous reader does not know.
-/// The weight and distance units arrive with their own version (SPEC §15.2); until then a
-/// backup carries none.
+/// Version 2 added the weight unit (SPEC §15.2), so a version-1 file reads as kg, which is
+/// what everything in it was written in. The distance unit will need its own version.
 ///
 /// The shape, the encoding and the version follow *How does a Chalk library round-trip
 /// exactly through a readable backup file?* (https://github.com/hermanno3005/Chalk/issues/128).
@@ -24,8 +24,10 @@ struct Backup: Equatable, Sendable {
     /// What the file says it is, so a picker that offers any JSON can tell a backup apart.
     static let format = "Chalk backup"
 
-    /// This Chalk's file version. Version 1 carries no units.
-    static let currentVersion = 1
+    /// This Chalk's file version. Version 1 carries no units; version 2 adds the weight
+    /// unit. `Chalk-backup-1.json` and `Chalk-backup-2.json` in the tests are frozen
+    /// copies of each, and every later Chalk restores both.
+    static let currentVersion = 2
 
     var format = Self.format
     var version = Self.currentVersion
@@ -43,6 +45,9 @@ struct Backup: Equatable, Sendable {
     struct Settings: Equatable, Sendable {
         /// The four lower bounds of Z2 to Z5, or `nil` before zones are set.
         var heartRateZones: [Int]?
+        /// The weight unit, which a restore sets. An unset unit reads as kg, so it is
+        /// written as kg, and left out like any other default.
+        var weightUnit = WeightUnit.kg
     }
 
     struct Group: Equatable, Sendable {
@@ -196,7 +201,7 @@ extension Backup {
         case newerVersion
         /// A key this Chalk doesn't know, which it would otherwise drop without a word.
         case unknownKey(String)
-        /// A `kind`, `unit` or `half` outside its enum.
+        /// A `kind`, `unit`, `half` or `weightUnit` outside its enum.
         case unknownValue(String)
         /// Zones that aren't four rising whole bpm between 40 and 230.
         case invalidZones
@@ -271,7 +276,7 @@ extension Backup: Codable {
 extension Backup.Settings: Codable {
 
     private enum CodingKeys: String, CodingKey, CaseIterable {
-        case heartRateZones
+        case heartRateZones, weightUnit
     }
 
     init(from decoder: any Decoder) throws {
@@ -281,11 +286,15 @@ extension Backup.Settings: Codable {
         if let heartRateZones, HeartRateZones(lowerBounds: heartRateZones) == nil {
             throw Backup.Refusal.invalidZones
         }
+        let rawUnit = try container.decode(String.self, forKey: .weightUnit, default: WeightUnit.kg.rawValue)
+        guard let weightUnit = WeightUnit(rawValue: rawUnit) else { throw Backup.Refusal.unknownValue(rawUnit) }
+        self.weightUnit = weightUnit
     }
 
     func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(heartRateZones, forKey: .heartRateZones)
+        try container.encode(weightUnit.rawValue, forKey: .weightUnit, unless: WeightUnit.kg.rawValue)
     }
 }
 

@@ -14,7 +14,8 @@ struct LibraryLayoutTests {
     private func layout(_ fixture: LibraryFixture) throws -> LibraryLayout {
         LibraryLayout(
             exercises: try fixture.allExercises(),
-            groups: try fixture.allGroups()
+            groups: try fixture.allGroups(),
+            weightUnit: .kg
         )
     }
 
@@ -100,7 +101,7 @@ struct LibraryLayoutTests {
 
         let tiles = try layout(fixture).tiles
 
-        #expect(tiles[0].lastEntry?.text(asOf: now) == "8 × \(52.5.kilogramsText) kg · today")
+        #expect(tiles[0].subtitle(asOf: now) == "8 × \(52.5.weightText) kg · today")
         #expect(tiles[1].lastEntry == nil)
     }
 
@@ -128,7 +129,7 @@ struct LibraryLayoutTests {
         let resume = try #require(try layout(fixture).resume)
 
         #expect(resume.exercise.name == "Bench Press")
-        #expect(resume.text(asOf: now) == "8 × \(52.5.kilogramsText) kg · today")
+        #expect(resume.text(asOf: now) == "8 × \(52.5.weightText) kg · today")
     }
 
     @Test("A library with nothing logged has no resume card")
@@ -228,7 +229,7 @@ struct LibraryLayoutTests {
 
         // The subtitle is all a tile says: it has no goal to read at all, since a tile
         // would have to resolve a scope through the current gym.
-        #expect(tile.lastEntry?.text(asOf: .now) == "5 × 100 kg · today")
+        #expect(tile.subtitle(asOf: .now) == "5 × 100 kg · today")
     }
 
     // MARK: - Search

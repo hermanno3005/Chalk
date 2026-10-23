@@ -92,7 +92,7 @@ struct BackupTests {
               170
             ]
           },
-          "version" : 1
+          "version" : 2
         }
         """)
     }
@@ -113,6 +113,24 @@ struct BackupTests {
         try Self.expect(decoded, holdsExactly: fixture.context)
         #expect(decoded.settings.heartRateZones == [117, 140, 158, 170])
         #expect(decoded.madeAt == Self.madeAt)
+    }
+
+    @Test("A library on lb goes out at version 2 with its unit, and decodes identical")
+    func aLibraryOnPoundsRoundTrips() throws {
+        let fixture = try LibraryFixture()
+        try Self.fixedLibrary(in: fixture)
+        fixture.weightUnit(.lb)
+
+        let backup = try Backup(of: fixture.context, defaults: fixture.defaults, madeAt: Self.madeAt)
+        let file = try backup.encoded()
+        let json = try #require(try JSONSerialization.jsonObject(with: file) as? [String: Any])
+        let decoded = try Backup(decoding: file)
+
+        #expect(json["version"] as? Int == 2)
+        #expect((json["settings"] as? [String: Any])?["weightUnit"] as? String == "lb")
+        #expect(decoded == backup)
+        #expect(try decoded.encoded() == file)
+        #expect(decoded.settings.weightUnit == .lb)
     }
 
     @Test("Every attribute of every entity is written, so nothing stored is left behind")

@@ -34,7 +34,10 @@ extension Backup.Settings {
 
     /// The settings `defaults` holds that are part of the record.
     init(defaults: UserDefaults) {
-        self.init(heartRateZones: HeartRateZones(defaults: defaults)?.lowerBounds)
+        self.init(
+            heartRateZones: HeartRateZones(defaults: defaults)?.lowerBounds,
+            weightUnit: WeightUnit(defaults: defaults)
+        )
     }
 }
 

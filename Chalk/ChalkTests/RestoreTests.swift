@@ -55,6 +55,28 @@ struct RestoreTests {
         #expect(phone.heldZones()?.lowerBounds == [117, 140, 158, 170])
     }
 
+    // MARK: - Version 2, frozen
+
+    /// `Fixtures/Chalk-backup-2.json` is the fixed library's backup at version 2, on lb:
+    /// the version-1 file with the weight unit added. **Every later Chalk must still
+    /// restore it**, as it does version 1.
+    @Test("The frozen version-2 backup restores, on lb, and goes out again byte for byte")
+    func theFrozenVersion2BackupRestores() throws {
+        let url = try #require(Bundle(for: LibraryFixture.self).url(forResource: "Chalk-backup-2", withExtension: "json"))
+        let file = try Data(contentsOf: url)
+        let phone = try LibraryFixture()
+        try Self.differentLibrary(in: phone)
+
+        try Restore(reading: file, over: phone.store.container, defaults: phone.defaults).replace()
+
+        let restored = try phone.afterRelaunch()
+        try BackupTests.expect(try Backup(decoding: file), holdsExactly: restored)
+        #expect(WeightUnit.stored(in: phone.defaults) == .lb)
+        #expect(phone.heldZones()?.lowerBounds == [117, 140, 158, 170])
+        let backup = try Backup(of: restored, defaults: phone.defaults, madeAt: BackupTests.madeAt)
+        #expect(String(decoding: try backup.encoded(), as: UTF8.self) == String(decoding: file, as: UTF8.self))
+    }
+
     // MARK: - The confirmation
 
     @Test("Over a library with entries, it counts the entries on each side and dates the backup")
@@ -180,6 +202,60 @@ struct RestoreTests {
         #expect(try phone.afterRelaunch().fetchCount(FetchDescriptor<ExerciseGroup>()) == 0)
     }
 
+    // MARK: - The weight unit
+
+    @Test("A backup on lb, over a phone on kg, says it switches weights to lb, and sets lb")
+    func aBackupOnPoundsSwitchesWeightsToPounds() throws {
+        let phone = try LibraryFixture()
+        try Self.differentLibrary(in: phone)
+        let file = try Self.fixedLibraryFile { $0[path: "settings", "weightUnit"] = "lb" }
+
+        let restore = try Restore(reading: file, over: phone.store.container, defaults: phone.defaults)
+
+        #expect(restore.confirmation(locale: Self.britain, timeZone: .gmt) == "This replaces 3 entries with 8 from 29 Oct 2026, and switches weights to lb")
+        try restore.replace()
+        #expect(WeightUnit.stored(in: phone.defaults) == .lb)
+    }
+
+    @Test("The frozen version-1 backup restores over a phone on lb as kg, and says so")
+    func theFrozenVersion1BackupRestoresAsKilograms() throws {
+        let url = try #require(Bundle(for: LibraryFixture.self).url(forResource: "Chalk-backup-1", withExtension: "json"))
+        let phone = try LibraryFixture()
+        try Self.differentLibrary(in: phone)
+        phone.weightUnit(.lb)
+
+        let restore = try Restore(reading: try Data(contentsOf: url), over: phone.store.container, defaults: phone.defaults)
+
+        #expect(restore.confirmation(locale: Self.britain, timeZone: .gmt) == "This replaces 3 entries with 8 from 29 Oct 2026, and switches weights to kg")
+        try restore.replace()
+        #expect(WeightUnit.stored(in: phone.defaults) == .kg)
+    }
+
+    @Test("A weight switch and a zones clear are named together")
+    func theWeightSwitchJoinsTheZonesClear() throws {
+        let phone = try LibraryFixture()
+        try Self.differentLibrary(in: phone)
+        let file = try Backup(
+            madeAt: Self.twelfthOfMarch, settings: .init(weightUnit: .lb), groups: [], gyms: [], exercises: []
+        ).encoded()
+
+        let restore = try Restore(reading: file, over: phone.store.container, defaults: phone.defaults)
+
+        #expect(restore.confirmation(locale: Self.britain, timeZone: .gmt) == "This replaces 3 entries with nothing from 12 Mar 2026, switches weights to lb and clears your heart-rate zones")
+    }
+
+    @Test("A restore over an empty library takes the backup's unit without asking")
+    func anEmptyLibraryTakesTheUnitWithoutAsking() throws {
+        let phone = try LibraryFixture()
+        let file = try Self.fixedLibraryFile { $0[path: "settings", "weightUnit"] = "lb" }
+
+        let restore = try Restore(reading: file, over: phone.store.container, defaults: phone.defaults)
+
+        #expect(restore.confirmation() == nil)
+        try restore.replace()
+        #expect(WeightUnit.stored(in: phone.defaults) == .lb)
+    }
+
     // MARK: - All or nothing
 
     @Test("A restore that fails after its deletes and before the commit leaves the library as it was")
@@ -230,8 +306,12 @@ struct RestoreTests {
             json[path: "exercises", 1, "machines", 0, "bar"] = 20
             return nil
         },
-        Refused("An unknown setting", .unknownKey("weightUnit")) { json in
-            json[path: "settings", "weightUnit"] = "kg"
+        Refused("An unknown setting", .unknownKey("distanceUnit")) { json in
+            json[path: "settings", "distanceUnit"] = "km"
+            return nil
+        },
+        Refused("A weight unit outside its enum", .unknownValue("stone")) { json in
+            json[path: "settings", "weightUnit"] = "stone"
             return nil
         },
         Refused("A group that isn't in the file", .missingReference) { json in

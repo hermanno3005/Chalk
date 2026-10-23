@@ -92,12 +92,13 @@ struct ExerciseTile: View {
         ExerciseTile(
             tile: LibraryTile(
                 exercise: Exercise(name: "Bulgarian Split Squat"),
-                lastEntry: LastEntry(reps: 8, weight: 52.5, date: .now)
+                lastEntry: LastEntry(reps: 8, weight: 52.5, date: .now),
+                weightUnit: .kg
             ),
             onOpen: {}
         )
         ExerciseTile(
-            tile: LibraryTile(exercise: Exercise(name: "Ab Wheel"), lastEntry: nil),
+            tile: LibraryTile(exercise: Exercise(name: "Ab Wheel"), lastEntry: nil, weightUnit: .kg),
             arranging: true,
             groups: [ExerciseGroup(name: "Core", sortIndex: 0)],
             onOpen: {}

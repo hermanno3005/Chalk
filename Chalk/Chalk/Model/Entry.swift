@@ -18,7 +18,7 @@ final class Entry {
     var id: UUID = UUID()
     /// >= 1, no upper bound.
     var reps: Int = 0
-    /// Kilograms, always. > 0.
+    /// On the weight unit's scale, never converted at read time (ADR-0009). > 0.
     var weight: Double = 0
     /// Whole seconds, exactly as typed and never snapped. > 0 on an interval.
     var duration: Int = 0

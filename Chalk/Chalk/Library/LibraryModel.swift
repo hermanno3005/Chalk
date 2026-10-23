@@ -71,11 +71,26 @@ final class LibraryModel {
         for half in Half.allCases {
             SuggestedGroups.seedIfNeeded(half, in: context, defaults: defaults)
         }
+        Self.storeKilogramsOverAnExistingLibrary(in: context, defaults: defaults)
         self.groups = GroupsModel(context: context, half: half)
         // Wired after `init`, not through it: a stored property cannot capture the
         // owner that is still initialising it.
         groups.onChange = { [weak self] in self?.refresh() }
         refresh()
+    }
+
+    /// **The phone's update** (SPEC §15.3): a launch with no weight unit stored, over a
+    /// library that is not empty, stores kg silently, because every weight an install from
+    /// before units wrote is kg. It never risks a relabel. An empty library stays unset,
+    /// for onboarding to ask, and a stored unit is never touched.
+    private static func storeKilogramsOverAnExistingLibrary(in context: ModelContext, defaults: UserDefaults) {
+        // As elsewhere: v1 has no error state past §3's container failure, so a count
+        // that can't be read leaves the unit as it was, which still reads as kg.
+        guard WeightUnit.stored(in: defaults) == nil,
+              let counts = try? LibraryCounts(context),
+              !counts.isEmpty
+        else { return }
+        WeightUnit.kg.save(to: defaults)
     }
 
     /// Switches the home screen to `half`, and remembers it for the next launch.
@@ -259,7 +274,12 @@ final class LibraryModel {
     /// in `@State` and drops the rest, which costs one derivation pass per rebuild of
     /// the destination and keeps no model alive behind a screen that has been popped.
     func detail(for exercise: Exercise) -> ExerciseDetailModel {
-        ExerciseDetailModel(exercise: exercise, context: context, gyms: gyms) { [weak self] in
+        ExerciseDetailModel(
+            exercise: exercise,
+            context: context,
+            gyms: gyms,
+            weightUnit: WeightUnit(defaults: defaults)
+        ) { [weak self] in
             self?.refresh()
         }
     }
@@ -304,7 +324,8 @@ final class LibraryModel {
             exercise: exercise,
             machine: resumedMachine(for: exercise),
             context: context,
-            gyms: gyms
+            gyms: gyms,
+            weightUnit: WeightUnit(defaults: defaults)
         ) { [weak self] in
             self?.refresh()
             onSave()
@@ -338,12 +359,14 @@ final class LibraryModel {
         let exercises = (try? context.fetch(Self.library(of: half))) ?? []
         let typed = query.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        // The zones are read live, never cached: the endurance card's ring is judged in
-        // them, and Settings can move them behind this screen.
+        // The zones and the weight unit are read live, never cached: the endurance
+        // card's ring is judged in the one and every lift is written on the other, and
+        // Settings can move both behind this screen.
         let layout = LibraryLayout(
             exercises: exercises,
             groups: groups.groups,
-            zones: HeartRateZones(defaults: defaults)
+            zones: HeartRateZones(defaults: defaults),
+            weightUnit: WeightUnit(defaults: defaults)
         )
         resume = layout.resume
 

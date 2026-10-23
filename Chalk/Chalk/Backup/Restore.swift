@@ -3,7 +3,8 @@ import SwiftData
 
 /// A **restore** (ADR-0010): a backup read, checked and counted, waiting to replace
 /// everything Chalk holds. A replace, never a merge: entries, exercises, ergs, groups,
-/// gyms, machines, goals and zones all come from the file, and nothing else survives.
+/// gyms, machines, goals, zones and the weight unit all come from the file, and nothing
+/// else survives.
 ///
 /// **Everything is decided before anything is touched.** Making a `Restore` decodes and
 /// checks the whole file, so a file Chalk can't restore exactly is refused here, with
@@ -17,9 +18,11 @@ struct Restore {
     let backup: Backup
 
     /// What the library holds now, counted from the store as it stands.
-    private let libraryCounts: Counts
+    private let libraryCounts: LibraryCounts
     /// Whether the restore unsets zones this device holds.
     private let clearsZones: Bool
+    /// Whether the restore moves weights onto another scale than the one they read in now.
+    private let switchesWeights: Bool
     private let container: ModelContainer
     private let defaults: UserDefaults
 
@@ -27,8 +30,9 @@ struct Restore {
     /// hold. Throws a `Backup.Refusal` for a file Chalk can't restore, and writes nothing.
     init(reading data: Data, over container: ModelContainer, defaults: UserDefaults) throws {
         backup = try Backup(decoding: data)
-        libraryCounts = try Counts(ModelContext(container))
+        libraryCounts = try LibraryCounts(ModelContext(container))
         clearsZones = backup.settings.heartRateZones == nil && HeartRateZones(defaults: defaults) != nil
+        switchesWeights = backup.settings.weightUnit != WeightUnit(defaults: defaults)
         self.container = container
         self.defaults = defaults
     }
@@ -38,18 +42,31 @@ struct Restore {
     /// `This replaces 1,240 entries with 980 from 12 Mar 2026`.
     ///
     /// **Each side is counted by what it holds**, and the date is the file's own `madeAt`,
-    /// never the file's metadata, which neither AirDrop nor a copy keeps reliably. Zones
-    /// the restore unsets are named; changed boundaries are not.
+    /// never the file's metadata, which neither AirDrop nor a copy keeps reliably. A weight
+    /// unit the restore switches is named, and so are zones it unsets; changed boundaries
+    /// are not: `…from 12 Mar 2026, switches weights to kg and clears your heart-rate
+    /// zones`.
     func confirmation(locale: Locale = .current, timeZone: TimeZone = .current) -> String? {
         guard !libraryCounts.isEmpty else { return nil }
-        let backupCounts = Counts(backup)
+        let backupCounts = LibraryCounts(backup)
         // `…1,240 entries with 980…`: the second side's noun goes when both count entries.
         let backupSide = libraryCounts.entries > 0 && backupCounts.entries > 0
             ? backupCounts.entries.formatted(.number.locale(locale))
             : backupCounts.description(locale: locale)
         let date = backup.madeAt.formatted(Date.FormatStyle(locale: locale, timeZone: timeZone).day().month(.abbreviated).year())
-        let zones = clearsZones ? ", and clears your heart-rate zones" : ""
-        return "This replaces \(libraryCounts.description(locale: locale)) with \(backupSide) from \(date)\(zones)"
+        return "This replaces \(libraryCounts.description(locale: locale)) with \(backupSide) from \(date)\(changes)"
+    }
+
+    /// What the restore changes beyond the rows, as the confirmation's last clause: empty,
+    /// `, and switches weights to kg`, or `, switches weights to kg and clears your
+    /// heart-rate zones`.
+    private var changes: String {
+        let clauses = [
+            switchesWeights ? "switches weights to \(backup.settings.weightUnit.symbol)" : nil,
+            clearsZones ? "clears your heart-rate zones" : nil,
+        ].compactMap(\.self)
+        guard let listed = listed(clauses) else { return "" }
+        return clauses.count == 1 ? ", and \(listed)" : ", \(listed)"
     }
 
     /// Replaces everything with the backup.
@@ -62,9 +79,10 @@ struct Restore {
     /// commits at once as a batch delete that `rollback()` does not undo, so it is never
     /// used here.
     ///
-    /// The zones are written only after the store commits, since `UserDefaults` can't join
-    /// the transaction and can't fail. Both seed flags are set, so the first-launch seed
-    /// never adds its suggested groups on top of a restored library.
+    /// The zones and the weight unit are written only after the store commits, since
+    /// `UserDefaults` can't join the transaction and can't fail. Every restore sets the
+    /// unit, over an empty library as over a full one. Both seed flags are set, so the
+    /// first-launch seed never adds its suggested groups on top of a restored library.
     ///
     /// `beforeSave` runs after the deletes and inserts and before the commit. It is there
     /// for a test to prove that a failure at that point changes nothing.
@@ -86,6 +104,7 @@ struct Restore {
         } else {
             HeartRateZones.clear(from: defaults)
         }
+        backup.settings.weightUnit.save(to: defaults)
         for half in Half.allCases {
             defaults.set(true, forKey: SuggestedGroups.seededKey(for: half))
         }
@@ -144,8 +163,9 @@ struct Restore {
     }
 }
 
-/// What one side of a restore holds, as its confirmation counts it.
-private struct Counts {
+/// What a library holds, as a restore's confirmation counts each side, and as the launch
+/// decides whether an install already has a library (SPEC §15.1, §15.3).
+struct LibraryCounts {
     var entries = 0
     var exercises = 0
     var ergs = 0
@@ -181,9 +201,14 @@ private struct Counts {
         if let entries = counted(entries, "entry", "entries") { return entries }
         let parts = [counted(exercises, "exercise", "exercises"), counted(ergs, "erg", "ergs"), counted(gyms, "gym", "gyms")]
             .compactMap(\.self)
-        guard let last = parts.last else { return "nothing" }
-        return parts.count == 1 ? last : parts.dropLast().joined(separator: ", ") + " and " + last
+        return listed(parts) ?? "nothing"
     }
+}
+
+/// `a`, `a and b`, `a, b and c`, or `nil` for nothing to list.
+private func listed(_ parts: [String]) -> String? {
+    guard let last = parts.last else { return nil }
+    return parts.count == 1 ? last : parts.dropLast().joined(separator: ", ") + " and " + last
 }
 
 private extension Backup.GoalFields {

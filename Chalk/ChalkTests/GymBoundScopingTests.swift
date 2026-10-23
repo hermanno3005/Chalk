@@ -167,7 +167,7 @@ struct GymBoundScopingTests {
         // sibling's 200 kg is quoted as the hint it is (SPEC §6.5) and seeds nothing.
         #expect(sheet.reps == 5)
         #expect(sheet.weight == nil)
-        #expect(sheet.verdict == .hint("No history here — \(200.0.kilogramsText) kg × 5 on Blue"))
+        #expect(sheet.verdict == .hint("No history here — \(200.0.weightText) kg × 5 on Blue"))
     }
 
     @Test("A gym-bound sheet with no machine refuses to save")

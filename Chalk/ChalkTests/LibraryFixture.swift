@@ -183,7 +183,8 @@ final class LibraryFixture {
         ExerciseDetailModel(
             exercise: exercise,
             context: context,
-            gyms: gyms ?? gymsModel()
+            gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults)
         ) { library?.refresh() }
     }
 
@@ -219,6 +220,7 @@ final class LibraryFixture {
             editing: editing,
             context: context,
             gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults),
             onSave: onSave
         )
     }
@@ -262,6 +264,7 @@ final class LibraryFixture {
             atLeast: reps,
             context: context,
             gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults),
             onChange: onChange
         )
     }
@@ -279,6 +282,7 @@ final class LibraryFixture {
             scope: GoalScope(exercise: exercise, machine: machine)!,
             reps: reps,
             context: context,
+            weightUnit: WeightUnit(defaults: defaults),
             onChange: onChange
         )
     }
@@ -288,6 +292,12 @@ final class LibraryFixture {
     /// set, which is every zone-gated screen's first state.
     func zones(_ z2: Int, _ z3: Int, _ z4: Int, _ z5: Int) {
         HeartRateZones(lowerBounds: [z2, z3, z4, z5])!.save(to: defaults)
+    }
+
+    /// Sets this fixture's weight unit, in its own defaults suite. A fixture that never
+    /// calls this has none stored, which reads as kg.
+    func weightUnit(_ unit: WeightUnit) {
+        unit.save(to: defaults)
     }
 
     /// The zones this fixture holds, read the one way the app reads them.

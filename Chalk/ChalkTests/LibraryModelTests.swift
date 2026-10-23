@@ -297,7 +297,7 @@ struct LibraryModelTests {
             return
         }
         #expect(sections[0].tiles.map(\.name) == ["Squat", "Bench Press"])
-        #expect(sections[0].tiles[0].lastEntry?.text() == "5 × 60 kg · today")
+        #expect(sections[0].tiles[0].subtitle() == "5 × 60 kg · today")
         #expect(sections[0].tiles[1].lastEntry == nil)
     }
 
