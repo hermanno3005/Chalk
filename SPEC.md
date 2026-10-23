@@ -1970,6 +1970,15 @@ is adopted.
 - **A restore** replaces everything and never merges. Over a library that is not empty, it first
   says what will be lost and how old the backup is: `This replaces 1,240 entries with 980 from
   12 Mar 2026`. Chalk makes no automatic backup of its own, not even before a restore.
+- **A library is empty when it holds no exercise, no erg and no gym.** Groups, zones and units
+  do not count, since a fresh install already holds its seeded groups. The same line decides
+  onboarding (§15.3) ([#134](https://github.com/hermanno3005/Chalk/issues/134)).
+- **The confirmation counts what each side holds**: its entries when it has any, otherwise its
+  exercises, ergs and gyms, otherwise nothing. `This replaces 3 exercises and 1 gym with 980
+  entries from 12 Mar 2026`, or `This replaces 1,240 entries with nothing from 12 Mar 2026`.
+- **A restore sets both units from the backup**, from Settings as from onboarding. When that
+  switches a unit, the confirmation says so: `…from 12 Mar 2026, and switches weights to kg`.
+  Over an empty library there is no confirmation, and the units simply follow the file.
 - **Make a backup before the team switch** and before a convert. This replaces *pull a
   container first*.
 
@@ -1999,6 +2008,13 @@ is adopted.
 **One screen**: the weight unit, the distance unit, and a quieter *Restore from a backup* link.
 There is no tour and no setup flow. Gyms, zones and exercises are still asked for at the moment
 they matter, and if strangers turn out to be confused, the fix goes into the empty states.
+
+**It shows only while no units are stored.** Picking them, or restoring, stores them, and
+onboarding never comes back, not even after the last exercise is deleted. A launch with no
+units stored over a library that is not empty (§15.1) writes **kg and km** silently instead,
+because every number an install from before units wrote is already kg and km/h (§2). That is
+the phone's update, and it never risks a relabel
+([#134](https://github.com/hermanno3005/Chalk/issues/134)).
 
 ### 15.4 Design
 
