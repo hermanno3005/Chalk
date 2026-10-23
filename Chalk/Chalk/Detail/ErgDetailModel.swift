@@ -279,6 +279,13 @@ final class ErgDetailModel {
         SettingsModel(defaults: defaults, container: context.container)
     }
 
+    /// Settings has closed: re-reads, and puts the grid behind back in step, since a
+    /// relabel there moves the scale both write in.
+    func settingsClosed() {
+        refresh()
+        onLibraryChange()
+    }
+
     // MARK: - The goal (SPEC §13.10)
 
     /// Where a goal on the scope in view lives — **nil on a gym-bound erg with no machine

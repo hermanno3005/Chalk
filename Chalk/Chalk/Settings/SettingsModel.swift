@@ -2,15 +2,19 @@ import Foundation
 import Observation
 import SwiftData
 
-/// Settings' state (ADR-0005): Chalk's one settings screen, holding your heart-rate zones,
-/// and where a **backup** is made and **restored** (ADR-0010). Each further setting is its
-/// own decision, never a row added in passing.
+/// Settings' state (ADR-0005): Chalk's one settings screen, holding your heart-rate zones
+/// and the **weight** and **distance units** (ADR-0009), and where a **backup** is made and
+/// **restored** (ADR-0010). Each further setting is its own decision, never a row added in
+/// passing.
 ///
 /// Four whole-bpm fields, the lower bounds of Z2 to Z5. A save needs all four, each 40–230
 /// and strictly higher than the one below — `HeartRateZones`' own rule, so the screen and
 /// every reader agree on what a set of zones is. **Edit only, never clear:** there is no
 /// clear verb, and a blanked field only disables the save, so once zones are set nothing
 /// that depends on them is gated again, short of restoring a backup made without them.
+///
+/// **A unit change is made at once**, not on Save: while nothing is written on its scale it
+/// is just a change, and once there is it waits on one question, answered by a relabel.
 @Observable
 final class SettingsModel: Identifiable {
 
@@ -38,6 +42,15 @@ final class SettingsModel: Identifiable {
     /// library as a relaunch would.
     private(set) var restored = false
 
+    /// The scale every strength weight and goal is written on.
+    private(set) var weightUnit: WeightUnit
+    /// The scale every speed and speed goal is written on.
+    private(set) var distanceUnit: DistanceUnit
+
+    /// A unit change waiting on the answer to its relabel question, or `nil` while
+    /// nothing is.
+    private(set) var unitChange: UnitChange?
+
     /// A restore waiting on the answer to its confirmation.
     private var pendingRestore: Restore?
     @ObservationIgnored private let defaults: UserDefaults
@@ -47,6 +60,8 @@ final class SettingsModel: Identifiable {
         self.defaults = defaults
         self.container = container
         backup = BackupFile(container: container, settings: Backup.Settings(defaults: defaults))
+        weightUnit = WeightUnit(defaults: defaults)
+        distanceUnit = DistanceUnit(defaults: defaults)
         if let zones = HeartRateZones(defaults: defaults) {
             lowerBounds = zones.lowerBounds
         }
@@ -56,6 +71,41 @@ final class SettingsModel: Identifiable {
     /// caller can save a partial or impossible set, or clear one.
     func save() {
         typedZones?.save(to: defaults)
+    }
+
+    /// Asks to write every weight in `unit`. The unit already held asks nothing.
+    func change(weightsTo unit: WeightUnit) {
+        guard unit != weightUnit else { return }
+        ask(.weights(unit))
+    }
+
+    /// Asks to write every speed in `unit`. The unit already held asks nothing.
+    func change(distancesTo unit: DistanceUnit) {
+        guard unit != distanceUnit else { return }
+        ask(.distances(unit))
+    }
+
+    /// Answers the unit change's question with a relabel: the scale moves, and every
+    /// number stays.
+    func relabel() {
+        guard let change = unitChange else { return }
+        unitChange = nil
+        change.relabel(in: defaults)
+        weightUnit = WeightUnit(defaults: defaults)
+        distanceUnit = DistanceUnit(defaults: defaults)
+    }
+
+    /// Answers the unit change's question no. The unit and every number stay as they are.
+    func cancelUnitChange() {
+        unitChange = nil
+    }
+
+    /// Holds `change` for the question, and makes it at once while nothing is written on
+    /// its scale: with no number to keep, a relabel is just a change.
+    private func ask(_ change: UnitChange) {
+        unitChange = change
+        // A store that can't be read asks, which is never the wrong thing to do.
+        if (try? change.isWritten(in: ModelContext(container))) == false { relabel() }
     }
 
     /// Restores the backup in `data` in place of everything Chalk holds: at once over a
