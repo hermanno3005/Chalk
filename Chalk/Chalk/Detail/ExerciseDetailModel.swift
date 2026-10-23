@@ -124,7 +124,7 @@ final class ExerciseDetailModel {
         guard let goal else { return nil }
         let target = "Goal \(goal.text)"
         return GoalLine(
-            text: goal.isReached ? "\(target) · reached" : "\(target) · \(goal.gap.kilogramsText) kg to go",
+            text: goal.isReached ? "\(target) · reached" : "\(target) · \(goal.gap.kilogramsText) \(PlateProto.unit.rawValue) to go",
             isReached: goal.isReached,
             progress: goal.progress
         )

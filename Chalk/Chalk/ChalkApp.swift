@@ -18,8 +18,8 @@ struct ChalkApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // PROTOTYPE (#140): rooted at the identity prototype, not the library.
-            IdentityPrototypeRoot()
+            // PROTOTYPE (#141): rooted at the plate breakdown prototype, not the library.
+            PlateBreakdownPrototypeRoot()
         }
     }
 

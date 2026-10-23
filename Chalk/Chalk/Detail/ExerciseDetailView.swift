@@ -28,6 +28,9 @@ struct ExerciseDetailView: View {
     @State private var history: HistorySheetModel?
     @State private var goalSheet: GoalSheetModel?
     @State private var flashingConfirmation = false
+    /// PROTOTYPE (#141): the exercise's bar, 0 for none. Held outside the model, which has
+    /// no `bar` yet.
+    @AppStorage("prototype.bar") private var protoBar = 20.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -86,6 +89,7 @@ struct ExerciseDetailView: View {
                             confirmingKindChange = true
                         }
                     }
+                    if Palette.current.style == .layout, !model.isGymBound { barMenu }
                     // Setting, changing and clearing all happen in the goal sheet;
                     // clearing is kept out of here, which holds lifetime operations.
                     if let goalMenuLabel = model.goalMenuLabel {
@@ -186,32 +190,73 @@ struct ExerciseDetailView: View {
     /// with the rep count beside it as their `▲ 10,55 %`, the goal, the chart bled off the
     /// leading edge, and what the subhead said moved into a row under it.
     private func tradeRepublicLayout(_ readout: ExerciseDetailModel.Readout) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        // PROTOTYPE (#141): the plate breakdown, in the variant the root's bar picks.
+        let unit = PlateProto.unit
+        let breakdown = protoBar > 0 ? readout.weight.map {
+            PlateBreakdown(weight: $0, bar: protoBar, unit: unit)
+        } : nil
+        let variant = PlateProto.variant
+        return VStack(alignment: .leading, spacing: 0) {
             NamedNumber(
                 name: model.name,
-                number: readout.weight.map { "\($0.kilogramsText) kg" } ?? "—",
+                number: readout.weight.map { "\($0.kilogramsText) \(unit.rawValue)" } ?? "—",
                 aside: "× \(readout.reps)",
                 dimmed: readout.weight == nil
             )
             .contentShape(.rect)
             .onTapGesture { history = model.historySheet() }
+            if variant == .line, let breakdown {
+                PlateLine(breakdown: breakdown, unit: unit, bar: protoBar)
+                    .padding(.top, 4)
+            }
             goalLine
                 .padding(.top, 12)
+            if variant == .sleeve, let breakdown {
+                PlateSleeve(breakdown: breakdown, unit: unit, bar: protoBar)
+                    .padding(.top, 16)
+            }
             StrengthCurve(
                 curve: model.curve,
                 selectedReps: model.selectedReps,
                 onSelect: model.select
             )
             .padding(.leading, -16)
-            .padding(.top, 40)
+            .padding(.top, variant == .sleeve && breakdown != nil ? 16 : 40)
+            if variant == .row, let breakdown {
+                PlateRow(breakdown: breakdown, unit: unit, bar: protoBar)
+                    .padding(.top, 28)
+            }
             FactRow(
                 label: "Entries at \(readout.reps)+ reps",
                 value: "\(readout.entriesBehind)",
                 opens: readout.weight != nil,
                 action: readout.weight == nil ? nil : { history = model.historySheet() }
             )
-            .padding(.top, 28)
+            .padding(.top, variant == .row && breakdown != nil ? 0 : 28)
             FactRow(label: "Logged", value: "\(model.entryCount) entries")
+        }
+    }
+
+    /// PROTOTYPE (#141): the bar, in the overflow. *No bar*, the weight unit's presets, and
+    /// a typed weight, which the prototype shows but does not ask for.
+    private var barMenu: some View {
+        let unit = PlateProto.unit
+        return Menu {
+            Picker("Bar", selection: $protoBar) {
+                Text("No bar").tag(0.0)
+                ForEach(unit.barPresets, id: \.self) { preset in
+                    Text("\(preset.plateText) \(unit.rawValue)").tag(preset)
+                }
+                if protoBar > 0, !unit.barPresets.contains(protoBar) {
+                    Text("\(protoBar.plateText) \(unit.rawValue)").tag(protoBar)
+                }
+            }
+            Button("Other weight…") {}
+        } label: {
+            Label(
+                protoBar > 0 ? "Bar · \(protoBar.plateText) \(unit.rawValue)" : "Bar",
+                systemImage: "minus"
+            )
         }
     }
 
