@@ -50,6 +50,8 @@ puts the rounding in one place, at a moment you chose.
   of the scale's smallest standard plates makes. The plate set used by a plate breakdown
   follows it too, so its smallest plate is 1.25 kg or 2.5 lb; the rest of the lb set is the
   plate breakdown prototype's ([#133](https://github.com/hermanno3005/Chalk/issues/133)).
+  _Amended 2026-10-23:_ plate breakdown was cut after its prototype, so no plate set ships;
+  the grid's reasoning stands on its own ([#141](https://github.com/hermanno3005/Chalk/issues/141)).
 - **The erg's Unit is untouched.** It stays the *kind* of number an erg speaks. The distance
   unit only says which scale a speed is on, and watts, splits and levels have no scale to
   change.

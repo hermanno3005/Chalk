@@ -178,8 +178,7 @@ _Avoid_: Session, workout, training day
 
 **Settings**:
 Chalk's one app-wide screen, reached from the home screen in either half. It holds your
-heart-rate zones, your weight unit, your distance unit and whether plate breakdowns show,
-and is where a backup is made
+heart-rate zones, your weight unit and your distance unit, and is where a backup is made
 and restored; each further setting is its own decision.
 _Avoid_: Preferences, options, profile, configuration
 
@@ -293,19 +292,6 @@ plate-loaded kit alike; a treadmill whose speed costs a different heart rate fro
 model to the next. The test is transferability, not whether it is colloquially a
 machine. Its numbers derive from one machine's entries only.
 _Avoid_: Machine exercise, fixed-weight
-
-**Bar**:
-The weight of the empty bar an exercise is loaded on, if it is loaded on one — said by
-you, never assumed, so an exercise has no bar until you give it one. A property of the
-exercise, not of a gym or machine, and never part of any derivation.
-_Avoid_: Barbell (as a kind of exercise), implement, equipment
-
-**Plate breakdown**:
-The plates per side that make up the weight you are reading, for an exercise with a bar,
-from the standard plates of your weight unit — the nearest loadable weight below it when
-the exact one is not. Arithmetic on a number Chalk already shows, never a prescription,
-and something you can turn off.
-_Avoid_: Plate calculator, loading guide, plate math
 
 **Group**:
 A user-owned, ordered bucket that an exercise or an erg may sit in, and a shelf rather
