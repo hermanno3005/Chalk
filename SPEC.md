@@ -1639,7 +1639,8 @@ one; no single row can reach a mean over visits).
 - **Each row carries a visible red minus** to delete it, **except the last remaining row** —
   Cancel is how you log nothing.
 - **Cancel asks *Discard 5 entries?* once anything is typed**, and swipe-down is disabled while
-  the sheet has been touched. **An untouched sheet closes without asking.**
+  the sheet has been touched. **An untouched sheet closes without asking.** A Spotlight result
+  opened over a touched sheet asks the same (§15.5).
 - After Save, the sheet closes; the detail screen behind it re-reads, as §6.7's does.
 
 **The machine caption** (§6.4, gym-bound only) appears **once, above the grid, covering every
@@ -2042,6 +2043,20 @@ the phone's update, and it never risks a relabel
   never touches the index. *Open Bench Press in Chalk* and *Open Rower in Chalk* give each one
   a Spotlight tile and a voice opener
   ([Does Chalk ship App Shortcuts, given they bring Siri phrases?](https://github.com/hermanno3005/Chalk/issues/151)).
+  **A result opened over something unfinished does what a swipe-down would do**
+  ([What wins when a Spotlight result opens over an unsaved log?](https://github.com/hermanno3005/Chalk/issues/152)).
+  The same holds for an Open shortcut and a tap on a rep-max card, which open the same way.
+  - **A result for the detail screen already on top changes nothing.** Chalk comes forward
+    as you left it, sheet, grid and prompt included, so going back to the erg you were
+    logging never asks.
+  - **Otherwise every sheet you could swipe away closes silently**, at any depth: the strength
+    log sheet with reps typed, an untouched grid, create, *Edit groups*, *Manage gyms*,
+    Settings, the goal sheets and History. One flick already drops them, so this is no new
+    loss. Alerts and confirmations close as cancelled, and Arrange mode ends as Done does.
+  - **A touched lap-list grid asks in its own words**: *Discard 5 entries?*, or *Discard
+    changes?* in edit mode (§13.7). **Discard** closes everything and opens the result. **Keep
+    editing** stays on the grid and drops the result. Nothing waits to fire when the sheet
+    closes.
 - **Rep-max cards**, the second item cut, after plate breakdown. *Bench press rep maxes in
   Chalk*, or *What's my 5 rep max on bench press in Chalk*, asked of Siri or run from its
   Spotlight tile, answers with a **rep-max card** without opening Chalk: the twelve rep-maxes of
