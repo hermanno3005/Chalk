@@ -60,6 +60,8 @@ struct ZoneLineChart: View {
                         Text(EnduranceText.clock(seconds))
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(.secondary)
+                            // Capped as the curve's are (SPEC §15.4).
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     }
                 }
             }

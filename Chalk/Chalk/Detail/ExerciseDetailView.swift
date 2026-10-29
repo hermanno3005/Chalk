@@ -31,39 +31,7 @@ struct ExerciseDetailView: View {
     @State private var flashingConfirmation = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let readout = model.readout {
-                // One of two ways into raw history (SPEC §5.6), with the first row. A
-                // plain tap, not a `Button`: the number keeps its own colour. An
-                // unproven cell hands back no sheet.
-                DetailHead(
-                    name: model.name,
-                    number: readout.weightWithUnit,
-                    aside: readout.aside,
-                    dimmed: readout.weight == nil,
-                    opensHistory: readout.weight != nil
-                )
-                .onTapGesture { history = model.historySheet() }
-                goalLine
-                    .padding(.top, 12)
-                StrengthCurve(
-                    curve: model.curve,
-                    selectedReps: model.selectedReps,
-                    onSelect: model.select
-                )
-                .detailChart()
-                .padding(.top, 40)
-                rows(readout)
-                    .padding(.top, 28)
-            } else {
-                DetailHead(name: model.name)
-                empty
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal)
-        .padding(.top, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        DetailBody { content }
         .chalkScreen()
         // The name is the readout's (SPEC §5.1); kept as the title for the back menu
         // and VoiceOver, never drawn in the bar.
@@ -163,6 +131,43 @@ struct ExerciseDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    /// Top to bottom, as the type's doc says; `DetailBody` decides whether it scrolls.
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let readout = model.readout {
+                // One of two ways into raw history (SPEC §5.6), with the first row. A
+                // plain tap, not a `Button`: the number keeps its own colour. An
+                // unproven cell hands back no sheet.
+                DetailHead(
+                    name: model.name,
+                    number: readout.weightWithUnit,
+                    aside: readout.aside,
+                    dimmed: readout.weight == nil,
+                    opensHistory: readout.weight != nil
+                )
+                .onTapGesture { history = model.historySheet() }
+                goalLine
+                    .padding(.top, 12)
+                StrengthCurve(
+                    curve: model.curve,
+                    selectedReps: model.selectedReps,
+                    onSelect: model.select
+                )
+                .detailChart()
+                .padding(.top, 40)
+                rows(readout)
+                    .padding(.top, 28)
+            } else {
+                DetailHead(name: model.name)
+                empty
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal)
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The machine qualifier — **gym-bound only** (SPEC §5.3). Switching re-scopes the

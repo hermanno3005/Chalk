@@ -103,8 +103,24 @@ struct LibraryLayoutTests {
 
         let sections = try layout(fixture).sections
 
-        #expect(sections[0].rows.map { $0.map(\.name) } == [["Squat", "Leg Curl"], ["Lunge"]])
-        #expect(sections[1].rows.map { $0.map(\.name) } == [["Bench Press", "Dip"]])
+        #expect(sections[0].rows(at: .large).map { $0.map(\.name) } == [["Squat", "Leg Curl"], ["Lunge"]])
+        #expect(sections[1].rows(at: .xxxLarge).map { $0.map(\.name) } == [["Bench Press", "Dip"]])
+    }
+
+    @Test("At an accessibility text size every tile takes a row of its own (SPEC §15.6)")
+    func accessibilitySizesLayOneTileToARow() throws {
+        let fixture = try LibraryFixture()
+        let legs = fixture.group("Legs", sortIndex: 0)
+        let now = Date.now
+        fixture.log(fixture.exercise("Squat", group: legs), on: now)
+        fixture.log(fixture.exercise("Leg Curl", group: legs), on: now.addingTimeInterval(-60))
+        fixture.log(fixture.exercise("Bulgarian Split Squat", group: legs), on: now.addingTimeInterval(-120))
+        try fixture.save()
+
+        let section = try layout(fixture).sections[0]
+
+        #expect(section.rows(at: .accessibility1).map { $0.map(\.name) } == [["Squat"], ["Leg Curl"], ["Bulgarian Split Squat"]])
+        #expect(section.rows(at: .accessibility5).count == 3)
     }
 
     // MARK: - Subtitles

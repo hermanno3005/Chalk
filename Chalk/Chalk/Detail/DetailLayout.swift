@@ -9,6 +9,10 @@ import SwiftUI
 /// the big number, bold with its unit at the same size, and a small bold aside beside it:
 /// `102,5 kg × 5`, `15.0 km/h 6:00 in Z4`.
 ///
+/// **Nothing in it is capped or truncated** (SPEC §15.4): the number scales with the large
+/// title, about 70 pt at the largest size, and the aside wraps under it when the two
+/// cannot share a line. The number is never shrunk to fit.
+///
 /// Without a number (nothing logged, zones not set) it is the name alone. A number that
 /// is not there — an unproven cell, a zone with no line — is a dimmed `—` rather than a
 /// number from somewhere else (SPEC §4).
@@ -30,21 +34,16 @@ struct DetailHead: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
             if let number {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text(number)
-                        .font(.system(size: numberSize, weight: .bold))
-                        .tracking(-0.8)
-                        .monospacedDigit()
-                        // The number moves digit by digit as the thumb crosses the
-                        // chart, rather than cross-fading whole.
-                        .contentTransition(.numericText())
-                        .animation(.snappy(duration: 0.2), value: number)
-                        .foregroundStyle(dimmed ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
-                    if let aside {
-                        Text(aside)
-                            .font(.system(size: asideSize, weight: .bold))
-                            .monospacedDigit()
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        numberText(number)
+                        asideText
                     }
+                    VStack(alignment: .leading, spacing: 2) {
+                        numberText(number)
+                        asideText
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
@@ -54,11 +53,35 @@ struct DetailHead: View {
         .accessibilityAddTraits(opensHistory ? [.isHeader, .isButton] : .isHeader)
         .accessibilityHint(opensHistory ? "Shows these entries" : "")
     }
+
+    private func numberText(_ number: String) -> some View {
+        Text(number)
+            .font(.system(size: numberSize, weight: .bold))
+            .tracking(-0.8)
+            .monospacedDigit()
+            // The number moves digit by digit as the thumb crosses the chart, rather
+            // than cross-fading whole.
+            .contentTransition(.numericText())
+            .animation(.snappy(duration: 0.2), value: number)
+            .foregroundStyle(dimmed ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+    }
+
+    @ViewBuilder
+    private var asideText: some View {
+        if let aside {
+            Text(aside)
+                .font(.system(size: asideSize, weight: .bold))
+                .monospacedDigit()
+        }
+    }
 }
 
 /// One fact under the chart (SPEC §5.1, §13.8): the label in grey, the value bold at the
 /// trailing end, at least 45 pt tall and no divider. **A row that opens a sheet carries a grey `›` after
 /// its label**; one with no `action` is plain text and not a button.
+///
+/// **At large text it stacks** (SPEC §15.4), label over value, grey over bold with its
+/// `›`, when the two cannot share a line. Each row decides alone.
 struct FactRow: View {
     let label: String
     let value: String
@@ -75,6 +98,26 @@ struct FactRow: View {
     }
 
     private func content(opens: Bool) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) {
+                labelText(opens: opens)
+                Spacer(minLength: 12)
+                valueText
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                labelText(opens: opens)
+                valueText
+            }
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.callout)
+        .frame(minHeight: 45)
+        .contentShape(.rect)
+    }
+
+    private func labelText(opens: Bool) -> some View {
         HStack(spacing: 6) {
             Text(label)
                 .foregroundStyle(.secondary)
@@ -83,20 +126,27 @@ struct FactRow: View {
                     .font(.footnote.weight(.bold))
                     .foregroundStyle(.secondary)
             }
-            Spacer(minLength: 12)
+        }
+    }
+
+    @ViewBuilder
+    private var valueText: some View {
+        // A row with nothing on its trailing end, `Set your heart-rate zones`, stacks
+        // into its label alone.
+        if !value.isEmpty {
             Text(value)
                 .fontWeight(.bold)
                 .monospacedDigit()
         }
-        .font(.callout)
-        .frame(minHeight: 45)
-        .contentShape(.rect)
     }
 }
 
 /// `Z1`–`Z5` as text, grey off and the primary on, with no fill (SPEC §13.8). **A zone
 /// with no line is dimmed but still tappable**: you see where you have never landed, and
 /// can still ask.
+///
+/// **They stop growing at xxxLarge**, past which five do not fit the width beside the
+/// incline menu, and show the Large Content Viewer on a long press instead (SPEC §15.4).
 struct ZoneTabs: View {
     let selected: Int
     let hasLine: (Int) -> Bool
@@ -115,9 +165,11 @@ struct ZoneTabs: View {
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
+                .accessibilityShowsLargeContentViewer()
                 .accessibilityAddTraits(zone == selected ? .isSelected : [])
             }
         }
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func style(_ zone: Int) -> AnyShapeStyle {
@@ -126,14 +178,63 @@ struct ZoneTabs: View {
     }
 }
 
+extension String {
+    /// This text with no line break after a `/`, so `km/h` and `6:00 /km` never wrap
+    /// apart at a large text size (SPEC §15.4), as a tile's last entry keeps its units.
+    var unbrokenAtSlashes: String {
+        replacingOccurrences(of: "/", with: "/\u{2060}")
+    }
+}
+
+/// A detail screen's body, which **never scrolls while it fits** (SPEC §15.4): first the
+/// chart gives way, down to 110 pt, and only when the screen cannot fit with the chart at
+/// 110 pt does it scroll — at any text size — **with the chart back at its full 210 pt**,
+/// since space is no longer what it is short of. The Log bar is the screen's
+/// `safeAreaInset`, outside this, so it stays pinned either way.
+struct DetailBody<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        ViewThatFits(in: .vertical) {
+            content
+            ScrollView {
+                content
+                    .environment(\.detailScrolls, true)
+            }
+        }
+    }
+}
+
+extension EnvironmentValues {
+    /// Whether the detail screen around a chart scrolls, which fixes it at 210 pt.
+    @Entry var detailScrolls = false
+}
+
 extension View {
     /// A detail screen's chart: **the one thing on the screen that gives way**, from 210
     /// down to 110 pt, so the screen does not scroll while it fits (SPEC §15.4). It is
     /// offered space ahead of the empty space under the rows, so it takes its full height
     /// whenever there is room, and it bleeds off the leading edge to the trailing margin.
     func detailChart() -> some View {
-        frame(minHeight: 110, maxHeight: 210)
-            .layoutPriority(1)
-            .padding(.leading, -16)
+        modifier(DetailChart())
+    }
+}
+
+private struct DetailChart: ViewModifier {
+    @Environment(\.detailScrolls) private var scrolls
+
+    func body(content: Content) -> some View {
+        Group {
+            if scrolls {
+                content.frame(height: 210)
+            } else {
+                // An ideal of 110 pt is what `DetailBody` measures the screen against,
+                // so it scrolls only when the chart at its smallest still does not fit.
+                content
+                    .frame(minHeight: 110, idealHeight: 110, maxHeight: 210)
+                    .layoutPriority(1)
+            }
+        }
+        .padding(.leading, -16)
     }
 }

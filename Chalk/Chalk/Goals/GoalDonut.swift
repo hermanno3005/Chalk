@@ -49,7 +49,7 @@ struct GoalLineView: View {
     var body: some View {
         HStack(spacing: 8) {
             GoalDonut(progress: line.progress, isReached: line.isReached)
-            Text(line.text)
+            Text(line.text.unbrokenAtSlashes)
                 .font(.subheadline)
                 .contentTransition(.numericText())
         }

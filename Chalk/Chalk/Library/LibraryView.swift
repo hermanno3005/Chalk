@@ -44,6 +44,8 @@ struct LibraryView: View {
     /// is cached in `LibraryModel` and refreshed on mutation, so a drag re-renders the
     /// grid without re-sorting a thing.
     @State private var dropTarget: LibraryDropTarget?
+    /// Which sets the grid's columns: one tile to a row at an accessibility size.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         NavigationStack(path: $opened) {
@@ -288,13 +290,14 @@ struct LibraryView: View {
     /// every group, empty ones included.
     private func section(_ section: LibrarySection) -> some View {
         let isTarget = dropTarget == section.dropTarget
+        let columns = LibrarySection.columns(at: dynamicTypeSize)
         return VStack(alignment: .leading, spacing: 8) {
             header(section)
             // A `Grid` rather than a `LazyVGrid`: a lone last tile spans both columns, so
             // no row leaves half the screen empty, and the tiles in a row share its height
             // when one's last entry takes a second line (SPEC §15.4).
             Grid(horizontalSpacing: 10, verticalSpacing: 10) {
-                ForEach(section.rows, id: \.first?.id) { row in
+                ForEach(section.rows(at: dynamicTypeSize), id: \.first?.id) { row in
                     GridRow {
                         ForEach(row) { tile in
                             ExerciseTile(
@@ -304,7 +307,7 @@ struct LibraryView: View {
                                 onOpen: { opened.append(tile.exercise) },
                                 onAssign: { model.assign(tile.exercise, to: model.groups.group(id: $0)) }
                             )
-                            .gridCellColumns(row.count == 1 ? LibrarySection.columns : 1)
+                            .gridCellColumns(row.count == 1 ? columns : 1)
                         }
                     }
                 }
@@ -416,6 +419,15 @@ private extension Half {
         ("Squat", "Compound"), ("Bench Press", "Compound"),
         ("Leg Curl", "Legs"), ("Ab Wheel", nil),
     ])
+}
+
+/// One tile to a row, and the resume card's *Log again* under its text (SPEC §15.6).
+#Preview("Grid, AX5") {
+    LibraryPreview.view(exercises: [
+        ("Squat", "Compound"), ("Bulgarian Split Squat", "Legs"),
+        ("Leg Curl", "Legs"), ("Ab Wheel", nil),
+    ])
+    .dynamicTypeSize(.accessibility5)
 }
 
 /// An in-memory library, so the previews above are the real screen over the real model.

@@ -84,6 +84,10 @@ struct StrengthCurve: View {
                         Text("\(reps)")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(reps == selectedReps ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                            // Past xxxLarge the labels no longer fit between their
+                            // ticks; the readout says the selected count at full size
+                            // (SPEC §15.4).
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     }
                 }
             }

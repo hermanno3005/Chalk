@@ -27,63 +27,7 @@ struct ErgDetailView: View {
     @State private var goalSheet: EnduranceGoalSheetModel?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if model.isEmpty {
-                DetailHead(name: model.name)
-                empty
-                goalLine
-                    .padding(.top, 12)
-            } else if !model.needsZones, let selection = model.selection {
-                // A zone with no line keeps the number's place with a dimmed `—`, so
-                // the tabs stay under your thumb as you move between zones.
-                DetailHead(
-                    name: model.name,
-                    number: model.readout?.intensity ?? "—",
-                    aside: model.readout?.aside,
-                    dimmed: model.readout == nil,
-                    // The readout opens the point's sheet, as the `Entries` row does
-                    // (SPEC §13.9). A zone with no line hands back no sheet.
-                    opensHistory: model.readout != nil
-                )
-                .onTapGesture { history = model.historySheet() }
-                // Under the number, whatever zone is selected: it is the goal's point,
-                // not the screen's (SPEC §13.10).
-                goalLine
-                    .padding(.top, 12)
-                tabs(selection)
-                    .padding(.top, 24)
-                if let readout = model.readout, let points = model.reading.line?.points, !points.isEmpty {
-                    ZoneLineChart(
-                        points: points,
-                        unit: model.unit ?? .speed,
-                        selectedDuration: selection.duration,
-                        onSelect: model.select(duration:)
-                    )
-                    .detailChart()
-                    .padding(.top, 16)
-                    overTheAxisCaption
-                    rows(readout)
-                        .padding(.top, 16)
-                } else if let noLine = model.noLine {
-                    ErgNoLineView(noLine: noLine)
-                        .padding(.top, 16)
-                    overTheAxisCaption
-                }
-            } else {
-                DetailHead(name: model.name)
-            }
-            // Zones not set: one row in place of the tabs, readout and line — under
-            // the empty text too, so a first erg says what it will need.
-            if model.needsZones {
-                zonesRow
-                    .padding(.top, 16)
-            }
-            Spacer(minLength: 0)
-        }
-        .animation(.snappy, value: model.selection)
-        .padding(.horizontal)
-        .padding(.top, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        DetailBody { content }
         .chalkScreen()
         // The name is the readout's (SPEC §13.8); kept as the title for the back menu
         // and VoiceOver, never drawn in the bar.
@@ -168,6 +112,67 @@ struct ErgDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    /// Top to bottom, as the type's doc says; `DetailBody` decides whether it scrolls.
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if model.isEmpty {
+                DetailHead(name: model.name)
+                empty
+                goalLine
+                    .padding(.top, 12)
+            } else if !model.needsZones, let selection = model.selection {
+                // A zone with no line keeps the number's place with a dimmed `—`, so
+                // the tabs stay under your thumb as you move between zones.
+                DetailHead(
+                    name: model.name,
+                    number: model.readout?.intensity ?? "—",
+                    aside: model.readout?.aside,
+                    dimmed: model.readout == nil,
+                    // The readout opens the point's sheet, as the `Entries` row does
+                    // (SPEC §13.9). A zone with no line hands back no sheet.
+                    opensHistory: model.readout != nil
+                )
+                .onTapGesture { history = model.historySheet() }
+                // Under the number, whatever zone is selected: it is the goal's point,
+                // not the screen's (SPEC §13.10).
+                goalLine
+                    .padding(.top, 12)
+                tabs(selection)
+                    .padding(.top, 24)
+                if let readout = model.readout, let points = model.reading.line?.points, !points.isEmpty {
+                    ZoneLineChart(
+                        points: points,
+                        unit: model.unit ?? .speed,
+                        selectedDuration: selection.duration,
+                        onSelect: model.select(duration:)
+                    )
+                    .detailChart()
+                    .padding(.top, 16)
+                    overTheAxisCaption
+                    rows(readout)
+                        .padding(.top, 16)
+                } else if let noLine = model.noLine {
+                    ErgNoLineView(noLine: noLine)
+                        .padding(.top, 16)
+                    overTheAxisCaption
+                }
+            } else {
+                DetailHead(name: model.name)
+            }
+            // Zones not set: one row in place of the tabs, readout and line — under
+            // the empty text too, so a first erg says what it will need.
+            if model.needsZones {
+                zonesRow
+                    .padding(.top, 16)
+            }
+            Spacer(minLength: 0)
+        }
+        .animation(.snappy, value: model.selection)
+        .padding(.horizontal)
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The machine qualifier — **gym-bound only**, as on a gym-bound exercise (SPEC §5.3,
@@ -258,6 +263,11 @@ struct ErgDetailView: View {
             .font(.callout)
             .foregroundStyle(.primary)
             .frame(height: 32)
+        }
+        // Capped with the tabs beside it, for the same width (SPEC §15.4).
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .accessibilityShowsLargeContentViewer {
+            Label("\(EnduranceText.incline(selection.incline)) %", systemImage: "chevron.up.chevron.down")
         }
         .accessibilityLabel("Incline \(EnduranceText.incline(selection.incline)) percent")
     }

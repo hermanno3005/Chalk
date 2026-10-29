@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// One exercise in the grid, with what you last did for it already read off the store
 /// (SPEC §7.1). The tile view is handed this rather than an `Exercise`, so nothing
@@ -105,15 +106,19 @@ struct LibrarySection: Identifiable {
 
     var isUngrouped: Bool { id == nil }
 
-    /// How many tiles the grid sets side by side.
-    static let columns = 2
+    /// How many tiles the grid sets side by side: two, and **one at an accessibility
+    /// text size**, where a half-width tile would break a name mid-word (SPEC §15.6).
+    static func columns(at size: DynamicTypeSize) -> Int {
+        size.isAccessibilitySize ? 1 : 2
+    }
 
-    /// The tiles as the grid lays them out, `columns` to a row. **A lone last tile is a
-    /// row of its own**, which the grid draws the full width, so no row leaves half the
-    /// screen empty (SPEC §15.4).
-    var rows: [[LibraryTile]] {
-        stride(from: 0, to: tiles.count, by: Self.columns).map {
-            Array(tiles[$0..<min($0 + Self.columns, tiles.count)])
+    /// The tiles as the grid lays them out, `columns(at:)` to a row. **A lone last tile
+    /// is a row of its own**, which the grid draws the full width, so no row leaves half
+    /// the screen empty (SPEC §15.4).
+    func rows(at size: DynamicTypeSize) -> [[LibraryTile]] {
+        let columns = Self.columns(at: size)
+        return stride(from: 0, to: tiles.count, by: columns).map {
+            Array(tiles[$0..<min($0 + columns, tiles.count)])
         }
     }
 

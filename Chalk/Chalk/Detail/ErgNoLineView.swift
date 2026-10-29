@@ -18,7 +18,7 @@ struct ErgNoLineView: View {
                 HStack(spacing: 6) {
                     Text("Z\(quote.zone)")
                         .fontWeight(.bold)
-                    Text(quote.clause)
+                    Text(quote.clause.unbrokenAtSlashes)
                         .font(.subheadline)
                         .monospacedDigit()
                 }

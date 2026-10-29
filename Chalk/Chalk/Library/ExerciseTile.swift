@@ -28,7 +28,9 @@ struct ExerciseTile: View {
             HStack(alignment: .top, spacing: 4) {
                 Text(tile.name)
                     .font(.subheadline.weight(.semibold))
-                    .lineLimit(2, reservesSpace: true)
+                    // Two lines held, so names line up, and **never cut short**: a
+                    // long name at a large text size takes what it needs (SPEC §15.6).
+                    .lineLimit(2...)
                     .multilineTextAlignment(.leading)
                     .foregroundStyle(.primary)
                 if arranging {
