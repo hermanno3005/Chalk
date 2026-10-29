@@ -242,7 +242,7 @@ final class ErgDetailModel {
     /// The incline menu, on a speed erg.
     func select(incline: Double) { reading.select(incline: incline) }
 
-    /// The point's sheet the readout's `12 entries ›` opens — **the chart's only door**
+    /// The point's sheet the readout and its `Entries 12 ›` row open — **the chart's only door**
     /// (SPEC §13.9) — at the selected duration, zone and incline on this scope. Nil
     /// without a readout: zones not set, or a zone with no line here.
     func historySheet() -> ErgHistoryModel? {

@@ -21,8 +21,11 @@ final class ExerciseDetailModel {
         /// absent cell is "not yet proven", never zero (SPEC §4), so the readout shows
         /// an absence rather than a number from somewhere else.
         let weight: Double?
-        /// Entries with `reps >= N`, the `M` in `· M records ›`.
+        /// Entries with `reps >= N`, the `M` in `Entries at N+ reps M ›`.
         let entriesBehind: Int
+        /// Every entry in scope, the `K` in `Logged K entries` (SPEC §5.1): one machine's
+        /// on a gym-bound exercise, reps above 12 included.
+        let logged: Int
         /// The scale `weight` is written on.
         let weightUnit: WeightUnit
 
@@ -35,6 +38,9 @@ final class ExerciseDetailModel {
     let exercise: Exercise
 
     private(set) var curve = RepMaxCurve(entries: [])
+
+    /// How many entries the curve was derived from — the scope's, not the exercise's.
+    private var entriesInScope = 0
 
     /// Your numbers on a sibling machine, where the one in scope has none of its own —
     /// the line the empty state carries (SPEC §5.4). `nil` for a free-weight exercise,
@@ -128,6 +134,7 @@ final class ExerciseDetailModel {
             reps: selectedReps,
             weight: curve.best[selectedReps],
             entriesBehind: curve.entriesBehind[selectedReps] ?? 0,
+            logged: entriesInScope,
             weightUnit: weightUnit
         )
     }
@@ -366,7 +373,9 @@ final class ExerciseDetailModel {
             machineMenu = MachineMenu(machines: [])
         }
 
-        curve = RepMaxCurve(entries: MachineScope.entries(of: exercise, on: machine))
+        let entries = MachineScope.entries(of: exercise, on: machine)
+        entriesInScope = entries.count
+        curve = RepMaxCurve(entries: entries)
         hint = MachineHint.lookUp(exercise, scopedTo: machine, weightUnit: weightUnit)
         goal = GoalScope(exercise: exercise, machine: machine)?.goal
     }

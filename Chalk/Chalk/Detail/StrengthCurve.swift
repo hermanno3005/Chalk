@@ -1,7 +1,8 @@
 import Charts
 import SwiftUI
 
-/// The strength curve and the ghost behind it (SPEC §5.2).
+/// The strength curve and the ghost behind it (SPEC §5.2). Its height is the screen's to
+/// give: `detailChart()` lets it give way from 210 to 110 pt (§15.4).
 ///
 /// **Drawn only where there is something to draw.** The zero-entry screen shows text
 /// instead — no axes, no flat line, no ghost (§5.4), so this view never has to render an
@@ -12,10 +13,6 @@ struct StrengthCurve: View {
     /// `chartXSelection` writes `nil` here on lift; the model ignores that and keeps the
     /// last real value, which is what makes the selection sticky.
     let onSelect: (Int?) -> Void
-
-    /// 150 pt. Full-bleed was tried and rejected: it makes the screen read as a chart
-    /// rather than as an exercise (SPEC §5.1).
-    static let height: CGFloat = 150
 
     var body: some View {
         Chart {
@@ -28,15 +25,15 @@ struct StrengthCurve: View {
                     series: .value("Series", "ghost")
                 )
                 .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 2, dash: [4, 5]))
-                // Grey and dashed against a solid tinted line, rather than a paler
+                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, dash: [0.1, 6]))
+                // Grey and dotted against a thick solid line, rather than a paler
                 // shade of the same thing: the first scaffolding drew both as thin
                 // dashed grey and failed both halves of the rule (SPEC §5.2).
-                .foregroundStyle(Color.grey.opacity(0.55))
+                .foregroundStyle(Color.grey)
             }
 
-            // Stepped, with a point on every rep count: monotonic backfill repeats the
-            // value above, so the honest picture is a staircase and not a slope.
+            // Stepped: monotonic backfill repeats the value above, so the honest
+            // picture is a staircase and not a slope.
             ForEach(best) { point in
                 LineMark(
                     x: .value("Reps", point.reps),
@@ -44,14 +41,17 @@ struct StrengthCurve: View {
                     series: .value("Series", "best")
                 )
                 .interpolationMethod(.stepEnd)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .lineStyle(StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
                 .foregroundStyle(Color.accentColor)
+            }
 
+            // A point on the selected rep count only (SPEC §5.2).
+            if let selected = best.first(where: { $0.reps == selectedReps }) {
                 PointMark(
-                    x: .value("Reps", point.reps),
-                    y: .value("Rep-max", point.weight)
+                    x: .value("Reps", selected.reps),
+                    y: .value("Rep-max", selected.weight)
                 )
-                .symbolSize(point.reps == selectedReps ? 90 : 22)
+                .symbolSize(90)
                 .foregroundStyle(Color.accentColor)
             }
 
@@ -76,22 +76,22 @@ struct StrengthCurve: View {
         // a zero-based axis flattens them into the top third.
         .chartYScale(domain: yDomain)
         .chartXAxis {
+            // The axis's labels only: no grid and no y axis (SPEC §5.2). The readout
+            // says the number; the selected rep count's label is the primary.
             AxisMarks(preset: .aligned, values: [1, 3, 5, 8, 12]) { value in
-                AxisGridLine()
                 AxisValueLabel {
                     if let reps = value.as(Int.self) {
                         Text("\(reps)")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(reps == selectedReps ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
                     }
                 }
             }
         }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 3))
-        }
+        .chartYAxis(.hidden)
         // Charts' own selection. A `DragGesture` in a `chartOverlay` with a tap gesture
         // over it is the failure this replaces: the two fight and the drag does nothing.
         .chartXSelection(value: Binding<Int?>(get: { selectedReps }, set: { onSelect($0) }))
-        .frame(height: Self.height)
         .accessibilityLabel("Strength curve")
     }
 
@@ -139,6 +139,7 @@ struct StrengthCurve: View {
         selectedReps: 5,
         onSelect: { _ in }
     )
+    .frame(height: 210)
     .padding()
 }
 
@@ -150,5 +151,6 @@ struct StrengthCurve: View {
         selectedReps: 5,
         onSelect: { _ in }
     )
+    .frame(height: 210)
     .padding()
 }

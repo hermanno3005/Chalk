@@ -57,7 +57,9 @@ struct ErgHistoryModelTests {
         let detail = fixture.ergDetailModel(for: rower)
         let model = try #require(detail.historySheet())
 
-        #expect(detail.readout?.detail == "6:00 in Z4 · 164 bpm · 12 entries")
+        #expect(detail.readout?.aside == "6:00 in Z4")
+        #expect(detail.readout?.heartRate == "164 bpm")
+        #expect(detail.readout?.entryCount == 12)
         #expect(model.rows.count == 12)
         #expect(model.older.count == 3)
     }
@@ -174,7 +176,9 @@ struct ErgHistoryModelTests {
         zone.save()
 
         #expect(model.rows.map(\.intensity) == ["262 W"])
-        #expect(detail.readout?.detail == "6:00 in Z4 · 164 bpm · 1 entry")
+        #expect(detail.readout?.aside == "6:00 in Z4")
+        #expect(detail.readout?.heartRate == "164 bpm")
+        #expect(detail.readout?.entryCount == 1)
         #expect(detail.hasLine(3))
 
         // A duration retyped: 6:02 is a point of its own.
@@ -207,7 +211,9 @@ struct ErgHistoryModelTests {
         #expect(model.rows.map(\.intensity) == ["251 W", "252 W", "253 W", "255 W", "256 W", "257 W", "258 W", "259 W", "260 W", "261 W"])
         #expect(model.older.isEmpty)
         // Behind the sheet, the readout has re-read: the same ten entries.
-        #expect(detail.readout?.detail == "6:00 in Z4 · 164 bpm · 10 entries")
+        #expect(detail.readout?.aside == "6:00 in Z4")
+        #expect(detail.readout?.heartRate == "164 bpm")
+        #expect(detail.readout?.entryCount == 10)
         #expect(try fixture.afterRelaunch().fetch(FetchDescriptor<Entry>()).count == 10)
     }
 

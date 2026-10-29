@@ -23,16 +23,21 @@ struct ErgReading {
         var incline: Double
     }
 
-    /// The scrub readout: `15.0 km/h`, `4:00 /km` (or `9.3 mph`, `6:27 /mi`), `6:00 in Z4 · 164 bpm · 12 entries`.
-    /// **The entry count is the uncertainty** — no ± band is drawn (SPEC §13.8).
+    /// The scrub readout: `15.0 km/h` with `6:00 in Z4` beside it, and the rows under the
+    /// line, `Pace 4:00 /km` (or `9.3 mph`, `6:27 /mi`), `Heart rate 164 bpm` and
+    /// `Entries 12 ›`. **The entry count is the uncertainty** — no ± band is drawn (SPEC
+    /// §13.8).
     struct Readout: Equatable {
         /// The point's mean intensity in its unit, the large number.
         let intensity: String
-        /// A speed's pace under it; nil on every other unit.
+        /// The point's duration and zone, beside the number.
+        let aside: String
+        /// A speed's pace, its own row; nil on every other unit.
         let pace: String?
-        /// The point's duration, zone, mean heart rate and entry count. The view adds the
-        /// `›`.
-        let detail: String
+        /// The point's mean heart rate, `164 bpm`.
+        let heartRate: String
+        /// The entries in the point, the rows of its sheet above the divider (§13.9).
+        let entryCount: Int
     }
 
     let unit: ErgUnit?
@@ -121,11 +126,12 @@ struct ErgReading {
 
     var readout: Readout? {
         guard let selection, let point, let unit else { return nil }
-        let entries = point.entryCount == 1 ? "1 entry" : "\(point.entryCount) entries"
         return Readout(
             intensity: EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false),
+            aside: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone)",
             pace: unit == .speed && point.intensity > 0 ? EnduranceText.pace(point.intensity, distanceUnit) : nil,
-            detail: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone) · \(point.averageHeartRate) bpm · \(entries)"
+            heartRate: "\(point.averageHeartRate) bpm",
+            entryCount: point.entryCount
         )
     }
 

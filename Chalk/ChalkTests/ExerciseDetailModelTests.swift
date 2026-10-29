@@ -41,6 +41,25 @@ struct ExerciseDetailModelTests {
         #expect(model.readout?.entriesBehind == 2)
     }
 
+    @Test("`Logged K entries` counts every entry in scope, and no other machine's")
+    func readoutCountsTheEntriesInScope() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Leg Press", kind: .gymBound)
+        let home = fixture.machine(for: exercise, at: fixture.gym("Home"), label: "Home")
+        let away = fixture.machine(for: exercise, at: fixture.gym("Away"), label: "Away")
+        fixture.log(home, reps: 8, weight: 150, on: .days(ago: 1))
+        // Off the 1–12 axis, and still an entry logged here.
+        fixture.log(home, reps: 20, weight: 90, on: .days(ago: 2))
+        fixture.log(away, reps: 8, weight: 120, on: .days(ago: 3))
+
+        let model = fixture.detailModel(for: exercise)
+        model.select(home)
+        #expect(model.readout?.logged == 2)
+
+        model.select(away)
+        #expect(model.readout?.logged == 1)
+    }
+
     @Test("The selection stays where the finger lifted")
     func selectionIsSticky() throws {
         let fixture = try LibraryFixture()
