@@ -10,12 +10,18 @@ import Foundation
 /// dialog outside any context.
 struct RepMaxCard: Equatable, Sendable {
 
-    /// One rep count's rep-max, written as the card shows it.
+    /// One rep count's rep-max.
     struct Cell: Equatable, Sendable {
         let reps: Int
-        /// The weight with its unit, `95 kg`, or `—` where nothing is proven: an absent
-        /// cell is *not yet proven*, never zero (SPEC §4).
-        let weight: String
+        /// `best[reps]`, or nil where nothing is proven: an absent cell is *not yet
+        /// proven*, never zero (SPEC §4).
+        let weight: Double?
+        let weightUnit: WeightUnit
+
+        /// The weight with its unit, `95 kg`, or `—` on an unproven cell.
+        var text: String {
+            weight.map(weightUnit.text) ?? "—"
+        }
     }
 
     let exerciseID: UUID
@@ -38,18 +44,18 @@ struct RepMaxCard: Equatable, Sendable {
         name = exercise.name
         self.machine = machine?.caption
         cells = RepMaxCurve.repRange.map { reps in
-            Cell(reps: reps, weight: curve.best[reps].map(weightUnit.text) ?? "—")
+            Cell(reps: reps, weight: curve.best[reps], weightUnit: weightUnit)
         }
         nothingLogged = curve.entryCount == 0 ? "Nothing logged on \(exercise.name) yet" : nil
     }
 
     /// The card in words, the value the intent returns, so Siri can answer from the
-    /// numbers where it hides the snippet: `Bench Press: 110 kg × 1, 95 kg × 2, …`.
+    /// numbers where it doesn't show the card: `Bench Press: 110 kg × 1, 95 kg × 2, …`.
     var summary: String {
         if let nothingLogged { return nothingLogged }
         let scope = machine.map { "\(name) on \($0)" } ?? name
         let cells = cells.map { cell in
-            cell.weight == "—" ? "not yet proven × \(cell.reps)" : "\(cell.weight) × \(cell.reps)"
+            cell.weight == nil ? "not yet proven × \(cell.reps)" : "\(cell.text) × \(cell.reps)"
         }
         return "\(scope): \(cells.joined(separator: ", "))"
     }

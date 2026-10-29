@@ -24,7 +24,7 @@ struct RepMaxCardTests {
         #expect(card.name == "Bench Press")
         #expect(card.machine == nil)
         #expect(card.cells.map(\.reps) == Array(1...12))
-        #expect(card.cells.map(\.weight) == [
+        #expect(card.cells.map(\.text) == [
             "110 kg", "95 kg", "95 kg", "95 kg", "95 kg",
             eightyTwoPointFive, eightyTwoPointFive, eightyTwoPointFive,
             "—", "—", "—", "—",
@@ -49,7 +49,7 @@ struct RepMaxCardTests {
         let card = RepMaxCard(exercise: legPress, gyms: gyms, weightUnit: .lb)
 
         #expect(card.machine == "By the window · Fitness X")
-        #expect(card.cells.map(\.weight) == Array(repeating: "140 lb", count: 5) + Array(repeating: "—", count: 7))
+        #expect(card.cells.map(\.text) == Array(repeating: "140 lb", count: 5) + Array(repeating: "—", count: 7))
     }
 
     @Test("A scope with nothing logged says so, though a machine at another gym has lifts")
@@ -69,6 +69,6 @@ struct RepMaxCardTests {
 
         #expect(card.nothingLogged == "Nothing logged on Leg Press yet")
         #expect(card.machine == "By the window · Fitness X")
-        #expect(card.cells.allSatisfy { $0.weight == "—" })
+        #expect(card.cells.allSatisfy { $0.text == "—" })
     }
 }

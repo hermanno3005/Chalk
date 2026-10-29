@@ -34,6 +34,9 @@ struct RepMaxesIntent: AppIntent {
 /// when gym-bound, then the twelve rep-maxes four to a row, or the line that says nothing
 /// is logged. **A tap opens the exercise's detail screen** through the same Open intent a
 /// Spotlight result runs, so it lands on the same numbers.
+///
+/// **It sets its grey and its weight itself** rather than through `chalkScreen()`: Siri
+/// draws it on a platter of its own, so there is no Chalk screen for it to open on.
 struct RepMaxCardView: View {
     let card: RepMaxCard
 
@@ -61,10 +64,11 @@ struct RepMaxCardView: View {
                                         Text("× \(cell.reps)")
                                             .font(.caption)
                                             .foregroundStyle(Color.grey)
-                                        Text(cell.weight)
+                                        Text(cell.text)
                                             .fontWeight(.bold)
                                             .monospacedDigit()
                                     }
+                                    .accessibilityElement(children: .combine)
                                 }
                             }
                         }

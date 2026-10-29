@@ -51,24 +51,9 @@ final class LibraryRouter {
     func suggested(in half: Half) throws -> [IndexedRow] {
         guard let container else { throw LibraryUnavailable() }
         let exercises = try ModelContext(container).fetch(FetchDescriptor<Exercise>())
-        let ranked = Recency.order(
-            exercises,
-            lastUsed: { ($0.entries ?? []).filter { $0.isALift || $0.isAnInterval }.map(\.date).max() },
-            name: \.name
-        )
-        var phrasesLeft = ChalkShortcuts.phraseLimit
-        var suggested: [IndexedRow] = []
-        for exercise in ranked {
-            let phrases = exercise.isErg ? ChalkShortcuts.phrasesPerErg : ChalkShortcuts.phrasesPerExercise
-            // Stops at the first row that doesn't fit rather than skipping to a cheaper
-            // one, so what is cut is always the least recently logged.
-            guard phrases <= phrasesLeft else { break }
-            phrasesLeft -= phrases
-            if exercise.half == half {
-                suggested.append(IndexedRow(id: exercise.id, name: exercise.name, half: half))
-            }
-        }
-        return suggested
+        let ranked = Recency.order(exercises, lastUsed: \.lastLogged, name: \.name)
+            .map { IndexedRow(id: $0.id, name: $0.name, half: $0.half) }
+        return ChalkShortcuts.fitting(ranked).filter { $0.half == half }
     }
 
     /// The rep-max card for the exercise with this id, at the scope its detail screen
@@ -100,7 +85,8 @@ struct LibraryUnavailable: Error, CustomLocalizedStringResourceConvertible {
     }
 }
 
-/// Why a rep-max card can't be drawn: the exercise was deleted since Siri last heard.
+/// Why a rep-max card can't be drawn: no exercise holds the id, because it was deleted
+/// since Siri last heard, or it names an erg, which has no rep-maxes.
 struct NotInLibrary: Error, CustomLocalizedStringResourceConvertible {
     var localizedStringResource: LocalizedStringResource {
         "That exercise is no longer in your library."
