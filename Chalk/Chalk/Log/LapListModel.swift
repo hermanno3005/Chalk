@@ -406,13 +406,41 @@ final class LapListModel: Identifiable {
     ///
     /// The rows are stamped a second apart, ending now, so the last row — the last lap on
     /// the watch — is the most recent entry and seeds the next block.
-    func save() {
+    ///
+    /// Answers with the haptic the Save plays (SPEC §15.4), **once for the block**, or nil
+    /// where nothing was saved. **A save reaches the goal** at the sheet's scope where the
+    /// goal is unreached over every other entry and reached once this one is written —
+    /// so an edit is judged as strength's crossing is, without the entry being corrected.
+    @discardableResult
+    func save() -> SaveHaptic? {
         settle()
-        guard canSave else { return }
+        guard canSave else { return nil }
+        let scope = GoalScope(exercise: erg, machine: machine)
+        let wasReached = scope.map { isGoalReached(on: $0, judgedAgainst: $0.entries.filter { $0 !== editing }) } ?? false
         if let editing {
             write(onto: editing)
-            return
+        } else {
+            writeBlock()
         }
+        // As elsewhere: v1 has no error state past §3's container failure.
+        try? context.save()
+        let reachesGoal = !wasReached && scope.map { isGoalReached(on: $0, judgedAgainst: $0.entries) } == true
+        onSave()
+        return reachesGoal ? .reachedGoal : .saved
+    }
+
+    /// Whether the endurance goal at `scope` is reached by `entries`, with the zones read
+    /// live. No goal is never reached.
+    private func isGoalReached(on scope: GoalScope, judgedAgainst entries: [Entry]) -> Bool {
+        scope.enduranceGoal(
+            judgedAgainst: entries,
+            zones: HeartRateZones(defaults: defaults),
+            distanceUnit: distanceUnit
+        )?.isReached ?? false
+    }
+
+    /// A new block: one entry per row.
+    private func writeBlock() {
         let now = Date.now
         for (index, row) in rows.enumerated() {
             context.insert(Entry(
@@ -428,9 +456,6 @@ final class LapListModel: Identifiable {
         }
         // Once per Save, not once per row: one block is one visit (SPEC §13.7).
         caption.logged()
-        // As elsewhere: v1 has no error state past §3's container failure.
-        try? context.save()
-        onSave()
     }
 
     /// An edit: **in place, and the date stays where it was** (SPEC §6.6). A changed
@@ -445,8 +470,5 @@ final class LapListModel: Identifiable {
         entry.averageHeartRate = Int(row.value(.averageHeartRate) ?? 0)
         entry.peakHeartRate = Int(row.value(.peakHeartRate) ?? 0)
         entry.machine = machine
-        // As elsewhere: v1 has no error state past §3's container failure.
-        try? context.save()
-        onSave()
     }
 }

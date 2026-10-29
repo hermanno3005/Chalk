@@ -62,7 +62,11 @@ enum GoalScope {
     /// The endurance goal set here, judged against this scope's entries and `zones`, and
     /// written in `distanceUnit`, both read live by the caller. **Nil on a lift**, and
     /// unless every field is set — a speed goal with its incline.
+    ///
+    /// `entries` judges it against those rather than all of this scope's — the lap-list
+    /// sheet's save, which asks whether the goal was reached without what it writes.
     func enduranceGoal(
+        judgedAgainst entries: [Entry]? = nil,
         zones: HeartRateZones?,
         distanceUnit: DistanceUnit,
         calendar: Calendar = .current
@@ -78,7 +82,7 @@ enum GoalScope {
             intensity: stored.intensity,
             incline: stored.incline,
             setAt: stored.setAt,
-            entries: entries,
+            entries: entries ?? self.entries,
             zones: zones,
             unit: unit,
             distanceUnit: distanceUnit,

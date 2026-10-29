@@ -476,6 +476,49 @@ struct LapListModelTests {
         #expect(next.drawn == ["3:00 | 16.0 | 0 | 167 | 174"])
     }
 
+    // MARK: - The haptic a save plays (SPEC §15.4)
+
+    @Test("A block plays the success tap, once per Save")
+    func aBlockPlaysTheSuccessTapOnce() throws {
+        let fixture = try LibraryFixture()
+        let treadmill = fixture.erg("Treadmill", kind: .freeWeight)
+        fixture.interval(treadmill, duration: 360, intensity: 14.0, average: 164, on: .days(ago: 2))
+
+        let model = fixture.lapListModel(for: treadmill)
+        model.addRow()
+
+        #expect(model.save() == .saved)
+    }
+
+    @Test("A block that reaches the goal plays the goal's haptic instead")
+    func aBlockThatReachesTheGoalPlaysItsHaptic() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(120, 140, 155, 170)
+        let treadmill = fixture.erg("Treadmill", kind: .freeWeight)
+        fixture.interval(treadmill, duration: 360, intensity: 14.0, average: 164, on: .days(ago: 2))
+        GoalScope.exercise(treadmill).set(zone: 4, duration: 360, intensity: 15.0, incline: 0, at: .days(ago: 5))
+
+        let model = fixture.lapListModel(for: treadmill)
+        model.select(.init(row: 0, field: .intensity))
+        model.type("16.0")
+
+        // Two visits at 6:00 in Z4, 14.0 and 16.0: the point's mean is the goal's 15.0.
+        #expect(model.save() == .reachedGoal)
+    }
+
+    @Test("A block past a goal already reached plays the success tap")
+    func aBlockPastAReachedGoalPlaysTheSuccessTap() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(120, 140, 155, 170)
+        let treadmill = fixture.erg("Treadmill", kind: .freeWeight)
+        fixture.interval(treadmill, duration: 360, intensity: 16.0, average: 164, on: .days(ago: 2))
+        GoalScope.exercise(treadmill).set(zone: 4, duration: 360, intensity: 15.0, incline: 0, at: .days(ago: 5))
+
+        let model = fixture.lapListModel(for: treadmill)
+
+        #expect(model.save() == .saved)
+    }
+
     @Test("Save does nothing while a row is invalid")
     func saveRefusesAnInvalidRow() throws {
         let fixture = try LibraryFixture()

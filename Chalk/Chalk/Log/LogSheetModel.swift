@@ -316,8 +316,15 @@ final class LogSheetModel: Identifiable {
     /// Writes the entry — a new one, or the one being edited, in place. The caller
     /// closes the sheet: after saving it never stays open
     /// to log again, because sessions are not modelled (SPEC §6.7).
-    func save() {
-        guard canSave, let reps, let weight else { return }
+    ///
+    /// Answers with the haptic the Save plays (SPEC §15.4), or nil where nothing was
+    /// saved. **A save reaches the goal exactly where the line said it would** — the
+    /// crossing, judged before the write against the same entries and scope the verdict
+    /// is, so an edit is judged against every other entry.
+    @discardableResult
+    func save() -> SaveHaptic? {
+        guard canSave, let reps, let weight else { return nil }
+        let haptic: SaveHaptic = goal?.isCrossed(byReps: reps, weight: weight) == true ? .reachedGoal : .saved
         if let editing {
             // In place, and the date stays where it was (SPEC §6.6). An edit that drops
             // the entry out of the history sheet it was opened from is that sheet's
@@ -348,5 +355,6 @@ final class LogSheetModel: Identifiable {
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
         onSave()
+        return haptic
     }
 }

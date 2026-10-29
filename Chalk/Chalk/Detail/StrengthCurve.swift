@@ -14,6 +14,10 @@ struct StrengthCurve: View {
     /// last real value, which is what makes the selection sticky.
     let onSelect: (Int?) -> Void
 
+    /// Whether a finger is on the chart — between a selection and the `nil` of its lift —
+    /// so the tick is the scrub's alone (SPEC §15.4).
+    @State private var isScrubbing = false
+
     var body: some View {
         Chart {
             // The ghost is drawn first so the solid curve sits over it, and
@@ -95,7 +99,13 @@ struct StrengthCurve: View {
         .chartYAxis(.hidden)
         // Charts' own selection. A `DragGesture` in a `chartOverlay` with a tap gesture
         // over it is the failure this replaces: the two fight and the drag does nothing.
-        .chartXSelection(value: Binding<Int?>(get: { selectedReps }, set: { onSelect($0) }))
+        .chartXSelection(value: Binding<Int?>(get: { selectedReps }, set: {
+            isScrubbing = $0 != nil
+            onSelect($0)
+        }))
+        // A tick at each rep count the scrub lands on (SPEC §15.4). Anything else that
+        // moves the selection, such as correcting the machine, stays silent.
+        .sensoryFeedback(.selection, trigger: selectedReps) { _, _ in isScrubbing }
         .accessibilityLabel("Strength curve")
     }
 

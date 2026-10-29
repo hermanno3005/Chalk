@@ -55,7 +55,7 @@ struct LogSheet: View {
                             .disabled(!model.canAdvance)
                     case .weight:
                         Button("Save") {
-                            model.save()
+                            model.save()?.play()
                             // Never stays open to log again: sessions are not modelled
                             // (SPEC §6.7).
                             dismiss()

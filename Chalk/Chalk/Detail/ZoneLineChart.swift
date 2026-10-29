@@ -16,6 +16,10 @@ struct ZoneLineChart: View {
     /// every real value to a duration done, which is the sticky, snapping scrub.
     let onSelect: (Int?) -> Void
 
+    /// Whether a finger is on the chart — between a selection and the `nil` of its lift —
+    /// so the tick is the scrub's alone (SPEC §15.4).
+    @State private var isScrubbing = false
+
     var body: some View {
         Chart {
             ForEach(points, id: \.duration) { point in
@@ -67,7 +71,13 @@ struct ZoneLineChart: View {
             }
         }
         .chartYAxis(.hidden)
-        .chartXSelection(value: Binding<Int?>(get: { selectedDuration }, set: { onSelect($0) }))
+        .chartXSelection(value: Binding<Int?>(get: { selectedDuration }, set: {
+            isScrubbing = $0 != nil
+            onSelect($0)
+        }))
+        // A tick at each duration the scrub snaps to (SPEC §15.4). A zone tab or the
+        // incline menu re-snapping the selection stays silent.
+        .sensoryFeedback(.selection, trigger: selectedDuration) { _, _ in isScrubbing }
         .accessibilityLabel("Zone line")
     }
 

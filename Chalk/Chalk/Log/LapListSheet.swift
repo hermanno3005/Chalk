@@ -85,7 +85,8 @@ struct LapListSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.saveTitle) {
-                        model.save()
+                        // Once for the block, however many rows it writes (SPEC §15.4).
+                        model.save()?.play()
                         dismiss()
                     }
                     .fontWeight(.semibold)

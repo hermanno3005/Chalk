@@ -729,9 +729,71 @@ struct LogSheetModelTests {
 
         let model = fixture.logSheetModel(for: exercise)
         model.advance()
-        model.save()
 
+        // Nothing saved, so nothing to play.
+        #expect(model.save() == nil)
         #expect(try fixture.afterRelaunch().fetch(FetchDescriptor<Entry>()).isEmpty)
+    }
+
+    // MARK: - The haptic a save plays (SPEC §15.4)
+
+    @Test("A save plays the success tap")
+    func aSavePlaysTheSuccessTap() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 2))
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.advance()
+
+        #expect(model.save() == .saved)
+    }
+
+    @Test("A save that reaches the goal plays the goal's haptic instead")
+    func aSaveThatReachesTheGoalPlaysItsHaptic() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.advance()
+        model.tapNumber()
+        type("140", into: model)
+
+        #expect(model.save() == .reachedGoal)
+    }
+
+    @Test("A save past a goal already reached plays the success tap")
+    func aSavePastAReachedGoalPlaysTheSuccessTap() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 140, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140, at: .days(ago: 5))
+
+        let model = fixture.logSheetModel(for: exercise)
+        model.advance()
+        model.tapNumber()
+        type("145", into: model)
+
+        #expect(model.save() == .saved)
+    }
+
+    @Test("Raising an old entry past the goal plays the goal's haptic")
+    func raisingAnOldEntryPastTheGoalPlaysItsHaptic() throws {
+        let fixture = try LibraryFixture()
+        let exercise = fixture.exercise("Bench Press")
+        fixture.log(exercise, reps: 5, weight: 100, on: .days(ago: 9))
+        fixture.log(exercise, reps: 5, weight: 120, on: .days(ago: 2))
+        GoalScope.exercise(exercise).set(reps: 5, weight: 140)
+        let old = try #require(exercise.entries?.first { $0.weight == 100 })
+
+        let model = fixture.logSheetModel(for: exercise, editing: old)
+        model.advance()
+        model.tapNumber()
+        type("140", into: model)
+
+        #expect(model.save() == .reachedGoal)
     }
 
     @Test("A thumb held on a key does not become a number")
