@@ -107,7 +107,7 @@ struct LibraryLayoutTests {
         #expect(sections[1].rows(at: .xxxLarge).map { $0.map(\.name) } == [["Bench Press", "Dip"]])
     }
 
-    @Test("At an accessibility text size every tile takes a row of its own (SPEC §15.6)")
+    @Test("At an accessibility text size every tile takes a row of its own")
     func accessibilitySizesLayOneTileToARow() throws {
         let fixture = try LibraryFixture()
         let legs = fixture.group("Legs", sortIndex: 0)

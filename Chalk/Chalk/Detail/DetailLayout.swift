@@ -160,6 +160,9 @@ struct ZoneTabs: View {
                 } label: {
                     Text("Z\(zone)")
                         .font(.callout)
+                        // On the label alone: the Large Content Viewer reads the
+                        // button's own text size, which is what shows it.
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundStyle(style(zone))
                         .frame(width: 52, height: 32, alignment: .leading)
                         .contentShape(.rect)
@@ -169,7 +172,6 @@ struct ZoneTabs: View {
                 .accessibilityAddTraits(zone == selected ? .isSelected : [])
             }
         }
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func style(_ zone: Int) -> AnyShapeStyle {
@@ -180,7 +182,7 @@ struct ZoneTabs: View {
 
 extension String {
     /// This text with no line break after a `/`, so `km/h` and `6:00 /km` never wrap
-    /// apart at a large text size (SPEC §15.4), as a tile's last entry keeps its units.
+    /// apart at a large text size (SPEC §15.4), as `doneKeepingUnits` keeps a tile's.
     var unbrokenAtSlashes: String {
         replacingOccurrences(of: "/", with: "/\u{2060}")
     }
@@ -191,17 +193,42 @@ extension String {
 /// 110 pt does it scroll — at any text size — **with the chart back at its full 210 pt**,
 /// since space is no longer what it is short of. The Log bar is the screen's
 /// `safeAreaInset`, outside this, so it stays pinned either way.
+///
+/// **Once it has scrolled it keeps scrolling** until the text size changes or the screen
+/// closes. On a screen at the edge of fitting, a scrub that rewraps the aside would
+/// otherwise flip it between the two mid-drag, dropping the scrub and jumping the chart.
 struct DetailBody<Content: View>: View {
     @ViewBuilder let content: Content
 
+    /// The branch `ViewThatFits` has on screen, as each reports from its frame — not
+    /// `onAppear`, which fires on a branch it only measures.
+    @State private var shown: Branch?
+    @State private var scrolled = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private enum Branch { case fits, scrolls }
+
     var body: some View {
         ViewThatFits(in: .vertical) {
+            // Latched by refusing to fit rather than by swapping views, so latching
+            // rebuilds nothing under a finger.
             content
+                .frame(minHeight: scrolled ? .greatestFiniteMagnitude : nil)
+                .onGeometryChange(for: Bool.self) { _ in true } action: { _ in shown = .fits }
             ScrollView {
                 content
                     .environment(\.detailScrolls, true)
             }
+            .onGeometryChange(for: Bool.self) { _ in true } action: { _ in shown = .scrolls }
         }
+        // Only a scroll that holds latches: a screen's first layout passes can briefly
+        // pick it on the way to fitting.
+        .task(id: shown) {
+            guard shown == .scrolls else { return }
+            try? await Task.sleep(for: .milliseconds(500))
+            if !Task.isCancelled { scrolled = true }
+        }
+        .onChange(of: dynamicTypeSize) { scrolled = false }
     }
 }
 

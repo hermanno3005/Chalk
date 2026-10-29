@@ -29,7 +29,7 @@ struct ExerciseTile: View {
                 Text(tile.name)
                     .font(.subheadline.weight(.semibold))
                     // Two lines held, so names line up, and **never cut short**: a
-                    // long name at a large text size takes what it needs (SPEC §15.6).
+                    // long name at a large text size takes what it needs (SPEC §15.4).
                     .lineLimit(2...)
                     .multilineTextAlignment(.leading)
                     .foregroundStyle(.primary)

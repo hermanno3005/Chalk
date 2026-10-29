@@ -5,12 +5,12 @@ import SwiftUI
 // where the screen gives way as SPEC §15.4 orders it: the chart shrinks to 110 pt, then
 // the screen scrolls with the chart at 210 pt and the Log bar pinned.
 
-#Preview("Lift") {
-    DetailPreview.lift()
+#Preview("Exercise") {
+    DetailPreview.exercise()
 }
 
-#Preview("Lift, AX5") {
-    DetailPreview.lift()
+#Preview("Exercise, AX5") {
+    DetailPreview.exercise()
         .dynamicTypeSize(.accessibility5)
 }
 
@@ -23,11 +23,11 @@ import SwiftUI
         .dynamicTypeSize(.accessibility5)
 }
 
-/// An in-memory library holding one lift and one speed erg with a goal each, so the
+/// An in-memory library holding one exercise and one speed erg with a goal each, so the
 /// previews above are the real screens over the real models.
 private enum DetailPreview {
     @MainActor
-    static func lift() -> some View {
+    static func exercise() -> some View {
         guard let (context, defaults) = store() else { return AnyView(Text("No preview store.")) }
         let bench = Exercise(name: "Bench Press")
         bench.goalReps = 5

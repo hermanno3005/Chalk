@@ -263,9 +263,10 @@ struct ErgDetailView: View {
             .font(.callout)
             .foregroundStyle(.primary)
             .frame(height: 32)
+            // Capped with the tabs beside it, for the same width, and on the label alone
+            // as theirs is, so the Large Content Viewer still shows (SPEC §15.4).
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
-        // Capped with the tabs beside it, for the same width (SPEC §15.4).
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .accessibilityShowsLargeContentViewer {
             Label("\(EnduranceText.incline(selection.incline)) %", systemImage: "chevron.up.chevron.down")
         }
