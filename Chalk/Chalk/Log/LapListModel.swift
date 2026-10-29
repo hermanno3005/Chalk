@@ -257,6 +257,32 @@ final class LapListModel: Identifiable {
         return rows.count == 1 ? "Discard this entry?" : "Discard \(rows.count) entries?"
     }
 
+    // MARK: - A result opened over the grid
+
+    /// Whether a Spotlight result or a shortcut is waiting on this grid's answer, asked
+    /// in Cancel's own words (SPEC §15.5).
+    private(set) var isHoldingAnOpen = false
+    @ObservationIgnored private var heldOpen: (() -> Void)?
+
+    /// Holds `open` until the grid is discarded.
+    func hold(_ open: @escaping () -> Void) {
+        heldOpen = open
+        isHoldingAnOpen = true
+    }
+
+    /// **Discard**: closes everything and opens the result.
+    func discardForHeldOpen() {
+        let open = heldOpen
+        keepEditing()
+        open?()
+    }
+
+    /// **Keep editing**: stays on the grid and drops the result, which never fires later.
+    func keepEditing() {
+        heldOpen = nil
+        isHoldingAnOpen = false
+    }
+
     // MARK: - Validation
 
     private static let heartRates = Double(HeartRateZones.range.lowerBound)...Double(HeartRateZones.range.upperBound)

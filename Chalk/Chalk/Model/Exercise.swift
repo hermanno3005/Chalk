@@ -67,6 +67,9 @@ final class Exercise {
     /// Whether this row is an erg: it speaks a unit.
     var isErg: Bool { unit != nil }
 
+    /// The half this row belongs to: an erg's is endurance, read off its unit (ADR-0008).
+    var half: Half { isErg ? .endurance : .strength }
+
     init(
         id: UUID = UUID(),
         name: String = "",

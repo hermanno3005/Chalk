@@ -44,6 +44,16 @@ final class LibraryModel {
     /// Where the half is held. A device preference, never part of the record.
     static let halfKey = "com.hermannaust.Chalk.half"
 
+    /// What is pushed on top of the library. A path rather than `NavigationLink`-per-tile:
+    /// a tile is a plain view so Arrange mode (#30) can drag it, and a link would claim
+    /// the press exactly as a `Button` does (SPEC §7.2). Held here rather than in the
+    /// view, so a Spotlight result or a shortcut can replace it (SPEC §15.5).
+    var path: [Exercise] = []
+
+    /// How many times something opened from outside Chalk has closed everything over the
+    /// library: the view closes its sheets, ends Arrange and drops the keyboard each time.
+    private(set) var closings = 0
+
     /// The gyms, and the gym you are standing in (SPEC §7.4). Held here because the
     /// library's overflow is where the current gym is chosen, and because the create
     /// sheet's gym-bound branch and the detail screen's opening cascade both read it.
@@ -242,17 +252,12 @@ final class LibraryModel {
     /// nothing. Returns whether anything was filed.
     @discardableResult
     func assign(_ exercise: Exercise, to group: ExerciseGroup?) -> Bool {
-        if let group, group.half != Self.half(of: exercise).rawValue { return false }
+        if let group, group.half != exercise.half.rawValue { return false }
         exercise.group = group
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
         refresh()
         return true
-    }
-
-    /// The half a row belongs to: an erg's is endurance, read off its unit (ADR-0008).
-    private static func half(of exercise: Exercise) -> Half {
-        exercise.isErg ? .endurance : .strength
     }
 
     /// The same, for a **drop**, which carries an id rather than a model — a
@@ -263,11 +268,62 @@ final class LibraryModel {
     /// the drop reports itself as not accepted.
     @discardableResult
     func assign(exerciseWithID id: UUID, to group: ExerciseGroup?) -> Bool {
-        var descriptor = FetchDescriptor<Exercise>(predicate: #Predicate { $0.id == id })
-        descriptor.fetchLimit = 1
-        guard let exercise = try? context.fetch(descriptor).first else { return false }
+        guard let exercise = exercise(withID: id) else { return false }
 
         return assign(exercise, to: group)
+    }
+
+    private func exercise(withID id: UUID) -> Exercise? {
+        var descriptor = FetchDescriptor<Exercise>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    /// Opens the exercise or erg with this id on its detail screen, **in its own half**,
+    /// as a Spotlight result or an Open shortcut does (SPEC §15.5).
+    ///
+    /// **The path is replaced, not appended to**, so Back lands on that half's home screen
+    /// (SPEC §9, §13.5), and the half switches as the home screen's control would, which
+    /// the app then reopens on. Whatever is over the library closes as a swipe-down would.
+    ///
+    /// Returns `false` for an id this library no longer holds, a result Spotlight has not
+    /// yet forgotten, and opens nothing.
+    @discardableResult
+    func open(exerciseWithID id: UUID) -> Bool {
+        guard let exercise = exercise(withID: id) else { return false }
+        // Chalk comes forward as you left it, sheet, grid and prompt included, so going
+        // back to the erg you were logging never asks.
+        guard path.last !== exercise else { return true }
+
+        // A touched grid asks in its own words: Discard opens the result and Keep editing
+        // drops it. Nothing waits to fire when the sheet closes.
+        if let grid, grid.isTouched {
+            grid.hold { [weak self] in self?.open(exercise) }
+        } else {
+            open(exercise)
+        }
+        return true
+    }
+
+    private func open(_ exercise: Exercise) {
+        show(exercise.half)
+        endSearch()
+        closings += 1
+        path = [exercise]
+    }
+
+    /// The lap-list grid on screen, wherever it was opened from: the only sheet a result
+    /// can't close silently, because a swipe-down can't close it either once it is
+    /// touched (SPEC §13.7). Told by the sheet as it appears and disappears.
+    @ObservationIgnored private weak var grid: LapListModel?
+
+    func presented(_ grid: LapListModel) {
+        self.grid = grid
+    }
+
+    func dismissed(_ grid: LapListModel) {
+        grid.keepEditing()
+        if self.grid === grid { self.grid = nil }
     }
 
     /// The detail screen's state for one exercise (SPEC §5), made here so the store's

@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftData
 import SwiftUI
 
@@ -5,10 +6,16 @@ import SwiftUI
 struct ChalkApp: App {
     @State private var root: Root
 
+    /// How Spotlight and Shortcuts reach the library (SPEC §15.5). Registered before the
+    /// store opens, so an intent never finds it missing, even when the store failed.
+    private static let router = LibraryRouter(sink: SpotlightIndex())
+
     init() {
         // A backup shared before the app last quit is no longer being copied anywhere,
         // and Chalk keeps none of its own (ADR-0010).
         BackupFile.clear()
+        let router = Self.router
+        AppDependencyManager.shared.add(dependency: router)
         _root = State(initialValue: Self.open())
     }
 
@@ -42,10 +49,13 @@ struct ChalkApp: App {
             // It is made before onboarding is decided, since it stores kg and km over a
             // library that isn't empty, which then never sees onboarding (SPEC §15.3).
             let library = LibraryModel(context: container.mainContext)
-            return OnboardingModel.isShown(defaults: .standard, context: container.mainContext)
+            let onboarding = OnboardingModel.isShown(defaults: .standard, context: container.mainContext)
+            router.opened(container, library: onboarding ? nil : library)
+            return onboarding
                 ? .onboarding(OnboardingModel(defaults: .standard, container: container))
                 : .library(container, library)
         case .failed(let storePath, _):
+            router.failed()
             return .unavailable(storePath)
         }
     }

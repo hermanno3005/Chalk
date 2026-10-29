@@ -10,6 +10,9 @@ struct LapListSheet: View {
     @State var model: LapListModel
 
     @Environment(\.dismiss) private var dismiss
+    /// The library under the sheet, told while the grid is up so a Spotlight result asks
+    /// here first (SPEC §15.5). Absent in a preview.
+    @Environment(LibraryModel.self) private var library: LibraryModel?
     @State private var confirmingDiscard = false
     /// The gym `New machine here` was tapped in, held while its one-field alert is up —
     /// always asked, as strength's is (SPEC §6.4).
@@ -72,15 +75,24 @@ struct LapListSheet: View {
                         // An untouched sheet closes without asking.
                         if model.isTouched { confirmingDiscard = true } else { dismiss() }
                     }
+                    // **One question for Cancel and for a result opened over the grid**
+                    // (SPEC §15.5), so a result arriving while Cancel's is up takes it
+                    // over rather than waiting behind it. The held result is answered
+                    // only by these buttons, never by the dialog's own dismissal.
                     .confirmationDialog(
                         model.discardConfirmation,
-                        isPresented: $confirmingDiscard,
+                        isPresented: Binding(
+                            get: { confirmingDiscard || model.isHoldingAnOpen },
+                            set: { if !$0 { confirmingDiscard = false } }
+                        ),
                         titleVisibility: .visible
                     ) {
                         Button(discardTitle, role: .destructive) {
-                            dismiss()
+                            if model.isHoldingAnOpen { model.discardForHeldOpen() } else { dismiss() }
                         }
-                        Button("Keep Typing", role: .cancel) {}
+                        Button(model.isHoldingAnOpen ? "Keep Editing" : "Keep Typing", role: .cancel) {
+                            model.keepEditing()
+                        }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -93,6 +105,15 @@ struct LapListSheet: View {
                     .disabled(!model.canSave)
                 }
             }
+            // What a swipe-down would do to what is over the grid, so its question can
+            // show: the gym sheet closes and the naming alert closes as cancelled.
+            .onChange(of: model.isHoldingAnOpen) { _, holding in
+                guard holding else { return }
+                naming = nil
+                creatingGym = false
+            }
+            .onAppear { library?.presented(model) }
+            .onDisappear { library?.dismissed(model) }
             .namingMachine(at: $naming, check: { model.nearModel(named: $1, at: $0) }) { gym, name in
                 model.createMachine(at: gym, named: name)
             }

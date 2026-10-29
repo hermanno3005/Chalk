@@ -10,10 +10,6 @@ struct LibraryView: View {
     let model: LibraryModel
 
     @State private var creating: CreateRequest?
-    /// What is pushed on top of the library. A path of its own rather than
-    /// `NavigationLink`-per-tile: a tile is a plain view so Arrange mode (#30) can drag
-    /// it, and a link would claim the press exactly as a `Button` does (SPEC §7.2).
-    @State private var opened: [Exercise] = []
     /// The exercise *Log again* has the log sheet open over, captured at the tap. Held
     /// rather than re-read from `model.resume` at presentation: the card moves the
     /// instant anything is logged, and a sheet in flight must not change the exercise
@@ -48,7 +44,8 @@ struct LibraryView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        NavigationStack(path: $opened) {
+        @Bindable var model = model
+        return NavigationStack(path: $model.path) {
             keyboardDismissingContent
                 .chalkScreen()
                 .navigationDestination(for: Exercise.self) { exercise in
@@ -66,11 +63,15 @@ struct LibraryView: View {
                 // rides along to a screen with no field under it — unless something
                 // resigns it as the push begins. Dropping it here also means a swipe
                 // back reveals the grid rather than a stale results list.
-                .onChange(of: opened) { previous, current in
+                .onChange(of: model.path) { previous, current in
                     guard current.count > previous.count else { return }
                     searchFocused = false
                     model.endSearch()
                 }
+                // A Spotlight result or a shortcut does what a swipe-down would do to
+                // everything over the library (SPEC §15.5). A sheet over a detail screen
+                // it replaced went with that screen.
+                .onChange(of: model.closings) { closeEverything() }
                 // Never drawn — the switch stands in its place — but it is what a
                 // pushed screen's back button says.
                 .navigationTitle(model.half.title)
@@ -159,6 +160,21 @@ struct LibraryView: View {
                     NewGymSheet(gyms: model.gyms) { model.gyms.select($0) }
                 }
         }
+        // Read by the lap-list grid, at any depth, which a result has to ask first.
+        .environment(model)
+    }
+
+    /// Closes every sheet the library has open, silently, ends Arrange as Done does and
+    /// puts the keyboard away. Alerts inside those sheets close with them, as cancelled.
+    private func closeEverything() {
+        creating = nil
+        loggingAgain = nil
+        creatingGym = false
+        editingGroups = false
+        managingGyms = false
+        settings = nil
+        arranging = false
+        searchFocused = false
     }
 
     /// The `Strength | Endurance` control (SPEC §13.5). Leaving a half leaves its modes
@@ -267,7 +283,7 @@ struct LibraryView: View {
                 if let resume = model.resume, !arranging {
                     ResumeCard(
                         resume: resume,
-                        onOpen: { opened.append(resume.exercise) },
+                        onOpen: { model.path.append(resume.exercise) },
                         onLogAgain: { loggingAgain = LoggingRequest(exercise: resume.exercise) }
                     )
                 }
@@ -304,7 +320,7 @@ struct LibraryView: View {
                                 tile: tile,
                                 arranging: arranging,
                                 groups: model.groups.groups,
-                                onOpen: { opened.append(tile.exercise) },
+                                onOpen: { model.path.append(tile.exercise) },
                                 onAssign: { model.assign(tile.exercise, to: model.groups.group(id: $0)) }
                             )
                             .gridCellColumns(row.count == 1 ? columns : 1)
@@ -358,7 +374,7 @@ struct LibraryView: View {
         List {
             ForEach(matches) { tile in
                 Button {
-                    opened.append(tile.exercise)
+                    model.path.append(tile.exercise)
                 } label: {
                     Text(tile.name)
                         .foregroundStyle(.primary)
