@@ -29,7 +29,7 @@ struct ZoneLine {
         let intensity: Double
         /// The window's mean average heart rate, in whole bpm.
         let averageHeartRate: Int
-        /// How many entries the window holds — the readout's `12 entries ›`, and the
+        /// How many entries the window holds — the `Entries 12 ›` row, and the
         /// rows above the history sheet's divider.
         let entryCount: Int
     }
@@ -130,7 +130,7 @@ struct ZoneLine {
     }
 
     /// Every zone's line, Z1 to Z5, at one incline, from the same scoped entries — what the
-    /// zone buttons dim by and the no-line quotes read. Every line is empty without zones.
+    /// zone tabs dim by and the no-line quotes read. Every line is empty without zones.
     static func lines(
         entries: [Entry],
         zones: HeartRateZones?,

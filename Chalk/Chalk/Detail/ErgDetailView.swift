@@ -40,10 +40,11 @@ struct ErgDetailView: View {
                     name: model.name,
                     number: model.readout?.intensity ?? "—",
                     aside: model.readout?.aside,
-                    dimmed: model.readout == nil
+                    dimmed: model.readout == nil,
+                    // The readout opens the point's sheet, as the `Entries` row does
+                    // (SPEC §13.9). A zone with no line hands back no sheet.
+                    opensHistory: model.readout != nil
                 )
-                // The readout opens the point's sheet, as the `Entries` row does
-                // (SPEC §13.9). A zone with no line hands back no sheet.
                 .onTapGesture { history = model.historySheet() }
                 // Under the number, whatever zone is selected: it is the goal's point,
                 // not the screen's (SPEC §13.10).
@@ -218,23 +219,12 @@ struct ErgDetailView: View {
         }
     }
 
-    /// Opens Settings, which is where zones are set (SPEC §13.3).
+    /// Opens Settings, which is where zones are set (SPEC §13.3): a row like the ones
+    /// under the line, with nothing to read on its trailing end.
     private var zonesRow: some View {
-        Button {
+        FactRow(label: "Set your heart-rate zones", value: "") {
             settings = model.settings()
-        } label: {
-            HStack {
-                Label("Set your heart-rate zones", systemImage: "heart")
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .background(Color.grey.opacity(0.1), in: .rect(cornerRadius: 10))
         }
-        .buttonStyle(.plain)
     }
 
     /// The zones as text tabs, with the incline menu at the trailing end on a speed erg.
@@ -298,7 +288,7 @@ struct ErgDetailView: View {
             if let pace = readout.pace {
                 FactRow(label: "Pace", value: pace)
             }
-            FactRow(label: "Heart rate", value: readout.heartRate)
+            FactRow(label: "Heart rate", value: readout.averageHeartRate)
             FactRow(label: "Entries", value: "\(readout.entryCount)") {
                 history = model.historySheet()
             }

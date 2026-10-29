@@ -35,7 +35,7 @@ struct ErgReadoutTests {
         #expect(model.readout?.pace == "4:00 /km")
         // The aside beside the number, and the rows under the line (SPEC §13.8).
         #expect(model.readout?.aside == "6:00 in Z4")
-        #expect(model.readout?.heartRate == "164 bpm")
+        #expect(model.readout?.averageHeartRate == "164 bpm")
         #expect(model.readout?.entryCount == 1)
     }
 
@@ -60,7 +60,7 @@ struct ErgReadoutTests {
         model.select(duration: 270)
         #expect(model.selection?.duration == 180)
         #expect(model.readout?.aside == "3:00 in Z4")
-        #expect(model.readout?.heartRate == "165 bpm")
+        #expect(model.readout?.averageHeartRate == "165 bpm")
         #expect(model.readout?.entryCount == 1)
     }
 
@@ -117,11 +117,11 @@ struct ErgReadoutTests {
         #expect(readout.intensity.decimalPoint == "15.0 km/h")
         #expect(readout.pace == "4:00 /km")
         #expect(readout.aside == "6:00 in Z4")
-        #expect(readout.heartRate == "164 bpm")
+        #expect(readout.averageHeartRate == "164 bpm")
         #expect(readout.entryCount == 3)
     }
 
-    @Test("Only a speed gets a pace under it")
+    @Test("Only a speed gets a pace row")
     func onlyASpeedHasAPace() throws {
         let fixture = try LibraryFixture()
         fixture.zones(117, 140, 158, 170)
@@ -135,20 +135,20 @@ struct ErgReadoutTests {
         #expect(split.intensity == "1:45 /500 m")
         #expect(split.pace == nil)
         #expect(split.aside == "4:00 in Z3")
-        #expect(split.heartRate == "150 bpm")
+        #expect(split.averageHeartRate == "150 bpm")
         #expect(split.entryCount == 1)
 
         let level = try #require(fixture.ergDetailModel(for: stairs).readout)
         #expect(level.intensity == "Level 12")
         #expect(level.pace == nil)
         #expect(level.aside == "10:00 in Z2")
-        #expect(level.heartRate == "130 bpm")
+        #expect(level.averageHeartRate == "130 bpm")
         #expect(level.entryCount == 1)
     }
 
-    // MARK: - Zone buttons
+    // MARK: - Zone tabs
 
-    @Test("A zone button moves the duration onto that zone's line")
+    @Test("A zone tab moves the duration onto that zone's line")
     func aZoneSwitchSnapsTheDuration() throws {
         let fixture = try LibraryFixture()
         fixture.zones(117, 140, 158, 170)
@@ -200,7 +200,7 @@ struct ErgReadoutTests {
 
         #expect(model.readout?.intensity == "205 W")
         #expect(model.readout?.aside == "6:00 in Z3")
-        #expect(model.readout?.heartRate == "150 bpm")
+        #expect(model.readout?.averageHeartRate == "150 bpm")
         #expect(model.readout?.entryCount == 2)
     }
 
@@ -219,7 +219,7 @@ struct ErgReadoutTests {
         let model = fixture.ergDetailModel(for: treadmill)
         #expect(model.machine === atHome)
         #expect(model.readout?.aside == "6:00 in Z4")
-        #expect(model.readout?.heartRate == "164 bpm")
+        #expect(model.readout?.averageHeartRate == "164 bpm")
         #expect(model.readout?.entryCount == 1)
 
         model.select(atAway)
@@ -228,7 +228,7 @@ struct ErgReadoutTests {
         #expect(model.selection == .init(zone: 4, duration: 360, incline: 0))
         #expect(model.readout?.intensity.decimalPoint == "13.5 km/h")
         #expect(model.readout?.aside == "6:00 in Z4")
-        #expect(model.readout?.heartRate == "166 bpm")
+        #expect(model.readout?.averageHeartRate == "166 bpm")
         #expect(model.readout?.entryCount == 1)
     }
 
@@ -272,7 +272,7 @@ struct ErgReadoutTests {
         #expect(model.inclines.isEmpty)
         #expect(model.readout?.intensity == "Level 13")
         #expect(model.readout?.aside == "10:00 in Z2")
-        #expect(model.readout?.heartRate == "130 bpm")
+        #expect(model.readout?.averageHeartRate == "130 bpm")
         #expect(model.readout?.entryCount == 2)
     }
 
@@ -299,7 +299,7 @@ struct ErgReadoutTests {
         #expect(!model.needsZones)
         #expect(model.selection == .init(zone: 4, duration: 360, incline: 0))
         #expect(model.readout?.aside == "6:00 in Z4")
-        #expect(model.readout?.heartRate == "164 bpm")
+        #expect(model.readout?.averageHeartRate == "164 bpm")
         #expect(model.readout?.entryCount == 1)
     }
 
@@ -327,7 +327,7 @@ struct ErgReadoutTests {
         model.select(zone: 4)
         #expect(model.selection?.duration == 360)
         #expect(model.readout?.aside == "6:00 in Z4")
-        #expect(model.readout?.heartRate == "164 bpm")
+        #expect(model.readout?.averageHeartRate == "164 bpm")
         #expect(model.readout?.entryCount == 1)
         #expect(model.overTheAxisCaption == "2 entries over 20:00")
 

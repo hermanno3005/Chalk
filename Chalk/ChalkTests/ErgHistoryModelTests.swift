@@ -58,7 +58,7 @@ struct ErgHistoryModelTests {
         let model = try #require(detail.historySheet())
 
         #expect(detail.readout?.aside == "6:00 in Z4")
-        #expect(detail.readout?.heartRate == "164 bpm")
+        #expect(detail.readout?.averageHeartRate == "164 bpm")
         #expect(detail.readout?.entryCount == 12)
         #expect(model.rows.count == 12)
         #expect(model.older.count == 3)
@@ -177,7 +177,7 @@ struct ErgHistoryModelTests {
 
         #expect(model.rows.map(\.intensity) == ["262 W"])
         #expect(detail.readout?.aside == "6:00 in Z4")
-        #expect(detail.readout?.heartRate == "164 bpm")
+        #expect(detail.readout?.averageHeartRate == "164 bpm")
         #expect(detail.readout?.entryCount == 1)
         #expect(detail.hasLine(3))
 
@@ -212,7 +212,7 @@ struct ErgHistoryModelTests {
         #expect(model.older.isEmpty)
         // Behind the sheet, the readout has re-read: the same ten entries.
         #expect(detail.readout?.aside == "6:00 in Z4")
-        #expect(detail.readout?.heartRate == "164 bpm")
+        #expect(detail.readout?.averageHeartRate == "164 bpm")
         #expect(detail.readout?.entryCount == 10)
         #expect(try fixture.afterRelaunch().fetch(FetchDescriptor<Entry>()).count == 10)
     }

@@ -54,10 +54,10 @@ struct ExerciseDetailModelTests {
 
         let model = fixture.detailModel(for: exercise)
         model.select(home)
-        #expect(model.readout?.logged == 2)
+        #expect(model.readout?.entriesInScope == 2)
 
         model.select(away)
-        #expect(model.readout?.logged == 1)
+        #expect(model.readout?.entriesInScope == 1)
     }
 
     @Test("The selection stays where the finger lifted")

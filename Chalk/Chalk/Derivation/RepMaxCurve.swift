@@ -22,11 +22,14 @@ struct RepMaxCurve {
     /// How many entries stand behind each cell: the count of entries with `reps >= n`,
     /// for `n` in 1...12.
     ///
-    /// The `M` in the readout's `best for N reps · M records ›` — the screen's wording,
-    /// SPEC §5.1's — and exactly the rows the history sheet lists (§5.6), so it is
+    /// The `M` in the `Entries at N+ reps M ›` row under the curve (SPEC §5.1), and
+    /// exactly the rows the history sheet lists (§5.6), so it is
     /// derived here off the same pass rather than counted again against a second rule
     /// that could drift. Keyed wherever `best` is keyed, and absent everywhere else.
     let entriesBehind: [Int: Int]
+
+    /// Every lift derived from, reps above 12 included: the `K` in `Logged K entries`.
+    let entryCount: Int
 
     /// The Epley projection drawn behind the curve, for `n` in 1...12.
     ///
@@ -43,6 +46,7 @@ struct RepMaxCurve {
         var heaviest: [Int: Double] = [:]
         var reached: [Int: Int] = [:]
         var highestEstimated1RM: Double = 0
+        var entryCount = 0
 
         for entry in entries {
             guard entry.isALift else { continue }
@@ -50,6 +54,7 @@ struct RepMaxCurve {
             let cell = min(entry.reps, Self.repRange.upperBound)
             heaviest[cell] = max(heaviest[cell] ?? 0, entry.weight)
             reached[cell, default: 0] += 1
+            entryCount += 1
 
             let estimate = entry.weight * Self.epleyFactor(reps: entry.reps)
             highestEstimated1RM = max(highestEstimated1RM, estimate)
@@ -73,6 +78,7 @@ struct RepMaxCurve {
         }
         self.best = best
         self.entriesBehind = entriesBehind
+        self.entryCount = entryCount
 
         // A single estimated 1RM — the highest any one entry produces — projected back
         // across the axis. Drawn unconditionally whenever the curve is drawn at all.

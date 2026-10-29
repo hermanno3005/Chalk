@@ -34,8 +34,8 @@ struct ErgReading {
         let aside: String
         /// A speed's pace, its own row; nil on every other unit.
         let pace: String?
-        /// The point's mean heart rate, `164 bpm`.
-        let heartRate: String
+        /// The point's mean average heart rate, `164 bpm`.
+        let averageHeartRate: String
         /// The entries in the point, the rows of its sheet above the divider (§13.9).
         let entryCount: Int
     }
@@ -45,7 +45,7 @@ struct ErgReading {
     /// The scale a speed is written on, read live by the caller as the zones are.
     let distanceUnit: DistanceUnit
 
-    /// Nil until zones are set — the zones gate: no buttons, readout or line (SPEC §13.8).
+    /// Nil until zones are set — the zones gate: no tabs, readout or line (SPEC §13.8).
     let zones: HeartRateZones?
 
     /// Nil while there is nothing to look at: zones not set, or no valid interval on
@@ -53,7 +53,7 @@ struct ErgReading {
     private(set) var selection: Selection?
 
     /// Every zone's line, Z1 to Z5, on this scope at the selected incline — what the zone
-    /// buttons dim by. Empty with no selection.
+    /// tabs dim by. Empty with no selection.
     private(set) var lines: [Int: ZoneLine] = [:]
 
     /// The incline menu's choices on a speed erg: every incline a valid interval on this
@@ -130,7 +130,7 @@ struct ErgReading {
             intensity: EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false),
             aside: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone)",
             pace: unit == .speed && point.intensity > 0 ? EnduranceText.pace(point.intensity, distanceUnit) : nil,
-            heartRate: "\(point.averageHeartRate) bpm",
+            averageHeartRate: "\(point.averageHeartRate) bpm",
             entryCount: point.entryCount
         )
     }
@@ -145,7 +145,7 @@ struct ErgReading {
 
     // MARK: - Selecting
 
-    /// A zone button. Every zone is tappable, a dimmed one too; the duration moves onto
+    /// A zone tab. Every zone is tappable, a dimmed one too; the duration moves onto
     /// the nearest one done in the new zone, or stays put where it has no line.
     mutating func select(zone: Int) {
         guard selection != nil, ZoneLine.zones.contains(zone) else { return }

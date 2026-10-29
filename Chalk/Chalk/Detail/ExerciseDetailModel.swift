@@ -15,7 +15,7 @@ final class ExerciseDetailModel {
     /// What the readout above the curve says. Absent altogether when there is no curve
     /// at all — the zero-entry screen has no readout (SPEC §5.4).
     struct Readout: Equatable {
-        /// The selected rep count, the `N` in `best for N reps`.
+        /// The selected rep count, the `N` in `× N` and `Entries at N+ reps`.
         let reps: Int
         /// `best[N]`, the large number — **and nil where that cell is unproven.** An
         /// absent cell is "not yet proven", never zero (SPEC §4), so the readout shows
@@ -25,9 +25,12 @@ final class ExerciseDetailModel {
         let entriesBehind: Int
         /// Every entry in scope, the `K` in `Logged K entries` (SPEC §5.1): one machine's
         /// on a gym-bound exercise, reps above 12 included.
-        let logged: Int
+        let entriesInScope: Int
         /// The scale `weight` is written on.
         let weightUnit: WeightUnit
+
+        /// The aside beside the number, `× 5`.
+        var aside: String { "× \(reps)" }
 
         /// The large number with its unit, `52.5 kg`, or `—` on an unproven cell.
         var weightWithUnit: String {
@@ -38,9 +41,6 @@ final class ExerciseDetailModel {
     let exercise: Exercise
 
     private(set) var curve = RepMaxCurve(entries: [])
-
-    /// How many entries the curve was derived from — the scope's, not the exercise's.
-    private var entriesInScope = 0
 
     /// Your numbers on a sibling machine, where the one in scope has none of its own —
     /// the line the empty state carries (SPEC §5.4). `nil` for a free-weight exercise,
@@ -134,7 +134,7 @@ final class ExerciseDetailModel {
             reps: selectedReps,
             weight: curve.best[selectedReps],
             entriesBehind: curve.entriesBehind[selectedReps] ?? 0,
-            logged: entriesInScope,
+            entriesInScope: curve.entryCount,
             weightUnit: weightUnit
         )
     }
@@ -373,9 +373,7 @@ final class ExerciseDetailModel {
             machineMenu = MachineMenu(machines: [])
         }
 
-        let entries = MachineScope.entries(of: exercise, on: machine)
-        entriesInScope = entries.count
-        curve = RepMaxCurve(entries: entries)
+        curve = RepMaxCurve(entries: MachineScope.entries(of: exercise, on: machine))
         hint = MachineHint.lookUp(exercise, scopedTo: machine, weightUnit: weightUnit)
         goal = GoalScope(exercise: exercise, machine: machine)?.goal
     }

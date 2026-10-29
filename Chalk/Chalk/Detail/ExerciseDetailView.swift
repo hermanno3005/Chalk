@@ -39,8 +39,9 @@ struct ExerciseDetailView: View {
                 DetailHead(
                     name: model.name,
                     number: readout.weightWithUnit,
-                    aside: "× \(readout.reps)",
-                    dimmed: readout.weight == nil
+                    aside: readout.aside,
+                    dimmed: readout.weight == nil,
+                    opensHistory: readout.weight != nil
                 )
                 .onTapGesture { history = model.historySheet() }
                 goalLine
@@ -200,7 +201,7 @@ struct ExerciseDetailView: View {
             )
             FactRow(
                 label: "Logged",
-                value: readout.logged == 1 ? "1 entry" : "\(readout.logged) entries"
+                value: readout.entriesInScope == 1 ? "1 entry" : "\(readout.entriesInScope) entries"
             )
         }
     }

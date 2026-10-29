@@ -41,8 +41,8 @@ extension Color {
 /// The detail screen's goal line: `Goal 140 × 5 · 40 kg to go`, led by the donut, both
 /// in the goal colour — and both grey once reached.
 ///
-/// **No `›`**, unlike the readout's subhead above it: two stacked tappable rows are told
-/// apart by the chevron, and this one opens a sheet about the goal, not a list.
+/// **No `›`**, unlike the rows under the chart: a `›` opens a list of entries, and this
+/// opens a sheet about the goal.
 struct GoalLineView: View {
     let line: GoalLine
 

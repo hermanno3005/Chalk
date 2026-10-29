@@ -2,7 +2,8 @@ import SwiftUI
 
 /// A zone with no line on the erg detail screen (SPEC §13.8): the text where the chart
 /// would be, and under it the nearest zones above and below that have one, each behind
-/// its zone as a tag — `Z5 3:00 at 16.5 km/h — too hard`.
+/// its zone in bold — `Z5 3:00 at 16.5 km/h — too hard`. **The zones take no colour**
+/// and no fill, as the tabs above it have none (SPEC §15.4).
 struct ErgNoLineView: View {
     let noLine: ErgNoLine
 
@@ -16,15 +17,12 @@ struct ErgNoLineView: View {
             ForEach(noLine.quotes, id: \.zone) { quote in
                 HStack(spacing: 6) {
                     Text("Z\(quote.zone)")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(Color.onAccent)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor, in: .rect(cornerRadius: 4))
+                        .fontWeight(.bold)
                     Text(quote.clause)
                         .font(.subheadline)
                         .monospacedDigit()
                 }
+                .font(.subheadline)
                 .accessibilityElement(children: .combine)
                 .padding(.top, 4)
             }

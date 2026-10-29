@@ -1,6 +1,6 @@
 import Foundation
 
-/// The one line a goal gets on a detail screen, under the readout's subhead, in either
+/// The one line a goal gets on a detail screen, under the number, in either
 /// half: `Goal 140 × 5 · 40 kg to go`, `Goal 15.5 km/h · 6:00 in Z4 · 1 % · 0.4 km/h to
 /// go`, led by a donut filled to `progress`. **It stays once reached**, greyed and
 /// reading `· reached` — no celebration, and no vanishing (SPEC §12.4, §13.10).

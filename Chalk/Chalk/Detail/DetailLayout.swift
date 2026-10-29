@@ -17,6 +17,8 @@ struct DetailHead: View {
     var number: String?
     var aside: String?
     var dimmed = false
+    /// Whether a tap on it opens the history sheet, which VoiceOver is told.
+    var opensHistory = false
 
     /// 40 pt at the default size, scaling with the large title (§15.4).
     @ScaledMetric(relativeTo: .largeTitle) private var numberSize: CGFloat = 40
@@ -49,12 +51,13 @@ struct DetailHead: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
+        .accessibilityAddTraits(opensHistory ? [.isHeader, .isButton] : .isHeader)
+        .accessibilityHint(opensHistory ? "Shows these entries" : "")
     }
 }
 
-/// One fact under the chart: the label in grey, the value bold at the trailing end, at
-/// least 45 pt tall and no divider. **A row that opens a sheet carries a grey `›` after
+/// One fact under the chart (SPEC §5.1, §13.8): the label in grey, the value bold at the
+/// trailing end, at least 45 pt tall and no divider. **A row that opens a sheet carries a grey `›` after
 /// its label**; one with no `action` is plain text and not a button.
 struct FactRow: View {
     let label: String

@@ -6,7 +6,7 @@ import SwiftData
 /// from the library model as `detail(for:)` is.
 ///
 /// The erg's name, the machine qualifier on a gym-bound erg, **the zone line read one
-/// zone at a time** — zone buttons, incline menu, scrub readout, the over-20:00 caption,
+/// zone at a time** — zone tabs, incline menu, readout, the over-20:00 caption,
 /// the zones gate and §5.4's empty state, all through `reading` — the Log bar's lap-list
 /// sheet, and the overflow's lifetime operations: Rename, *Change unit…* and Delete. The
 /// no-line text, hint, goal and the other sheets join it in later tickets.
@@ -210,7 +210,7 @@ final class ErgDetailModel {
     var distanceUnit: DistanceUnit { reading.distanceUnit }
 
     /// Zones not set: a *Set your heart-rate zones* row, opening Settings, stands in place
-    /// of the zone buttons, readout and line (SPEC §13.8). The Log bar works as normal.
+    /// of the zone tabs, readout and line (SPEC §13.8). The Log bar works as normal.
     var needsZones: Bool { reading.zones == nil }
 
     /// Nothing logged on the scope in view — §5.4's empty state. A gym-bound erg's scope
@@ -273,7 +273,7 @@ final class ErgDetailModel {
         }
     }
 
-    /// Settings, opened in place of the zone buttons while zones are not set. The screen
+    /// Settings, opened in place of the zone tabs while zones are not set. The screen
     /// re-reads when it closes: entries logged before the zones join the lines then.
     func settings() -> SettingsModel {
         SettingsModel(defaults: defaults, container: context.container)
