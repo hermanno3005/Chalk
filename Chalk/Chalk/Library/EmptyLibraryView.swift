@@ -20,6 +20,7 @@ struct EmptyLibraryView: View {
             Button(action: onCreate) {
                 Text(button)
                     .frame(maxWidth: 260)
+                    .foregroundStyle(Color.onAccent)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)

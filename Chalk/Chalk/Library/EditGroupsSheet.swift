@@ -38,11 +38,14 @@ struct EditGroupsSheet: View {
                     }
                 } header: {
                     Text("Groups")
+                        .foregroundStyle(.secondary)
                 } footer: {
                     Text("Drag to reorder — this is the order the sections appear in. Tap to rename. Deleting a group keeps its exercises and moves them to Ungrouped.")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
 
-                Section("Add a group") {
+                Section {
                     HStack {
                         TextField("Name", text: $newGroup)
                             .submitLabel(.done)
@@ -50,10 +53,15 @@ struct EditGroupsSheet: View {
                         Button("Add", action: add)
                             .disabled(trimmedNewGroup.isEmpty)
                     }
+                } header: {
+                    Text("Add a group")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
             }
             // Always arranging: the grips are the point of the screen.
             .environment(\.editMode, .constant(.active))
+            .chalkScreen()
             .navigationTitle("Groups")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

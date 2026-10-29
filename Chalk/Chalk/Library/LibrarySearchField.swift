@@ -39,7 +39,7 @@ struct LibrarySearchField: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(Color(.secondarySystemBackground), in: Capsule())
+        .background(Color.surface, in: Capsule())
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.bar)

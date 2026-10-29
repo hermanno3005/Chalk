@@ -46,6 +46,7 @@ struct OnboardingView: View {
             Button(action: model.pick) {
                 Text("Continue")
                     .frame(maxWidth: 260)
+                    .foregroundStyle(Color.onAccent)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -58,6 +59,7 @@ struct OnboardingView: View {
             .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity)
+        .chalkScreen()
         .fileImporter(isPresented: $pickingBackup, allowedContentTypes: [.json]) { picked in
             guard case .success(let url) = picked else { return }
             model.restore(contentsOf: url)

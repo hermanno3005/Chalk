@@ -70,6 +70,7 @@ struct ErgDetailView: View {
         .padding(.horizontal)
         .padding(.top, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .chalkScreen()
         .navigationTitle(model.name)
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) { logBar }
@@ -178,7 +179,7 @@ struct ErgDetailView: View {
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
-                .font(.title3.weight(.medium))
+                .font(.title3.weight(.semibold))
             Text("Log a block and what you held in each zone starts here.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -215,7 +216,7 @@ struct ErgDetailView: View {
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 14)
-            .background(Color.secondary.opacity(0.1), in: .rect(cornerRadius: 10))
+            .background(Color.grey.opacity(0.1), in: .rect(cornerRadius: 10))
         }
         .buttonStyle(.plain)
     }
@@ -234,10 +235,10 @@ struct ErgDetailView: View {
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 40, height: 32)
                         .foregroundStyle(
-                            isSelected ? Color.white : hasLine ? Color.primary : Color.secondary.opacity(0.5)
+                            isSelected ? Color.onAccent : hasLine ? Color.primary : Color.grey.opacity(0.5)
                         )
                         .background(
-                            isSelected ? Color.accentColor : Color.secondary.opacity(hasLine ? 0.14 : 0.05),
+                            isSelected ? Color.accentColor : Color.grey.opacity(hasLine ? 0.14 : 0.05),
                             in: .rect(cornerRadius: 8)
                         )
                 }
@@ -263,10 +264,10 @@ struct ErgDetailView: View {
             }
         } label: {
             Label("\(EnduranceText.incline(selection.incline)) %", systemImage: "arrow.up.right")
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.secondary.opacity(0.12), in: .capsule)
+                .background(Color.grey.opacity(0.12), in: .capsule)
         }
         .accessibilityLabel("Incline \(EnduranceText.incline(selection.incline)) percent")
     }
@@ -276,12 +277,12 @@ struct ErgDetailView: View {
     private func readoutView(_ readout: ErgReading.Readout) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(readout.intensity)
-                .font(.system(size: 46, weight: .semibold, design: .rounded))
+                .font(.system(size: 46, weight: .bold))
                 .monospacedDigit()
                 .contentTransition(.numericText())
             if let pace = readout.pace {
                 Text(pace)
-                    .font(.title3.weight(.medium))
+                    .font(.title3.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
@@ -311,6 +312,7 @@ struct ErgDetailView: View {
         } label: {
             Text("Log")
                 .font(.headline)
+                .foregroundStyle(Color.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
         }

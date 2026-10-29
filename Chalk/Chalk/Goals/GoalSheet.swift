@@ -26,6 +26,7 @@ struct GoalSheet: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
+            .chalkScreen()
             .navigationTitle(model.hasGoal ? "Change goal" : "Set a goal")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

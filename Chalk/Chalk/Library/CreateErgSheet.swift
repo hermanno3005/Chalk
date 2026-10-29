@@ -49,6 +49,7 @@ struct CreateErgSheet: View {
                         Text(LibraryLayout.ungroupedTitle).tag(UUID?.none)
                     }
                 }
+                .chalkRows()
 
                 Section {
                     Picker("Unit", selection: $draft.unit) {
@@ -60,7 +61,9 @@ struct CreateErgSheet: View {
                     }
                 } footer: {
                     Text("What the console shows, and what you set. It cannot change once you have logged on this erg.")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
 
                 Section {
                     Picker("Kind", selection: $draft.kind) {
@@ -73,8 +76,11 @@ struct CreateErgSheet: View {
                     Text(draft.kind == .gymBound
                          ? "Does the same number mean the same thing on every one of these machines, anywhere? No — so its numbers are kept per machine."
                          : "Does the same number mean the same thing on every one of these machines, anywhere? Yes — so its numbers are kept together, at every gym.")
+                    .foregroundStyle(.secondary)
                 }
+                .chalkRows()
             }
+            .chalkScreen()
             .navigationTitle("New erg")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

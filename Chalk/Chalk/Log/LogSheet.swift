@@ -40,6 +40,7 @@ struct LogSheet: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
+            .chalkScreen()
             .navigationTitle(model.exercise.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

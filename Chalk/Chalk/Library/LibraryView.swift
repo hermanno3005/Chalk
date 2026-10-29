@@ -48,6 +48,7 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack(path: $opened) {
             keyboardDismissingContent
+                .chalkScreen()
                 .navigationDestination(for: Exercise.self) { exercise in
                     if exercise.isErg {
                         ErgDetailView(model: model.ergDetail(for: exercise))
@@ -360,13 +361,15 @@ struct LibraryView: View {
                 }
                 .buttonStyle(.plain)
             }
+            .chalkRows()
             if let createSuggestion {
                 Button {
                     creating = CreateRequest(name: createSuggestion, half: model.half)
                 } label: {
                     Label("Create “\(createSuggestion)”", systemImage: "plus.circle.fill")
-                        .font(.body.weight(.medium))
+                        .font(.body.weight(.semibold))
                 }
+                .chalkRows()
             }
         }
         .listStyle(.plain)

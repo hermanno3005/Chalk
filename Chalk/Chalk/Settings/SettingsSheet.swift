@@ -54,9 +54,12 @@ struct SettingsSheet: View {
                     }
                 } header: {
                     Text("Heart-rate zones")
+                        .foregroundStyle(.secondary)
                 } footer: {
                     Text("The lowest heart rate of each zone, in whole bpm, from your watch or a lactate test. Each is between 40 and 230 and higher than the one before. Z5 has no ceiling.")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
                 Section {
                     Picker("Weights", selection: Binding(get: { model.weightUnit }, set: model.change(weightsTo:))) {
                         ForEach(WeightUnit.allCases, id: \.self) { Text($0.symbol) }
@@ -66,7 +69,9 @@ struct SettingsSheet: View {
                     }
                 } header: {
                     Text("Units")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
                 Section {
                     ShareLink(item: model.backup, preview: SharePreview("Chalk backup")) {
                         Label("Make a backup", systemImage: "square.and.arrow.up")
@@ -76,7 +81,9 @@ struct SettingsSheet: View {
                     }
                 } footer: {
                     Text("One file holding every entry, exercise, erg, gym, machine and goal, and your zones. Keep it off the phone, in Files or on a Mac. Restoring one replaces everything Chalk holds.")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
             }
             .fileImporter(isPresented: $pickingBackup, allowedContentTypes: [.json]) { picked in
                 guard case .success(let url) = picked else { return }
@@ -139,6 +146,7 @@ struct SettingsSheet: View {
                 if model.restored || model.converted { reopenLibrary() }
             }
             .onDisappear(perform: model.close)
+            .chalkScreen()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

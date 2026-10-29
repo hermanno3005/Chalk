@@ -27,7 +27,7 @@ struct ExerciseTile: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 4) {
                 Text(tile.name)
-                    .font(.subheadline.weight(.medium))
+                    .font(.subheadline.weight(.semibold))
                     .lineLimit(2, reservesSpace: true)
                     .multilineTextAlignment(.leading)
                     .foregroundStyle(.primary)
@@ -48,7 +48,7 @@ struct ExerciseTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.surface, in: RoundedRectangle(cornerRadius: 14))
         .contentShape(RoundedRectangle(cornerRadius: 14))
         .onTapGesture { if !arranging { onOpen() } }
         // The fast path, and only ever the fast path: dragging the length of a 42-tile
@@ -56,7 +56,7 @@ struct ExerciseTile: View {
         // is why `picker` exists and why nothing depends on this landing.
         .draggable(DraggedExercise(id: tile.id)) {
             Text(tile.name)
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .padding(10)
                 .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 10))
         }

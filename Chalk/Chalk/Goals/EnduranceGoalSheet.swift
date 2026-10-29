@@ -29,7 +29,7 @@ struct EnduranceGoalSheet: View {
                         if field != model.rows.last { Divider() }
                     }
                 }
-                .background(Color.secondary.opacity(0.08), in: .rect(cornerRadius: 10))
+                .background(Color.grey.opacity(0.08), in: .rect(cornerRadius: 10))
 
                 Text(model.line?.text ?? " ")
                     .font(.subheadline)
@@ -53,6 +53,7 @@ struct EnduranceGoalSheet: View {
             .padding(.horizontal)
             .padding(.top, 8)
             .padding(.bottom, 12)
+            .chalkScreen()
             .navigationTitle(model.hasGoal ? "Change goal" : "Set a goal")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

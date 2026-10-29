@@ -30,24 +30,33 @@ struct ManageGymsSheet: View {
                         Text("No gyms yet. One is created the first time you log on a machine, or from New gym… in the same menu you opened this from.")
                             .foregroundStyle(.secondary)
                     }
+                    .chalkRows()
                 } else {
                     Section {
                         ForEach(list.inUse, id: \.id, content: row)
                     } header: {
                         Text("Gyms")
+                            .foregroundStyle(.secondary)
                     } footer: {
                         Text("Tap to rename — a gym is remembered by identity, so renaming one costs its history nothing. Swipe to archive: an archived gym keeps every entry it holds and comes back the moment you log there again.")
+                            .foregroundStyle(.secondary)
                     }
+                    .chalkRows()
                 }
 
                 // One section at the bottom, however many gyms it holds. There is no
                 // *restore* verb to put on these rows (SPEC §7.4).
                 if !list.archived.isEmpty {
-                    Section("Archived") {
+                    Section {
                         ForEach(list.archived, id: \.id, content: row)
+                    } header: {
+                        Text("Archived")
+                            .foregroundStyle(.secondary)
                     }
+                    .chalkRows()
                 }
             }
+            .chalkScreen()
             .navigationTitle("Gyms")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: Gym.self) { gym in
@@ -115,7 +124,7 @@ struct ManageGymsSheet: View {
                 Button("Archive", systemImage: "archivebox") {
                     gyms.archive(gym)
                 }
-                .tint(.orange)
+                .tint(Color.grey)
             }
         }
     }

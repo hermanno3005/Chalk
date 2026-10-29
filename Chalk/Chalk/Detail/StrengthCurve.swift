@@ -32,7 +32,7 @@ struct StrengthCurve: View {
                 // Grey and dashed against a solid tinted line, rather than a paler
                 // shade of the same thing: the first scaffolding drew both as thin
                 // dashed grey and failed both halves of the rule (SPEC §5.2).
-                .foregroundStyle(Color.secondary.opacity(0.55))
+                .foregroundStyle(Color.grey.opacity(0.55))
             }
 
             // Stepped, with a point on every rep count: monotonic backfill repeats the
@@ -60,7 +60,7 @@ struct StrengthCurve: View {
             // what says which cell it is talking about.
             RuleMark(x: .value("Reps", selectedReps))
                 .lineStyle(StrokeStyle(lineWidth: 1))
-                .foregroundStyle(Color.secondary.opacity(0.4))
+                .foregroundStyle(Color.grey.opacity(0.4))
                 // Behind the marks above it, so the thumb tracker never covers the
                 // point it is tracking.
                 .zIndex(-1)

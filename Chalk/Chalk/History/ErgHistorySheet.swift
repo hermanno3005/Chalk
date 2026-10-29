@@ -19,12 +19,15 @@ struct ErgHistorySheet: View {
                 Section {
                     ForEach(model.rows) { row($0) }
                 }
+                .chalkRows()
                 if !model.older.isEmpty {
                     Section {
                         ForEach(model.older) { row($0) }
                     } header: {
                         Text(ErgHistoryModel.divider)
+                            .foregroundStyle(.secondary)
                     }
+                    .chalkRows()
                 }
             }
             .listStyle(.plain)
@@ -33,6 +36,7 @@ struct ErgHistorySheet: View {
                     ContentUnavailableView("No entries left", systemImage: "tray")
                 }
             }
+            .chalkScreen()
             .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

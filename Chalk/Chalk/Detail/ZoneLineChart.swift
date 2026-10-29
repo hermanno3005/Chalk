@@ -40,7 +40,7 @@ struct ZoneLineChart: View {
 
             RuleMark(x: .value("Duration", selectedDuration))
                 .lineStyle(StrokeStyle(lineWidth: 1))
-                .foregroundStyle(Color.secondary.opacity(0.4))
+                .foregroundStyle(Color.grey.opacity(0.4))
                 .zIndex(-1)
         }
         // **Linear and fixed at 0–20:00 on every erg and zone**, so lines compare and

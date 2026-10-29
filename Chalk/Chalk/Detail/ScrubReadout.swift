@@ -13,7 +13,7 @@ struct ScrubReadout: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(readout.weightWithUnit)
-                .font(.system(size: 46, weight: .semibold, design: .rounded))
+                .font(.system(size: 46, weight: .bold))
                 .monospacedDigit()
                 // The number moves digit by digit as the thumb crosses rep counts,
                 // rather than cross-fading whole.

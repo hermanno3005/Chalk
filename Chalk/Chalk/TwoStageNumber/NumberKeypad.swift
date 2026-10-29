@@ -37,7 +37,7 @@ struct NumberKeypad: View {
                     Text(title ?? "")
                 }
             }
-            .font(.title2.weight(.medium))
+            .font(.title2.weight(.semibold))
             .frame(maxWidth: .infinity, minHeight: 58)
         }
         .buttonStyle(.bordered)

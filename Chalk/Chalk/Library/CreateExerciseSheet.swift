@@ -89,6 +89,7 @@ struct CreateExerciseSheet: View {
                         Text(LibraryLayout.ungroupedTitle).tag(UUID?.none)
                     }
                 }
+                .chalkRows()
 
                 Section {
                     Picker("Kind", selection: $kind) {
@@ -103,12 +104,15 @@ struct CreateExerciseSheet: View {
                     Text(kind == .gymBound
                          ? "Does the load transfer between gyms? No — the weight means something different at each gym, so its numbers are kept per machine."
                          : "Does the load transfer between gyms? Yes — \(weightUnit.text(60)) is \(weightUnit.text(60)) wherever you lift it, so its numbers are kept together.")
+                    .foregroundStyle(.secondary)
                 }
+                .chalkRows()
 
                 if kind == .gymBound {
                     machineSection
                 }
             }
+            .chalkScreen()
             .navigationTitle("New exercise")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -155,7 +159,9 @@ struct CreateExerciseSheet: View {
             Text(gym == nil
                  ? "Its numbers are kept per machine, so pick the gym you use it at — or leave this and the first entry you log will make the machine."
                  : "What is written on the stack — Hammer Strength, Technogym. One gym can hold several of these and their numbers stay separate.")
+            .foregroundStyle(.secondary)
         }
+        .chalkRows()
     }
 
     /// The picked gym, resolved from the id the picker holds. A gym that has gone since

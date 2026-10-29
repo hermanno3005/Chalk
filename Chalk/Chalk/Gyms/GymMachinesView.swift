@@ -49,15 +49,21 @@ struct GymMachinesView: View {
             if list.sections.isEmpty {
                 Text("No machines here yet.")
                     .foregroundStyle(.secondary)
+                    .chalkRows()
             }
             ForEach(list.sections, id: \.title) { section in
-                Section(section.title) {
+                Section {
                     ForEach(list.machines(in: section), id: \.id) { machine in
                         row(machine)
                     }
+                } header: {
+                    Text(section.title)
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
             }
         }
+        .chalkScreen()
         .navigationTitle(gym.name)
         .navigationBarTitleDisplayMode(.inline)
         // `presenting:` hands the machine to the action rather than leaving it to read

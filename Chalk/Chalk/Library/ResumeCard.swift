@@ -35,12 +35,13 @@ struct ResumeCard: View {
 
             Button("Log again", action: onLogAgain)
                 .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.onAccent)
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.capsule)
                 .controlSize(.large)
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(Color.surface, in: RoundedRectangle(cornerRadius: 18))
     }
 
     /// The goal's ring, with no words, in a slot **reserved whether or not there is a

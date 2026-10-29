@@ -38,8 +38,10 @@ struct HistorySheet: View {
                             }
                         }
                 }
+                .chalkRows()
             }
             .listStyle(.plain)
+            .chalkScreen()
             .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -65,7 +67,7 @@ struct HistorySheet: View {
     private var confirmation: some View {
         if flashingConfirmation {
             Label("Saved", systemImage: "checkmark.circle.fill")
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(.regularMaterial, in: .capsule)

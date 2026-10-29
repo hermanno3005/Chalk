@@ -9,7 +9,7 @@ struct ErgNoLineView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(noLine.title)
-                .font(.title3.weight(.medium))
+                .font(.title3.weight(.semibold))
             Text(noLine.detail)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -17,7 +17,7 @@ struct ErgNoLineView: View {
                 HStack(spacing: 6) {
                     Text("Z\(quote.zone)")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onAccent)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.accentColor, in: .rect(cornerRadius: 4))

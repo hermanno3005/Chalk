@@ -14,7 +14,7 @@ struct RepsBackButton: View {
             withAnimation(.snappy) { number.backToReps() }
         } label: {
             Label(number.repsLabel, systemImage: "chevron.left")
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
         }
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
@@ -31,20 +31,17 @@ struct GiantNumber: View {
         Button {
             withAnimation(.snappy) { number.tapNumber() }
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(number.numberText)
-                    .font(.system(size: 92, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(.snappy(duration: 0.2), value: number.numberText)
-                    .minimumScaleFactor(0.4)
-                    .lineLimit(1)
-                Text(number.unitText)
-                    .font(.title2.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 110)
-            .contentShape(.rect)
+            // The unit at the number's own size and weight (SPEC §15.4), in one text so
+            // the two shrink together when a long number has to fit.
+            Text([number.numberText, number.unitText].filter { !$0.isEmpty }.joined(separator: " "))
+                .font(.system(size: 92, weight: .bold))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .animation(.snappy(duration: 0.2), value: number.numberText)
+                .minimumScaleFactor(0.4)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, minHeight: 110)
+                .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(number.numberText.isEmpty ? "Blank" : number.numberText) \(number.unitText)")

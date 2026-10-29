@@ -40,7 +40,7 @@ struct LapListSheet: View {
                                 withAnimation(.snappy) { model.addRow() }
                             } label: {
                                 Label("Add an entry", systemImage: "plus")
-                                    .font(.subheadline.weight(.medium))
+                                    .font(.subheadline.weight(.semibold))
                                     .frame(maxWidth: .infinity, minHeight: 40)
                             }
                             .buttonStyle(.bordered)
@@ -60,6 +60,7 @@ struct LapListSheet: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
+            .chalkScreen()
             // The erg while logging; the entry's date, not editable, on an edit.
             .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -135,7 +136,7 @@ struct LapListSheet: View {
             withAnimation(.snappy(duration: 0.15)) { model.select(cell) }
         } label: {
             Text(text.isEmpty ? "–" : text)
-                .font(.system(.title3, design: .rounded).weight(.semibold))
+                .font(.title3.weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
@@ -143,7 +144,7 @@ struct LapListSheet: View {
                 .frame(maxWidth: .infinity, minHeight: 46)
                 .background(
                     RoundedRectangle(cornerRadius: 9)
-                        .fill(focused ? Color.accentColor.opacity(0.2) : Color(.secondarySystemFill))
+                        .fill(focused ? Color.accentColor.opacity(0.2) : Color.surface)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 9)
@@ -202,7 +203,7 @@ struct LapListSheet: View {
     private var header: some View {
         HStack {
             Text(model.focusTitle)
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
             Spacer()
             Button {

@@ -57,6 +57,7 @@ struct ExerciseDetailView: View {
         .padding(.horizontal)
         .padding(.top, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .chalkScreen()
         .navigationTitle(model.name)
         .navigationBarTitleDisplayMode(.inline)
         // The back button is the `NavigationStack`'s own — nothing here hides it, and
@@ -196,7 +197,7 @@ struct ExerciseDetailView: View {
     private var confirmation: some View {
         if flashingConfirmation {
             Label("Logged", systemImage: "checkmark.circle.fill")
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(.regularMaterial, in: .capsule)
@@ -228,7 +229,7 @@ struct ExerciseDetailView: View {
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
-                .font(.title3.weight(.medium))
+                .font(.title3.weight(.semibold))
             Text(emptyDetail)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -266,6 +267,7 @@ struct ExerciseDetailView: View {
         } label: {
             Text("Log")
                 .font(.headline)
+                .foregroundStyle(Color.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
         }
