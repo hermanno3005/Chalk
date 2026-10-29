@@ -1,7 +1,8 @@
 import CoreSpotlight
 
 /// Spotlight's side of `LibraryIndex`: Chalk's named index, holding each row as an
-/// `ExerciseEntity` or an `ErgEntity` by its half (SPEC §15.5).
+/// `ExerciseEntity` or an `ErgEntity` by its half (SPEC §15.5), and the App Shortcuts'
+/// suggestions, which follow the same rows.
 ///
 /// **Its writes are chained**, each starting when the one before it ends: an index may
 /// be modified from only one task at a time, and an actor alone would let a rename's
@@ -64,6 +65,10 @@ final class SpotlightIndex: LibraryIndexSink {
             // Nothing to report and nothing to retry: the next launch rebuilds the index
             // whole, which mends whatever a failed write left.
             try? await write()
+            // The App Shortcuts' tiles and phrases follow the same rows, so they are asked
+            // to re-read their suggestions after every write, the launch's rebuild
+            // included (SPEC §15.5).
+            ChalkShortcuts.updateAppShortcutParameters()
         }
     }
 }

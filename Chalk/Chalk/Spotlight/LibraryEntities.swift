@@ -38,6 +38,12 @@ struct ExerciseQuery: EnumerableEntityQuery {
         try await router.rows(in: .strength).map { ExerciseEntity(id: $0.id, name: $0.name) }
     }
 
+    /// The exercises the App Shortcuts offer a tile and a phrase for: every one, unless
+    /// Apple's phrase cap bites (`LibraryRouter.suggested(in:)`).
+    func suggestedEntities() async throws -> [ExerciseEntity] {
+        try await router.suggested(in: .strength).map { ExerciseEntity(id: $0.id, name: $0.name) }
+    }
+
     func entities(for identifiers: [UUID]) async throws -> [ExerciseEntity] {
         try await allEntities().filter { identifiers.contains($0.id) }
     }
@@ -49,6 +55,11 @@ struct ErgQuery: EnumerableEntityQuery {
 
     func allEntities() async throws -> [ErgEntity] {
         try await router.rows(in: .endurance).map { ErgEntity(id: $0.id, name: $0.name) }
+    }
+
+    /// The ergs the App Shortcuts offer a tile and a phrase for, as `ExerciseQuery`'s.
+    func suggestedEntities() async throws -> [ErgEntity] {
+        try await router.suggested(in: .endurance).map { ErgEntity(id: $0.id, name: $0.name) }
     }
 
     func entities(for identifiers: [UUID]) async throws -> [ErgEntity] {

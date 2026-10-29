@@ -8,6 +8,12 @@ struct OpenExerciseIntent: OpenIntent {
     @Parameter(title: "Exercise") var target: ExerciseEntity
     @Dependency private var router: LibraryRouter
 
+    init() {}
+
+    init(target: ExerciseEntity) {
+        self.target = target
+    }
+
     @MainActor
     func perform() async throws -> some IntentResult {
         try router.open(target.id)
@@ -22,6 +28,12 @@ struct OpenErgIntent: OpenIntent {
 
     @Parameter(title: "Erg") var target: ErgEntity
     @Dependency private var router: LibraryRouter
+
+    init() {}
+
+    init(target: ErgEntity) {
+        self.target = target
+    }
 
     @MainActor
     func perform() async throws -> some IntentResult {
