@@ -329,7 +329,11 @@ final class LibraryFixture {
 
 extension Date {
     /// A date `days` back, for seeding history that has to come out in a known order.
+    ///
+    /// **Calendar days, never 86,400 seconds**: across a daylight-saving change, a late
+    /// evening minus whole seconds lands past midnight, on the same day as the one after
+    /// it, and two visits collapse into one.
     static func days(ago days: Int) -> Date {
-        .now.addingTimeInterval(-Double(days) * 86_400)
+        Calendar.current.date(byAdding: .day, value: -days, to: .now)!
     }
 }
