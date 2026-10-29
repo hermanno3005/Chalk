@@ -65,6 +65,12 @@ struct MachineCaption {
         return machine?.caption ?? Self.noMachine
     }
 
+    /// `text` as VoiceOver says it: `Hammer Strength at Fitness X`.
+    var spokenText: String? {
+        guard exercise.isGymBound else { return nil }
+        return machine?.spokenCaption ?? Self.noMachine
+    }
+
     /// What the caption reads before any machine exists — the one case no caller can
     /// resolve, closed by `New machine here` inside the picker (SPEC §6.4).
     static let noMachine = "No machine"

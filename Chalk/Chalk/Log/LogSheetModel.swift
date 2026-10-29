@@ -187,6 +187,7 @@ final class LogSheetModel: Identifiable {
     /// the layout and stops being trusted. A gym-bound sheet with nothing resolved yet
     /// says so, which is the state the first log at a new gym opens in.
     var machineCaption: String? { caption.text }
+    var spokenMachineCaption: String? { caption.spokenText }
 
     // The number's own readings and verbs, forwarded so the sheet's tests read the same
     // as before the number was shared (#73). The view binds `number` directly.
@@ -233,6 +234,20 @@ final class LogSheetModel: Identifiable {
             return .measured("Matches your \(reps)-rep best")
         }
         return .measured("Your \(reps)-rep best is \(number.weightUnit.text(best))")
+    }
+
+    /// `verdict` as VoiceOver says it, where the drawn line carries a `×`.
+    var spokenVerdict: String? {
+        switch verdict {
+        case .goal:
+            return goal.map { "Reaches your goal of \($0.spokenText(in: number.weightUnit))" }
+        case .hint:
+            return hint?.spokenVerdictLine
+        case .measured(let text):
+            return text
+        case nil:
+            return nil
+        }
     }
 
     var canAdvance: Bool { number.canAdvance }

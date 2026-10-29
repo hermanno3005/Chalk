@@ -42,6 +42,18 @@ struct Goal: Equatable {
     /// `140 × 5` — the goal as every surface names it.
     var text: String { "\(weight.weightText) × \(reps)" }
 
+    /// `text` as VoiceOver says it: `140 kilograms for 5 reps`.
+    func spokenText(in unit: WeightUnit) -> String {
+        "\(unit.spokenText(weight)) for \(Spoken.reps(reps))"
+    }
+
+    /// The goal line as VoiceOver says it: `Goal 140 kilograms for 5 reps, 40 kilograms to
+    /// go`, or `…, reached`.
+    func spokenLine(in unit: WeightUnit) -> String {
+        let target = "Goal \(spokenText(in: unit))"
+        return isReached ? "\(target), reached" : "\(target), \(unit.spokenText(gap)) to go"
+    }
+
     /// `best[reps] >= weight` — a 5-rep 95 reaches a 1-rep goal of 95.
     var isReached: Bool { (current ?? 0) >= weight }
 

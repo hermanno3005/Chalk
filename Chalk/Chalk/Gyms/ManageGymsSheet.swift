@@ -100,6 +100,8 @@ struct ManageGymsSheet: View {
                     renamed = gym.name
                     renaming = gym
                 }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Renames this gym")
             NavigationLink(value: gym) {
                 // What is in it — which is also what says whether the delete below is
                 // offered at all.
@@ -110,6 +112,8 @@ struct ManageGymsSheet: View {
                     .contentShape(Rectangle())
             }
             .fixedSize()
+            .accessibilityLabel(Spoken.count(gym.machines?.count ?? 0, "machine"))
+            .accessibilityHint("Shows the machines at \(gym.name)")
         }
         // **The full swipe is the delete, and only where there is nothing to lose.** A
         // gym holding machines has no full swipe at all: archiving is deliberate enough

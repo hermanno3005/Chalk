@@ -42,6 +42,9 @@ final class ErgHistoryModel: Identifiable {
         let intensity: String
         /// `164/170 bpm`.
         let heartRate: String
+        /// The whole row as VoiceOver says it: `yesterday, 15.0 kilometres per hour, pace
+        /// 4 minutes per kilometre, average 164, peak 170 beats per minute`.
+        let spoken: String
 
         /// The whole row in the spec's order: `date · duration · intensity · avg/peak bpm`.
         var text: String {
@@ -118,6 +121,16 @@ final class ErgHistoryModel: Identifiable {
         return title
     }
 
+    /// `title` as VoiceOver says it: `6 minutes in zone 4, 1 percent incline`.
+    var spokenTitle: String {
+        var title = switch listing {
+        case .point(let duration): "\(Spoken.duration(duration)) in zone \(zone)"
+        case .overTheAxis: "Over \(Spoken.duration(ZoneLine.axisEnd)) in zone \(zone)"
+        }
+        if erg.ergUnit?.hasIncline == true { title += ", \(Spoken.incline(incline))" }
+        return title
+    }
+
     /// **The point has nothing left** — its last entry deleted or edited away. The sheet
     /// stays open and empty (SPEC §13.9); the screen behind it settles on its own.
     var isEmpty: Bool { rows.isEmpty && older.isEmpty }
@@ -183,12 +196,21 @@ final class ErgHistoryModel: Identifiable {
     }
 
     private func row(_ entry: Entry, _ unit: ErgUnit, _ distanceUnit: DistanceUnit, duration: Bool) -> Row {
-        Row(
+        let day = RelativeDay.text(for: entry.date, asOf: .now)
+        let pace = unit == .speed && entry.intensity > 0 ? "pace \(EnduranceText.spokenPace(entry.intensity, distanceUnit))" : nil
+        return Row(
             id: entry.id,
-            day: RelativeDay.text(for: entry.date, asOf: .now),
+            day: day,
             duration: duration ? EnduranceText.clock(entry.duration) : nil,
             intensity: EnduranceText.intensity(entry.intensity, unit, distanceUnit),
             heartRate: "\(entry.averageHeartRate)/\(entry.peakHeartRate) bpm",
+            spoken: [
+                day,
+                duration ? Spoken.duration(entry.duration) : nil,
+                EnduranceText.spokenIntensity(entry.intensity, unit, distanceUnit),
+                pace,
+                "average \(entry.averageHeartRate), peak \(Spoken.heartRate(entry.peakHeartRate))",
+            ].compactMap(\.self).joined(separator: ", "),
             entry: entry
         )
     }

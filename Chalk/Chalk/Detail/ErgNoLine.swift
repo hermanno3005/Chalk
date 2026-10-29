@@ -16,6 +16,9 @@ struct ErgNoLine: Equatable {
     /// One neighbouring zone's point: `Z5 3:00 at 16.5 km/h — too hard`.
     struct Quote: Equatable {
         let zone: Int
+        /// The quote as VoiceOver says it: `Zone 5, 3 minutes at 16.5 kilometres per
+        /// hour, too hard`.
+        let spoken: String
         /// The quote without its zone — `3:00 at 16.5 km/h — too hard` — for a view that
         /// draws the zone as a tag of its own.
         let clause: String
@@ -25,6 +28,9 @@ struct ErgNoLine: Equatable {
 
     let title: String
     let detail: String
+    /// `title` and `detail` as VoiceOver says them.
+    let spokenTitle: String
+    let spokenDetail: String
 
     /// The nearest zone above with a line, then the nearest below — none, one or both.
     let quotes: [Quote]
@@ -37,6 +43,8 @@ struct ErgNoLine: Equatable {
         else { return nil }
         title = "No Z\(selection.zone) on this \(place) yet."
         detail = "Nothing you've logged here averaged \(zones.range(of: selection.zone))."
+        spokenTitle = "No zone \(selection.zone) on this \(place) yet."
+        spokenDetail = "Nothing you've logged here averaged \(zones.spokenRange(of: selection.zone))."
 
         let withLines = ZoneLine.zones.filter(reading.hasLine)
         let above = withLines.first { $0 > selection.zone }
@@ -48,6 +56,7 @@ struct ErgNoLine: Equatable {
             else { return nil }
             return Quote(
                 zone: zone,
+                spoken: "Zone \(zone), \(Spoken.duration(point.duration)) at \(EnduranceText.spokenIntensity(point.intensity, unit, reading.distanceUnit)), \(verdict)",
                 clause: "\(EnduranceText.clock(point.duration)) at \(EnduranceText.intensity(point.intensity, unit, reading.distanceUnit, pace: false)) — \(verdict)"
             )
         }

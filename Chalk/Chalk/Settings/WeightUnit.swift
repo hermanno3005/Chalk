@@ -40,6 +40,12 @@ enum WeightUnit: String, CaseIterable, Sendable {
         }
     }
 
+    /// A weight as VoiceOver says it: `102.5 pounds`, `1 kilogram`.
+    func spokenText(_ weight: Double) -> String {
+        let name = weight == 1 ? String(spokenName.dropLast()) : spokenName
+        return "\(weight.weightText) \(name)"
+    }
+
     /// The grid the steppers snap to: **2.5 kg or 5 lb**, the smallest change a pair of
     /// the scale's smallest standard plates makes. The unit alone picks it, and it is not
     /// a setting (SPEC §6.2, §15.2).

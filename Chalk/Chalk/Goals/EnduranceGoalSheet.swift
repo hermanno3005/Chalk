@@ -18,7 +18,9 @@ struct EnduranceGoalSheet: View {
             VStack(spacing: 12) {
                 Picker("Zone", selection: $model.zone) {
                     ForEach(ZoneLine.zones, id: \.self) { zone in
-                        Text("Z\(zone)").tag(Int?.some(zone))
+                        Text("Z\(zone)")
+                            .accessibilityLabel("Zone \(zone)")
+                            .tag(Int?.some(zone))
                     }
                 }
                 .pickerStyle(.segmented)
@@ -37,6 +39,8 @@ struct EnduranceGoalSheet: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, minHeight: 22)
                     .animation(.snappy(duration: 0.2), value: model.line)
+                    .accessibilityLabel(model.spokenLine ?? "")
+                    .accessibilityHidden(model.line == nil)
 
                 Spacer(minLength: 0)
                 NumberKeypad(decimalIsDead: model.decimalIsDead) { key in
@@ -98,6 +102,9 @@ struct EnduranceGoalSheet: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(field.name(model.unit))
+        .accessibilityValue(model.spokenText(field))
         .accessibilityAddTraits(isFocused ? .isSelected : [])
     }
 

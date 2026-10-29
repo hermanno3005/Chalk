@@ -9,6 +9,8 @@ import Foundation
 /// `GoalLine(endurance:)`; `GoalLineView` draws both.
 struct GoalLine: Equatable {
     let text: String
+    /// `text` as VoiceOver says it: `Goal 140 kilograms for 5 reps, 40 kilograms to go`.
+    let spoken: String
     let isReached: Bool
     /// The donut's fill, 0…1.
     let progress: Double

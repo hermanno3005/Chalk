@@ -24,6 +24,8 @@ final class HistorySheetModel: Identifiable {
     struct Row: Identifiable {
         let id: UUID
         let lift: String
+        /// `lift` as VoiceOver says it: `5 reps at 75 kilograms`.
+        let spokenLift: String
         /// The day, in the words the tiles and the resume card use.
         let day: String
         /// Whether this is the entry currently setting `best[N]`.
@@ -31,6 +33,8 @@ final class HistorySheetModel: Identifiable {
         /// The machine the entry was logged on, for a gym-bound exercise (SPEC §5.6).
         /// `nil` for a free-weight one, which has no machine to name.
         let machine: String?
+        /// `machine` as VoiceOver says it, `Hammer Strength at Fitness X`.
+        let spokenMachine: String?
 
         /// The entry the row stands for, which edit and delete act on. Held rather than
         /// looked up again: the row is the thing your thumb is on. **Not for reading
@@ -151,9 +155,11 @@ final class HistorySheetModel: Identifiable {
             return Row(
                 id: entry.id,
                 lift: lift.lift(in: weightUnit),
+                spokenLift: lift.spokenLift(in: weightUnit),
                 day: lift.day(),
                 isBest: entry === setter,
                 machine: entry.machine?.caption,
+                spokenMachine: entry.machine?.spokenCaption,
                 entry: entry
             )
         }

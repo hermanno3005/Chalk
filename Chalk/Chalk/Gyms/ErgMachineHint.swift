@@ -12,9 +12,15 @@ struct ErgMachineHint: Equatable {
     /// `6:00 in Z4 at 15.0 km/h · 1 % on Technogym Run · Urban Gym` — the clause the
     /// lead-in wraps.
     let text: String
+    /// `text` as VoiceOver says it: `6 minutes in zone 4 at 15.0 kilometres per hour, 1
+    /// percent incline, on Technogym Run at Urban Gym`.
+    let spoken: String
 
     /// The line under the empty state's text, as strength's `MachineHint.emptyStateLine`.
     var emptyStateLine: String { "No entries here — \(text)" }
+
+    /// `emptyStateLine` as VoiceOver says it.
+    var spokenEmptyStateLine: String { "No entries here. \(spoken)" }
 
     /// The hint for one gym-bound erg screen, or `nil` where there is nothing honest to say:
     ///
@@ -48,7 +54,11 @@ struct ErgMachineHint: Equatable {
         let incline = ErgUnit.roundedIncline(latest.incline)
         if unit.hasIncline, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
         text += " on \(sibling.caption)"
-        return ErgMachineHint(text: text)
+
+        var spoken = "\(Spoken.duration(point.duration)) in zone \(zone) at \(EnduranceText.spokenIntensity(point.intensity, unit, distanceUnit))"
+        if unit.hasIncline, incline > 0 { spoken += ", \(Spoken.incline(incline))," }
+        spoken += " on \(sibling.spokenCaption)"
+        return ErgMachineHint(text: text, spoken: spoken)
     }
 
     /// **The same model at another gym** — a case-insensitive equal model name — that has

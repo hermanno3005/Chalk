@@ -36,6 +36,13 @@ final class ExerciseDetailModel {
         var weightWithUnit: String {
             weight.map(weightUnit.text) ?? "—"
         }
+
+        /// The number and its aside as VoiceOver says them: `102.5 pounds for 5 reps`, or
+        /// `Not yet proven at 9 reps`.
+        var spoken: String {
+            guard let weight else { return "Not yet proven at \(Spoken.reps(reps))" }
+            return "\(weightUnit.spokenText(weight)) for \(Spoken.reps(reps))"
+        }
     }
 
     let exercise: Exercise
@@ -139,6 +146,11 @@ final class ExerciseDetailModel {
         )
     }
 
+    /// The curve as VoiceOver plays and says it, the goal in its words (SPEC §15.6).
+    var audioGraph: AudioGraph {
+        AudioGraph(curve: curve, weightUnit: weightUnit, goal: goal)
+    }
+
     /// Nil without a goal: **the screen gains nothing** where no goal is set, and the
     /// chart never carries one either way.
     var goalLine: GoalLine? {
@@ -146,6 +158,7 @@ final class ExerciseDetailModel {
         let target = "Goal \(goal.text)"
         return GoalLine(
             text: goal.isReached ? "\(target) · reached" : "\(target) · \(weightUnit.text(goal.gap)) to go",
+            spoken: goal.spokenLine(in: weightUnit),
             isReached: goal.isReached,
             progress: goal.progress
         )

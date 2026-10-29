@@ -40,6 +40,9 @@ struct SettingsSheet: View {
                         Text(model.lowerBounds[0].map { "below \($0) bpm" } ?? "below Z2")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Zone 1")
+                    .accessibilityValue(model.lowerBounds[0].map { "below \(Spoken.heartRate($0))" } ?? "below zone 2")
                     ForEach(model.lowerBounds.indices, id: \.self) { index in
                         LabeledContent("Z\(index + 2)") {
                             HStack(spacing: 4) {
@@ -47,10 +50,14 @@ struct SettingsSheet: View {
                                     .keyboardType(.numberPad)
                                     .multilineTextAlignment(.trailing)
                                     .focused($focused, equals: index)
+                                    .accessibilityLabel("Zone \(index + 2) from")
+                                    .accessibilityHint("In beats per minute")
                                 Text("bpm")
                                     .foregroundStyle(.secondary)
+                                    .accessibilityHidden(true)
                             }
                         }
+                        .accessibilityElement(children: .contain)
                     }
                 } header: {
                     Text("Heart-rate zones")
@@ -58,14 +65,15 @@ struct SettingsSheet: View {
                 } footer: {
                     Text("The lowest heart rate of each zone, in whole bpm, from your watch or a lactate test. Each is between 40 and 230 and higher than the one before. Z5 has no ceiling.")
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel("The lowest heart rate of each zone, in whole beats per minute, from your watch or a lactate test. Each is between 40 and 230 and higher than the one before. Zone 5 has no ceiling.")
                 }
                 .chalkRows()
                 Section {
                     Picker("Weights", selection: Binding(get: { model.weightUnit }, set: model.change(weightsTo:))) {
-                        ForEach(WeightUnit.allCases, id: \.self) { Text($0.symbol) }
+                        ForEach(WeightUnit.allCases, id: \.self) { Text($0.symbol).accessibilityLabel($0.spokenName) }
                     }
                     Picker("Distances", selection: Binding(get: { model.distanceUnit }, set: model.change(distancesTo:))) {
-                        ForEach(DistanceUnit.allCases, id: \.self) { Text($0.name) }
+                        ForEach(DistanceUnit.allCases, id: \.self) { Text($0.name).accessibilityLabel($0.spokenName) }
                     }
                 } header: {
                     Text("Units")

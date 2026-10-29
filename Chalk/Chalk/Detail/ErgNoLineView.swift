@@ -11,9 +11,11 @@ struct ErgNoLineView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(noLine.title)
                 .font(.title3.weight(.semibold))
+                .accessibilityLabel(noLine.spokenTitle)
             Text(noLine.detail)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .accessibilityLabel(noLine.spokenDetail)
             ForEach(noLine.quotes, id: \.zone) { quote in
                 HStack(spacing: 6) {
                     Text("Z\(quote.zone)")
@@ -23,7 +25,8 @@ struct ErgNoLineView: View {
                         .monospacedDigit()
                 }
                 .font(.subheadline)
-                .accessibilityElement(children: .combine)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(quote.spoken)
                 .padding(.top, 4)
             }
         }

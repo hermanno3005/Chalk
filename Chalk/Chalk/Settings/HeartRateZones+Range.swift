@@ -17,4 +17,20 @@ extension HeartRateZones {
         let zone = zone(of: heartRate)
         return "Z\(zone) · \(range(of: zone))"
     }
+
+    /// `range(of:)` as VoiceOver says it: `below 117 beats per minute`, `158 to 169 beats
+    /// per minute`, `170 beats per minute and up`.
+    func spokenRange(of zone: Int) -> String {
+        switch zone {
+        case ...1: "below \(Spoken.heartRate(lowerBounds[0]))"
+        case 5...: "\(Spoken.heartRate(lowerBounds[3])) and up"
+        default: "\(lowerBounds[zone - 2]) to \(Spoken.heartRate(lowerBounds[zone - 1] - 1))"
+        }
+    }
+
+    /// `zoneLine(of:)` as VoiceOver says it: `Zone 4, 158 to 169 beats per minute`.
+    func spokenZoneLine(of heartRate: Int) -> String {
+        let zone = zone(of: heartRate)
+        return "Zone \(zone), \(spokenRange(of: zone))"
+    }
 }

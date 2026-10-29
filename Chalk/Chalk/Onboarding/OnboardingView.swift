@@ -21,22 +21,26 @@ struct OnboardingView: View {
             Text("Pick your units")
                 .font(.title2.bold())
                 .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
             Text("Chalk writes every weight and speed in these. You can change them later in Settings.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 36)
             Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 12) {
+                // The pickers carry their own names, so the drawn ones are not said twice.
                 GridRow {
                     Text("Weights")
+                        .accessibilityHidden(true)
                     Picker("Weights", selection: $model.weightUnit) {
-                        ForEach(WeightUnit.allCases, id: \.self) { Text($0.symbol) }
+                        ForEach(WeightUnit.allCases, id: \.self) { Text($0.symbol).accessibilityLabel($0.spokenName) }
                     }
                 }
                 GridRow {
                     Text("Distances")
+                        .accessibilityHidden(true)
                     Picker("Distances", selection: $model.distanceUnit) {
-                        ForEach(DistanceUnit.allCases, id: \.self) { Text($0.name) }
+                        ForEach(DistanceUnit.allCases, id: \.self) { Text($0.name).accessibilityLabel($0.spokenName) }
                     }
                 }
             }

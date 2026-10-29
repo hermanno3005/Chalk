@@ -98,6 +98,7 @@ final class LapListModel: Identifiable {
     /// one machine. `label · gym`, or `No machine` before any exists; `nil` on a
     /// transferable erg, which carries no caption at all.
     var machineCaption: String? { caption.text }
+    var spokenMachineCaption: String? { caption.spokenText }
 
     /// The rows the caption opens: the shared machine menu, with `New machine here` and
     /// `New gym…`. Empty on a transferable erg.
@@ -191,9 +192,28 @@ final class LapListModel: Identifiable {
         rows[cell.row].inputs[cell.field]?.text ?? ""
     }
 
+    /// A cell as VoiceOver says it: its value in words once it holds one, what is typed
+    /// while it is being typed, and `Blank` when empty.
+    func spokenText(_ cell: Cell) -> String {
+        EnduranceInput.spoken(rows[cell.row].inputs[cell.field], cell.field, unit, distanceUnit)
+    }
+
+    /// `line` as VoiceOver says it: `Zone 4, 158 to 169 beats per minute`, or the problem.
+    var spokenLine: String? {
+        guard case .zone = line else { return line?.text }
+        let row = rows[focus.row]
+        guard let zones = HeartRateZones(defaults: defaults), let average = row.settledValue(.averageHeartRate) else { return nil }
+        return zones.spokenZoneLine(of: Int(average))
+    }
+
     /// Over the keypad: `Row 2 · Average heart rate`.
     var focusTitle: String {
         "Row \(focus.row + 1) · \(focus.field.name(unit))"
+    }
+
+    /// `focusTitle` as VoiceOver says it: `Row 2, Average heart rate`.
+    var spokenFocusTitle: String {
+        "Row \(focus.row + 1), \(focus.field.name(unit))"
     }
 
     /// The sheet's title: the erg while logging; **the entry's date on an edit**, shown

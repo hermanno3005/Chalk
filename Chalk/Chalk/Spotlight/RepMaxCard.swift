@@ -22,12 +22,19 @@ struct RepMaxCard: Equatable, Sendable {
         var text: String {
             weight.map(weightUnit.text) ?? "—"
         }
+
+        /// The cell as VoiceOver says it: `5 reps, 95 kilograms`, `9 reps, not yet proven`.
+        var spoken: String {
+            "\(Spoken.reps(reps)), \(weight.map(weightUnit.spokenText) ?? "not yet proven")"
+        }
     }
 
     let exerciseID: UUID
     let name: String
     /// The machine in scope, `label · gym`, on a gym-bound exercise that has one.
     let machine: String?
+    /// `machine` as VoiceOver says it, `By the window at Fitness X`.
+    let spokenMachine: String?
     /// One cell per rep count, 1 through 12.
     let cells: [Cell]
     /// `Nothing logged on Bench Press yet` where the scope holds no lift, in place of the
@@ -43,6 +50,7 @@ struct RepMaxCard: Equatable, Sendable {
         exerciseID = exercise.id
         name = exercise.name
         self.machine = machine?.caption
+        spokenMachine = machine?.spokenCaption
         cells = RepMaxCurve.repRange.map { reps in
             Cell(reps: reps, weight: curve.best[reps], weightUnit: weightUnit)
         }

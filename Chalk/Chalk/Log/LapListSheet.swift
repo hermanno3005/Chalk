@@ -27,6 +27,7 @@ struct LapListSheet: View {
                 if let machineCaption = model.machineCaption {
                     MachineCaptionMenu(
                         text: machineCaption,
+                        spokenText: model.spokenMachineCaption ?? machineCaption,
                         menu: model.machineMenu,
                         selected: model.machine,
                         onSelect: model.select,
@@ -137,6 +138,9 @@ struct LapListSheet: View {
                     Text(field.columnTitle(model.unit, model.distanceUnit))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+                        // Each cell names its own column, so the titles are not said
+                        // twice.
+                        .accessibilityHidden(true)
                 }
                 Color.clear.frame(width: 34, height: 1)
             }
@@ -178,7 +182,8 @@ struct LapListSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Row \(cell.row + 1), \(cell.field.name(model.unit))")
-        .accessibilityValue(text.isEmpty ? "Blank" : text)
+        .accessibilityValue(model.spokenText(cell))
+        .accessibilityAddTraits(focused ? .isSelected : [])
     }
 
     /// A row added one too many is deleted from the row itself. The last remaining row
@@ -220,6 +225,9 @@ struct LapListSheet: View {
         .font(.subheadline)
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, minHeight: 22)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.spokenLine ?? "")
+        .accessibilityHidden(model.line == nil)
     }
 
     private var header: some View {
@@ -227,6 +235,7 @@ struct LapListSheet: View {
             Text(model.focusTitle)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
+                .accessibilityLabel(model.spokenFocusTitle)
             Spacer()
             Button {
                 withAnimation(.snappy(duration: 0.15)) { model.next() }

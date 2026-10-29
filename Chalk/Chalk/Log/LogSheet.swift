@@ -92,6 +92,7 @@ struct LogSheet: View {
         if let machineCaption = model.machineCaption {
             MachineCaptionMenu(
                 text: machineCaption,
+                spokenText: model.spokenMachineCaption ?? machineCaption,
                 menu: model.machineMenu,
                 selected: model.machine,
                 onSelect: model.select,
@@ -145,6 +146,9 @@ struct LogSheet: View {
         }
         .frame(maxWidth: .infinity, minHeight: 22)
         .animation(.snappy(duration: 0.2), value: model.verdict)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.spokenVerdict ?? "")
+        .accessibilityHidden(model.verdict == nil)
     }
 
     private var verdictStyle: AnyShapeStyle {

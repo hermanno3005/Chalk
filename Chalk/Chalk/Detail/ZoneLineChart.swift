@@ -12,6 +12,10 @@ struct ZoneLineChart: View {
     let points: [ZoneLine.Point]
     let unit: ErgUnit
     let selectedDuration: Int
+    /// What VoiceOver plays and says for the line (SPEC §15.6).
+    let audioGraph: AudioGraph
+    /// The readout at the selected point, as VoiceOver says it.
+    let spokenValue: String
     /// `chartXSelection` writes `nil` here on lift; the model ignores that and snaps
     /// every real value to a duration done, which is the sticky, snapping scrub.
     let onSelect: (Int?) -> Void
@@ -78,7 +82,20 @@ struct ZoneLineChart: View {
         // A tick at each duration the scrub snaps to (SPEC §15.4). A zone tab or the
         // incline menu re-snapping the selection stays silent.
         .sensoryFeedback(.selection, trigger: selectedDuration) { _, _ in isScrubbing }
-        .accessibilityLabel("Zone line")
+        // One element VoiceOver scrubs as a finger does, a swipe up or down a point, and
+        // plays as an audio graph from its rotor (SPEC §15.6).
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(audioGraph.title)
+        .accessibilityValue(spokenValue)
+        .accessibilityAdjustableAction { direction in
+            guard let index = points.firstIndex(where: { $0.duration == selectedDuration }) else { return }
+            switch direction {
+            case .increment: if index + 1 < points.count { onSelect(points[index + 1].duration) }
+            case .decrement: if index > 0 { onSelect(points[index - 1].duration) }
+            @unknown default: break
+            }
+        }
+        .accessibilityChartDescriptor(audioGraph)
     }
 
     /// **A split is plotted upside down**, so harder is up on every erg.

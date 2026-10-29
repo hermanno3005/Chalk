@@ -10,6 +10,8 @@ import SwiftUI
 /// exercise or a transferable erg carries no machine row.
 struct MachineCaptionMenu: View {
     let text: String
+    /// `text` as VoiceOver says it: `Hammer Strength at Fitness X`.
+    let spokenText: String
     let menu: MachineMenu
     let selected: Machine?
     let onSelect: (Machine) -> Void
@@ -35,6 +37,7 @@ struct MachineCaptionMenu: View {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(spokenText)
         .accessibilityHint("Changes the machine this is logged on")
     }
 }

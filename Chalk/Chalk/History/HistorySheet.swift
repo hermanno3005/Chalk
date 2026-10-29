@@ -131,9 +131,9 @@ struct HistorySheet: View {
 
         private var accessibilityLabel: String {
             [
-                row.lift,
+                row.spokenLift,
                 row.day,
-                row.machine,
+                row.spokenMachine,
                 row.isBest ? "sets this best" : nil,
             ]
             .compactMap { $0 }

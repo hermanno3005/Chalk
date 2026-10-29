@@ -40,6 +40,13 @@ struct ErgHistorySheet: View {
             .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // The title drawn as before, said in words: `6:00` is not a time of day.
+                ToolbarItem(placement: .principal) {
+                    Text(model.title)
+                        .font(.headline)
+                        .accessibilityLabel(model.spokenTitle)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
@@ -71,6 +78,8 @@ struct ErgHistorySheet: View {
             Text(row.text)
                 .monospacedDigit()
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel(row.spoken)
+                .accessibilityAddTraits(.isButton)
                 .accessibilityHint("Edits this entry")
         }
     }

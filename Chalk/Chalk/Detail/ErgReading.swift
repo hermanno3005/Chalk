@@ -38,6 +38,13 @@ struct ErgReading {
         let averageHeartRate: String
         /// The entries in the point, the rows of its sheet above the divider (§13.9).
         let entryCount: Int
+        /// The number and its aside as VoiceOver says them: `9.3 miles per hour for 6
+        /// minutes in zone 4`.
+        let spoken: String
+        /// The pace in words, `6 minutes 27 seconds per mile`; nil where `pace` is.
+        let spokenPace: String?
+        /// `164 beats per minute`.
+        let spokenHeartRate: String
     }
 
     let unit: ErgUnit?
@@ -131,7 +138,10 @@ struct ErgReading {
             aside: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone)",
             pace: unit == .speed && point.intensity > 0 ? EnduranceText.pace(point.intensity, distanceUnit) : nil,
             averageHeartRate: "\(point.averageHeartRate) bpm",
-            entryCount: point.entryCount
+            entryCount: point.entryCount,
+            spoken: "\(EnduranceText.spokenIntensity(point.intensity, unit, distanceUnit)) for \(Spoken.duration(point.duration)) in zone \(selection.zone)",
+            spokenPace: unit == .speed && point.intensity > 0 ? EnduranceText.spokenPace(point.intensity, distanceUnit) : nil,
+            spokenHeartRate: Spoken.heartRate(point.averageHeartRate)
         )
     }
 
@@ -141,6 +151,12 @@ struct ErgReading {
     var overTheAxisCaption: String? {
         guard let count = line?.entriesOverTheAxis.count, count > 0 else { return nil }
         return count == 1 ? "1 entry over 20:00" : "\(count) entries over 20:00"
+    }
+
+    /// The caption as VoiceOver says it: `2 entries over 20 minutes`.
+    var spokenOverTheAxisCaption: String? {
+        guard let count = line?.entriesOverTheAxis.count, count > 0 else { return nil }
+        return "\(Spoken.count(count, "entry")) over \(Spoken.duration(ZoneLine.axisEnd))"
     }
 
     // MARK: - Selecting

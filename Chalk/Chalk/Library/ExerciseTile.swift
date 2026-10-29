@@ -57,6 +57,9 @@ struct ExerciseTile: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                // Said in words in Arrange mode too, where the tile is a container.
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(subtitle.spoken)
             }
         }
         // Both ways, so the tiles in a grid row split it evenly and share its height.
@@ -74,8 +77,13 @@ struct ExerciseTile: View {
                 .padding(10)
                 .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 10))
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
+        // One button reading `Bench Press, 8 reps at 100 kilograms, today`. In Arrange
+        // mode the tile opens nothing, so it is a container and its group picker is
+        // reachable on its own.
+        .accessibilityElement(children: arranging ? .contain : .combine)
+        .accessibilityLabel(tile.name)
+        .accessibilityValue(tile.subtitleParts()?.spoken ?? "Nothing logged yet")
+        .accessibilityAddTraits(arranging ? [] : .isButton)
     }
 
     /// **The path that always works.** A plain menu, no gesture at all: tap, pick a

@@ -72,6 +72,25 @@ struct LastInterval: Equatable {
         setting(in: distanceUnit, pace: false)
     }
 
+    /// The resume card's line as VoiceOver says it: the written form in words, pace and
+    /// heart rates included, then the day.
+    func spoken(in distanceUnit: DistanceUnit, asOf now: Date = .now) -> String {
+        var parts = ["\(Spoken.duration(duration)) at \(EnduranceText.spokenIntensity(intensity, unit, distanceUnit))"]
+        if unit == .speed, intensity > 0 { parts.append("pace \(EnduranceText.spokenPace(intensity, distanceUnit))") }
+        if unit.hasIncline, incline > 0 { parts.append(Spoken.incline(incline)) }
+        parts.append("average \(averageHeartRate), peak \(Spoken.heartRate(peakHeartRate))")
+        parts.append(day(asOf: now))
+        return parts.joined(separator: ", ")
+    }
+
+    /// The tile's words as VoiceOver says them: `6 minutes at 15.0 kilometres per hour, 1
+    /// percent incline`.
+    func spokenTileText(in distanceUnit: DistanceUnit) -> String {
+        var text = "\(Spoken.duration(duration)) at \(EnduranceText.spokenIntensity(intensity, unit, distanceUnit))"
+        if unit.hasIncline, incline > 0 { text += ", \(Spoken.incline(incline))" }
+        return text
+    }
+
     /// The day alone, in the words `LastEntry` uses.
     func day(asOf now: Date = .now) -> String {
         RelativeDay.text(for: date, asOf: now)

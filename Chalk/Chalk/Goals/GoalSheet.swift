@@ -74,6 +74,8 @@ struct GoalSheet: View {
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 22)
             .animation(.snappy(duration: 0.2), value: model.line)
+            // The reserved space is not said.
+            .accessibilityHidden(model.line == nil)
     }
 
     /// **At the foot of the sheet, and only where a goal exists.** No confirmation:

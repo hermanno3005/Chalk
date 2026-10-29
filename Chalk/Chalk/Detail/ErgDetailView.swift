@@ -130,6 +130,7 @@ struct ErgDetailView: View {
                     number: model.readout?.intensity ?? "—",
                     aside: model.readout?.aside,
                     dimmed: model.readout == nil,
+                    spoken: model.readout?.spoken ?? "No line in zone \(selection.zone)",
                     // The readout opens the point's sheet, as the `Entries` row does
                     // (SPEC §13.9). A zone with no line hands back no sheet.
                     opensHistory: model.readout != nil
@@ -141,11 +142,14 @@ struct ErgDetailView: View {
                     .padding(.top, 12)
                 tabs(selection)
                     .padding(.top, 24)
-                if let readout = model.readout, let points = model.reading.line?.points, !points.isEmpty {
+                if let readout = model.readout, let points = model.reading.line?.points, !points.isEmpty,
+                   let audioGraph = model.audioGraph {
                     ZoneLineChart(
                         points: points,
                         unit: model.unit ?? .speed,
                         selectedDuration: selection.duration,
+                        audioGraph: audioGraph,
+                        spokenValue: readout.spoken,
                         onSelect: model.select(duration:)
                     )
                     .detailChart()
@@ -210,6 +214,7 @@ struct ErgDetailView: View {
                 Text(hint.emptyStateLine)
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
+                    .accessibilityLabel(hint.spokenEmptyStateLine)
                     .padding(.top, 4)
             }
         }
@@ -286,6 +291,7 @@ struct ErgDetailView: View {
                     .foregroundStyle(.tertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(model.reading.spokenOverTheAxisCaption ?? caption)
             .padding(.top, 8)
         }
     }
@@ -297,9 +303,9 @@ struct ErgDetailView: View {
     private func rows(_ readout: ErgReading.Readout) -> some View {
         VStack(spacing: 0) {
             if let pace = readout.pace {
-                FactRow(label: "Pace", value: pace)
+                FactRow(label: "Pace", value: pace, spokenValue: readout.spokenPace)
             }
-            FactRow(label: "Heart rate", value: readout.averageHeartRate)
+            FactRow(label: "Heart rate", value: readout.averageHeartRate, spokenValue: readout.spokenHeartRate)
             FactRow(label: "Entries", value: "\(readout.entryCount)") {
                 history = model.historySheet()
             }

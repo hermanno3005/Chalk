@@ -21,6 +21,9 @@ struct DetailHead: View {
     var number: String?
     var aside: String?
     var dimmed = false
+    /// The number and aside as VoiceOver says them, `102.5 pounds for 5 reps`, read after
+    /// the name in place of the symbols drawn.
+    var spoken: String?
     /// Whether a tap on it opens the history sheet, which VoiceOver is told.
     var opensHistory = false
 
@@ -50,6 +53,7 @@ struct DetailHead: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(spoken.map { "\(name), \($0)" } ?? name)
         .accessibilityAddTraits(opensHistory ? [.isHeader, .isButton] : .isHeader)
         .accessibilityHint(opensHistory ? "Shows these entries" : "")
     }
@@ -85,16 +89,28 @@ struct DetailHead: View {
 struct FactRow: View {
     let label: String
     let value: String
+    /// `label` and `value` as VoiceOver says them, where the drawn words carry symbols:
+    /// `Entries at 5 or more reps`, `164 beats per minute`.
+    var spokenLabel: String?
+    var spokenValue: String?
     var action: (() -> Void)?
 
     var body: some View {
-        if let action {
-            Button(action: action) { content(opens: true) }
-                .buttonStyle(.plain)
-        } else {
-            content(opens: false)
-                .accessibilityElement(children: .combine)
+        Group {
+            if let action {
+                Button(action: action) { content(opens: true) }
+                    .buttonStyle(.plain)
+            } else {
+                content(opens: false)
+            }
         }
+        // One element, label then value; the `›` is drawn, not said — the button
+        // trait already says it opens something. Combined rather than ignored, so the
+        // button keeps its action.
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(spokenLabel ?? label)
+        .accessibilityValue(spokenValue ?? value)
+        .accessibilityAddTraits(action == nil ? [] : .isButton)
     }
 
     private func content(opens: Bool) -> some View {
@@ -168,7 +184,11 @@ struct ZoneTabs: View {
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                .accessibilityShowsLargeContentViewer()
+                .accessibilityShowsLargeContentViewer { Text("Z\(zone)") }
+                // `Zone 4`, said as selected when it is, and as having no line where
+                // it is dimmed.
+                .accessibilityLabel("Zone \(zone)")
+                .accessibilityValue(hasLine(zone) ? "" : "No line yet")
                 .accessibilityAddTraits(zone == selected ? .isSelected : [])
             }
         }

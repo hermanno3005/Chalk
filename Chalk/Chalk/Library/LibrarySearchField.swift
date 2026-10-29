@@ -18,6 +18,7 @@ struct LibrarySearchField: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             TextField(prompt, text: $query)
                 .focused($isFocused)
                 // An exit in its own right: submit resigns focus.

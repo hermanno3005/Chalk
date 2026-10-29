@@ -206,6 +206,20 @@ final class ErgDetailModel {
 
     var readout: ErgReading.Readout? { reading.readout }
 
+    /// The selected zone's line as VoiceOver plays and says it (SPEC §15.6); nil where the
+    /// zone has no line to play.
+    var audioGraph: AudioGraph? {
+        guard let selection, let unit, let points = reading.line?.points, !points.isEmpty else { return nil }
+        return AudioGraph(
+            zoneLine: points,
+            unit: unit,
+            distanceUnit: distanceUnit,
+            zone: selection.zone,
+            incline: unit.hasIncline ? selection.incline : nil,
+            goal: goal
+        )
+    }
+
     /// The scale every speed on this screen is written on, read live on every refresh.
     var distanceUnit: DistanceUnit { reading.distanceUnit }
 

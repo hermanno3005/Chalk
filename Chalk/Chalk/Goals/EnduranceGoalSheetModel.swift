@@ -83,6 +83,11 @@ final class EnduranceGoalSheetModel: Identifiable {
         inputs[field]?.text ?? ""
     }
 
+    /// A row's value as VoiceOver says it, as the lap-list grid's cells are said.
+    func spokenText(_ field: EnduranceField) -> String {
+        EnduranceInput.spoken(inputs[field], field, unit, distanceUnit)
+    }
+
     /// Moves the keypad to another row, settling the one it leaves — a stray tap puts
     /// its seed back.
     func select(_ field: EnduranceField) {
@@ -138,6 +143,15 @@ final class EnduranceGoalSheetModel: Identifiable {
     }
 
     // MARK: - The live line
+
+    /// `line` as VoiceOver says it: `0.4 kilometres per hour above your 6 minutes in zone
+    /// 4 at 1 percent incline`.
+    var spokenLine: String? {
+        guard line != nil, let goal = goal(intensity: value(.intensity) ?? 0) else { return nil }
+        guard let current = goal.current, let gap = goal.gap else { return "Not held yet at \(goal.spokenPoint)" }
+        if gap > 0 { return "\(EnduranceText.spokenSteps(gap, unit, distanceUnit)) above your \(goal.spokenPoint)" }
+        return "Already reached. Your \(goal.spokenPoint) is \(EnduranceText.spokenIntensity(current, unit, distanceUnit))"
+    }
 
     /// The one line under the intensity: how the goal on screen stands against **the
     /// exact point the rows name** — its ten-visit mean, read through `EnduranceGoal` so

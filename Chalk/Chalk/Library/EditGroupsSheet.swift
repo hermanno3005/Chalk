@@ -99,6 +99,11 @@ struct EditGroupsSheet: View {
             renamed = group.name
             renaming = group
         }
+        // `Core, 4 exercises`, a button that renames.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(group.name), \(Spoken.count(group.exercises?.count ?? 0, "exercise"))")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Renames this group")
     }
 
     private var trimmedNewGroup: String {

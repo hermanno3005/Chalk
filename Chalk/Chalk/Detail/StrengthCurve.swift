@@ -10,6 +10,10 @@ import SwiftUI
 struct StrengthCurve: View {
     let curve: RepMaxCurve
     let selectedReps: Int
+    /// What VoiceOver plays and says for the curve (SPEC §15.6).
+    let audioGraph: AudioGraph
+    /// The readout at the selected rep count, as VoiceOver says it.
+    let spokenValue: String
     /// `chartXSelection` writes `nil` here on lift; the model ignores that and keeps the
     /// last real value, which is what makes the selection sticky.
     let onSelect: (Int?) -> Void
@@ -106,7 +110,19 @@ struct StrengthCurve: View {
         // A tick at each rep count the scrub lands on (SPEC §15.4). Anything else that
         // moves the selection, such as correcting the machine, stays silent.
         .sensoryFeedback(.selection, trigger: selectedReps) { _, _ in isScrubbing }
+        // One element VoiceOver scrubs as a finger does, a swipe up or down a rep count,
+        // and plays as an audio graph from its rotor (SPEC §15.6).
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Strength curve")
+        .accessibilityValue(spokenValue)
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: onSelect(selectedReps + 1)
+            case .decrement: onSelect(selectedReps - 1)
+            @unknown default: break
+            }
+        }
+        .accessibilityChartDescriptor(audioGraph)
     }
 
     private var best: [CurvePoint] { Self.points(curve.best) }
@@ -145,12 +161,15 @@ struct StrengthCurve: View {
 }
 
 #Preview("A curve with shape") {
+    let curve = RepMaxCurve(entries: [
+        Entry(reps: 1, weight: 120), Entry(reps: 3, weight: 110),
+        Entry(reps: 5, weight: 100), Entry(reps: 8, weight: 85),
+    ])
     StrengthCurve(
-        curve: RepMaxCurve(entries: [
-            Entry(reps: 1, weight: 120), Entry(reps: 3, weight: 110),
-            Entry(reps: 5, weight: 100), Entry(reps: 8, weight: 85),
-        ]),
+        curve: curve,
         selectedReps: 5,
+        audioGraph: AudioGraph(curve: curve, weightUnit: .kg, goal: nil),
+        spokenValue: "",
         onSelect: { _ in }
     )
     .frame(height: 210)
@@ -160,9 +179,12 @@ struct StrengthCurve: View {
 /// The case the ghost has to survive: one entry, a flat curve, and a projection that
 /// still has to read as guidance rather than as a record (SPEC §5.2).
 #Preview("A single entry") {
+    let curve = RepMaxCurve(entries: [Entry(reps: 5, weight: 55)])
     StrengthCurve(
-        curve: RepMaxCurve(entries: [Entry(reps: 5, weight: 55)]),
+        curve: curve,
         selectedReps: 5,
+        audioGraph: AudioGraph(curve: curve, weightUnit: .kg, goal: nil),
+        spokenValue: "",
         onSelect: { _ in }
     )
     .frame(height: 210)

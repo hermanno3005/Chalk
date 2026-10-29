@@ -54,6 +54,16 @@ struct LastEntry: Equatable {
         "\(reps) × \(unit.text(weight))"
     }
 
+    /// The whole line as VoiceOver says it: `8 reps at 52.5 kilograms, today`.
+    func spokenText(in unit: WeightUnit, asOf now: Date = .now) -> String {
+        "\(spokenLift(in: unit)), \(day(asOf: now))"
+    }
+
+    /// The numbers as VoiceOver says them: `8 reps at 52.5 kilograms`.
+    func spokenLift(in unit: WeightUnit) -> String {
+        "\(Spoken.reps(reps)) at \(unit.spokenText(weight))"
+    }
+
     /// The day alone, in the same words.
     func day(asOf now: Date = .now) -> String {
         RelativeDay.text(for: date, asOf: now)

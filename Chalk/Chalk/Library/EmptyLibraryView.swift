@@ -12,10 +12,12 @@ struct EmptyLibraryView: View {
             Text(title)
                 .font(.title2.bold())
                 .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
             Text(detail)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+                .accessibilityLabel(spokenDetail)
                 .padding(.horizontal, 36)
             Button(action: onCreate) {
                 Text(button)
@@ -43,6 +45,15 @@ struct EmptyLibraryView: View {
             "Log what you lifted as plain reps × weight. Chalk works out what you have proven at every rep count, and what to load next time."
         case .endurance:
             "Log an interval as time, what you set and the heart rate it cost. Chalk works out what to set on this machine to hit a zone."
+        }
+    }
+
+    /// `detail` as VoiceOver says it: the `×` as the word it stands for.
+    private var spokenDetail: String {
+        switch half {
+        case .strength:
+            "Log what you lifted as plain reps times weight. Chalk works out what you have proven at every rep count, and what to load next time."
+        case .endurance: detail
         }
     }
 

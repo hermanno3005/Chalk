@@ -36,6 +36,7 @@ struct ResumeCard: View {
             .contentShape(Rectangle())
             .onTapGesture(perform: onOpen)
             .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(resume.exercise.name), \(resume.spoken())")
             .accessibilityAddTraits(.isButton)
             .accessibilityHint("Opens this exercise")
 

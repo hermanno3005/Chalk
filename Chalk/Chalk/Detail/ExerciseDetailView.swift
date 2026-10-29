@@ -145,6 +145,7 @@ struct ExerciseDetailView: View {
                     number: readout.weightWithUnit,
                     aside: readout.aside,
                     dimmed: readout.weight == nil,
+                    spoken: readout.spoken,
                     opensHistory: readout.weight != nil
                 )
                 .onTapGesture { history = model.historySheet() }
@@ -153,6 +154,8 @@ struct ExerciseDetailView: View {
                 StrengthCurve(
                     curve: model.curve,
                     selectedReps: model.selectedReps,
+                    audioGraph: model.audioGraph,
+                    spokenValue: readout.spoken,
                     onSelect: model.select
                 )
                 .detailChart()
@@ -202,6 +205,7 @@ struct ExerciseDetailView: View {
             FactRow(
                 label: "Entries at \(readout.reps)+ reps",
                 value: "\(readout.entriesBehind)",
+                spokenLabel: "Entries at \(readout.reps) or more reps",
                 action: readout.weight == nil ? nil : { history = model.historySheet() }
             )
             FactRow(
@@ -243,6 +247,8 @@ struct ExerciseDetailView: View {
 
     private func flashConfirmation() {
         withAnimation(.snappy) { flashingConfirmation = true }
+        // Said as well as shown: VoiceOver's focus is wherever the sheet left it.
+        AccessibilityNotification.Announcement("Logged").post()
         Task {
             try? await Task.sleep(for: .seconds(1.4))
             withAnimation(.easeOut) { flashingConfirmation = false }
@@ -269,6 +275,7 @@ struct ExerciseDetailView: View {
                 Text(hint.emptyStateLine)
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
+                    .accessibilityLabel(hint.spokenEmptyStateLine)
                     .padding(.top, 2)
             }
             // After the prompt to go and log, never ahead of it.

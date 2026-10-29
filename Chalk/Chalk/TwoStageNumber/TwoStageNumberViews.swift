@@ -44,7 +44,7 @@ struct GiantNumber: View {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(number.numberText.isEmpty ? "Blank" : number.numberText) \(number.unitText)")
+        .accessibilityLabel(number.spokenNumber)
         .accessibilityHint(number.mode == .keypad ? "Shows the steppers" : "Types a number")
     }
 }

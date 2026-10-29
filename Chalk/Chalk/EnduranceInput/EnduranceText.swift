@@ -78,3 +78,41 @@ enum EnduranceText {
         value < 10 ? "0\(value)" : "\(value)"
     }
 }
+
+// MARK: - Spoken
+
+extension EnduranceText {
+    /// An intensity as VoiceOver says it: `15.0 kilometres per hour`, `220 watts`,
+    /// `1 minute 45.3 seconds per 500 metres`, `level 12`.
+    static func spokenIntensity(_ value: Double, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
+        switch unit {
+        case .speed: return "\(intensityNumber(value, unit)) \(distance.spokenSpeedName)"
+        case .watts: return Spoken.count(Int(value.rounded()), "watt")
+        case .level: return "level \(intensityNumber(value, unit))"
+        case .split:
+            let tenths = Int((value * 10).rounded())
+            let minutes = tenths / 600
+            let seconds = Double(tenths % 600) / 10
+            let secondsText = "\(seconds.formatted(.number.precision(.fractionLength(0...1)))) \(seconds == 1 ? "second" : "seconds")"
+            let clock = minutes > 0 ? "\(Spoken.count(minutes, "minute")) \(secondsText)" : secondsText
+            return "\(clock) per 500 metres"
+        }
+    }
+
+    /// One cell's value as VoiceOver says it, where `cell(_:_:_:)` draws it: `6 minutes 30
+    /// seconds`, `9.5 miles per hour`, `1.5 percent`, `164 beats per minute`.
+    static func spokenCell(_ value: Double, _ field: EnduranceField, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
+        switch field {
+        case .duration: Spoken.duration(Int(value.rounded()))
+        case .intensity: spokenIntensity(value, unit, distance)
+        case .incline: "\(incline(value)) percent"
+        case .averageHeartRate, .peakHeartRate: Spoken.heartRate(Int(value.rounded()))
+        }
+    }
+
+    /// A speed's pace in words, as `pace(_:_:)` writes it: `4 minutes per kilometre`, `6
+    /// minutes 27 seconds per mile`.
+    static func spokenPace(_ speed: Double, _ distance: DistanceUnit) -> String {
+        "\(Spoken.duration(Int((3600 / speed).rounded()))) per \(distance.spokenPaceDistance)"
+    }
+}

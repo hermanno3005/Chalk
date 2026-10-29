@@ -65,10 +65,18 @@ struct LibraryTile: Identifiable {
     /// under what you did rather than cutting either off (SPEC §15.4).
     func subtitleParts(asOf now: Date = .now) -> SubtitleParts? {
         if let lastEntry {
-            return SubtitleParts(done: lastEntry.lift(in: weightUnit), day: lastEntry.day(asOf: now))
+            return SubtitleParts(
+                done: lastEntry.lift(in: weightUnit),
+                day: lastEntry.day(asOf: now),
+                spokenDone: lastEntry.spokenLift(in: weightUnit)
+            )
         }
         if let lastInterval {
-            return SubtitleParts(done: lastInterval.tileText(in: distanceUnit), day: lastInterval.day(asOf: now))
+            return SubtitleParts(
+                done: lastInterval.tileText(in: distanceUnit),
+                day: lastInterval.day(asOf: now),
+                spokenDone: lastInterval.spokenTileText(in: distanceUnit)
+            )
         }
         return nil
     }
@@ -77,9 +85,14 @@ struct LibraryTile: Identifiable {
     struct SubtitleParts: Equatable {
         let done: String
         let day: String
+        /// `done` as VoiceOver says it, `12 reps at 102.5 kilograms`.
+        var spokenDone: String?
 
         /// The two on one line, the way the subtitle is written wherever it fits.
         var text: String { "\(done) · \(day)" }
+
+        /// The two as VoiceOver says them: `12 reps at 102.5 kilograms, 3 days ago`.
+        var spoken: String { "\(spokenDone ?? done), \(day)" }
 
         /// `done` for a tile too narrow for it, free to break only after `×`, `at` or a
         /// `·`, so a number never leaves its unit: `1:45.3 /500 m` moves to the next line
@@ -105,6 +118,13 @@ struct LibrarySection: Identifiable {
     let tiles: [LibraryTile]
 
     var isUngrouped: Bool { id == nil }
+
+    /// The header as VoiceOver says it, the count said as what it counts: `Compound, 4
+    /// exercises`, `Rowing, 2 ergs`.
+    var spokenHeader: String {
+        let noun = tiles.first?.exercise.isErg == true ? "erg" : "exercise"
+        return "\(title), \(Spoken.count(tiles.count, noun))"
+    }
 
     /// How many tiles the grid sets side by side: two, and **one at an accessibility
     /// text size**, where a half-width tile would break a name mid-word (SPEC §15.6).
@@ -213,6 +233,11 @@ struct LibraryResume {
     /// with its heart rates — `6:00 at 15.0 km/h (4:00 /km) · 1 % · 168/174 bpm · today`.
     func text(asOf now: Date = .now) -> String {
         lastEntry?.text(in: weightUnit, asOf: now) ?? lastInterval?.text(in: distanceUnit, asOf: now) ?? ""
+    }
+
+    /// The card's line as VoiceOver says it: `8 reps at 52.5 kilograms, today`.
+    func spoken(asOf now: Date = .now) -> String {
+        lastEntry?.spokenText(in: weightUnit, asOf: now) ?? lastInterval?.spoken(in: distanceUnit, asOf: now) ?? ""
     }
 
     /// The card for `exercise`, or nil when it has nothing to resume. `zones` are the

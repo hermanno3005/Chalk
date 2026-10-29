@@ -364,6 +364,10 @@ struct LibraryView: View {
         }
         // Ungrouped is a bucket rather than a group of your own, and reads as one.
         .foregroundStyle(section.isUngrouped ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+        // `Compound, 4 exercises`: the count said as what it counts.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(section.spokenHeader)
+        .accessibilityAddTraits(.isHeader)
     }
 
     // MARK: - Searching
@@ -382,6 +386,7 @@ struct LibraryView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityValue(tile.subtitleParts()?.spoken ?? "")
             }
             .chalkRows()
             if let createSuggestion {

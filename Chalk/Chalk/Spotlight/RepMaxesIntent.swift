@@ -48,7 +48,9 @@ struct RepMaxCardView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(card.name)
                     if let machine = card.machine {
-                        Text(machine).font(.footnote)
+                        Text(machine)
+                            .font(.footnote)
+                            .accessibilityLabel(card.spokenMachine ?? machine)
                     }
                 }
                 .foregroundStyle(Color.grey)
@@ -68,7 +70,8 @@ struct RepMaxCardView: View {
                                             .fontWeight(.bold)
                                             .monospacedDigit()
                                     }
-                                    .accessibilityElement(children: .combine)
+                                    .accessibilityElement(children: .ignore)
+                                    .accessibilityLabel(cell.spoken)
                                 }
                             }
                         }

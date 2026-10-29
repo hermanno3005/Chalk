@@ -56,7 +56,8 @@ struct GoalLineView: View {
         .foregroundStyle(Color.goal(reached: line.isReached))
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(line.spoken)
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Changes the goal")
     }
@@ -64,9 +65,9 @@ struct GoalLineView: View {
 
 #Preview {
     VStack(alignment: .leading, spacing: 16) {
-        GoalLineView(line: .init(text: "Goal 140 × 5 · 140 kg to go", isReached: false, progress: 0))
-        GoalLineView(line: .init(text: "Goal 140 × 5 · 40 kg to go", isReached: false, progress: 0.33))
-        GoalLineView(line: .init(text: "Goal 140 × 5 · reached", isReached: true, progress: 1))
+        GoalLineView(line: .init(text: "Goal 140 × 5 · 140 kg to go", spoken: "", isReached: false, progress: 0))
+        GoalLineView(line: .init(text: "Goal 140 × 5 · 40 kg to go", spoken: "", isReached: false, progress: 0.33))
+        GoalLineView(line: .init(text: "Goal 140 × 5 · reached", spoken: "", isReached: true, progress: 1))
     }
     .padding()
 }

@@ -7,6 +7,7 @@ extension GoalLine {
     init(endurance goal: EnduranceGoal) {
         self.init(
             text: "Goal \(goal.text) · \(goal.status)",
+            spoken: goal.spokenLine,
             isReached: goal.isReached,
             progress: goal.progress
         )

@@ -128,6 +128,19 @@ struct EnduranceGoal: Equatable {
         return gap == 0 ? "reached" : "\(EnduranceText.steps(gap, unit, distanceUnit)) to go"
     }
 
+    /// The goal line as VoiceOver says it: `Goal 15.5 kilometres per hour for 6 minutes in
+    /// zone 4 at 1 percent incline, 0.4 kilometres per hour to go`, `…, reached` or
+    /// `…, not held yet`.
+    var spokenLine: String {
+        let point = "\(EnduranceText.spokenIntensity(intensity, unit, distanceUnit)) for \(spokenPoint)"
+        let status = switch gap {
+        case nil: "not held yet"
+        case 0: "reached"
+        case let gap?: "\(EnduranceText.spokenSteps(gap, unit, distanceUnit)) to go"
+        }
+        return "Goal \(point), \(status)"
+    }
+
     /// What a unit change says of the goals it clears (SPEC §13.6): *Your goal of 260 W ·
     /// 10:00 in Z3 is cleared.* — the most recently set named, any others counted. Nil
     /// when there were none.
@@ -138,6 +151,12 @@ struct EnduranceGoal: Equatable {
         case 1: return "Your goal of \(named.text) and 1 other goal are cleared."
         case let others: return "Your goal of \(named.text) and \(others) other goals are cleared."
         }
+    }
+
+    /// `pointText` as VoiceOver says it: `6 minutes in zone 4 at 1 percent incline`.
+    var spokenPoint: String {
+        let point = "\(Spoken.duration(duration)) in zone \(zone)"
+        return incline.map { "\(point) at \(Spoken.incline($0))" } ?? point
     }
 
     /// `6:00 in Z4 · 1 %` — the point the goal names, with no number.
@@ -162,6 +181,22 @@ extension EnduranceText {
             return "\(amount.formatted(.number.precision(.fractionLength(0...1)).grouping(.never))) s"
         case .level:
             return steps == 1 ? "1 level" : "\(steps) levels"
+        }
+    }
+
+    /// A difference of `steps` in the unit's own step, as `steps(_:_:_:)` writes it:
+    /// `0.4 kilometres per hour`, `12 watts`, `2 seconds`, `2 levels`.
+    static func spokenSteps(_ steps: Int, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
+        let amount = Double(steps) * unit.step
+        switch unit {
+        case .speed:
+            return "\(amount.formatted(.number.precision(.fractionLength(1)).grouping(.never))) \(distance.spokenSpeedName)"
+        case .watts:
+            return Spoken.count(steps, "watt")
+        case .split:
+            return "\(amount.formatted(.number.precision(.fractionLength(0...1)).grouping(.never))) \(amount == 1 ? "second" : "seconds")"
+        case .level:
+            return Spoken.count(steps, "level")
         }
     }
 }

@@ -80,6 +80,15 @@ struct TwoStageNumber {
         }
     }
 
+    /// What VoiceOver says for the giant number: `8 reps`, `102.5 pounds`, `Blank pounds`.
+    var spokenNumber: String {
+        let number = numberText.isEmpty ? "Blank" : numberText
+        switch stage {
+        case .reps: return "\(number) \(unitText)"
+        case .weight: return "\(number) \(weightUnit.spokenName)"
+        }
+    }
+
     /// What VoiceOver says for a stepper on the stage in view: the step said as the snap
     /// it is, on the unit's grid — `Up to the next 5 pounds`.
     func stepperLabel(_ direction: Int) -> String {
