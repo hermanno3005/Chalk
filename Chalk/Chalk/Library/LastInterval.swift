@@ -63,13 +63,18 @@ struct LastInterval: Equatable {
     /// The resume card's line: the whole written form, heart rates included, and the day,
     /// a speed written in `distanceUnit`.
     func text(in distanceUnit: DistanceUnit, asOf now: Date = .now) -> String {
-        "\(written(in: distanceUnit)) · \(RelativeDay.text(for: date, asOf: now))"
+        "\(written(in: distanceUnit)) · \(day(asOf: now))"
     }
 
-    /// A tile's line: `6:00 at 15.0 km/h · today` — **no heart rates and no pace**, so it
-    /// fits a tile's one line (SPEC §13.5).
-    func tileText(in distanceUnit: DistanceUnit, asOf now: Date = .now) -> String {
-        "\(setting(in: distanceUnit, pace: false)) · \(RelativeDay.text(for: date, asOf: now))"
+    /// What a tile says you did, before its day: `6:00 at 15.0 km/h` — **no heart rates and
+    /// no pace**, so it stays short enough for a tile (SPEC §13.5).
+    func tileText(in distanceUnit: DistanceUnit) -> String {
+        setting(in: distanceUnit, pace: false)
+    }
+
+    /// The day alone, in the words `LastEntry` uses.
+    func day(asOf now: Date = .now) -> String {
+        RelativeDay.text(for: date, asOf: now)
     }
 
     /// The written form (SPEC §13.2): average before peak, incline left out at 0 %.

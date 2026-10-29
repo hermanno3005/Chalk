@@ -57,7 +57,40 @@ struct LibraryTile: Identifiable {
     /// an erg's without its heart rates (SPEC §13.5). `nil` with nothing logged: that
     /// tile shows no subtitle at all.
     func subtitle(asOf now: Date = .now) -> String? {
-        lastEntry?.text(in: weightUnit, asOf: now) ?? lastInterval?.tileText(in: distanceUnit, asOf: now)
+        subtitleParts(asOf: now)?.text
+    }
+
+    /// The subtitle in its two halves, so a tile too narrow for the one line sets the day
+    /// under what you did rather than cutting either off (SPEC §15.4).
+    func subtitleParts(asOf now: Date = .now) -> SubtitleParts? {
+        if let lastEntry {
+            return SubtitleParts(done: lastEntry.lift(in: weightUnit), day: lastEntry.day(asOf: now))
+        }
+        if let lastInterval {
+            return SubtitleParts(done: lastInterval.tileText(in: distanceUnit), day: lastInterval.day(asOf: now))
+        }
+        return nil
+    }
+
+    /// What you last did, `12 × 102.5 kg`, and the day you did it, `3 days ago`.
+    struct SubtitleParts: Equatable {
+        let done: String
+        let day: String
+
+        /// The two on one line, the way the subtitle is written wherever it fits.
+        var text: String { "\(done) · \(day)" }
+
+        /// `done` for a tile too narrow for it, free to break only after `×`, `at` or a
+        /// `·`, so a number never leaves its unit: `1:45.3 /500 m` moves to the next line
+        /// whole. A slash is a break of its own to the line breaker, so it is joined to
+        /// what follows it too.
+        var doneKeepingUnits: String {
+            done.replacingOccurrences(of: " ", with: "\u{00A0}")
+                .replacingOccurrences(of: "/", with: "/\u{2060}")
+                .replacingOccurrences(of: "\u{00A0}×\u{00A0}", with: "\u{00A0}× ")
+                .replacingOccurrences(of: "\u{00A0}at\u{00A0}", with: "\u{00A0}at ")
+                .replacingOccurrences(of: "\u{00A0}·\u{00A0}", with: "\u{00A0}· ")
+        }
     }
 }
 
@@ -71,6 +104,18 @@ struct LibrarySection: Identifiable {
     let tiles: [LibraryTile]
 
     var isUngrouped: Bool { id == nil }
+
+    /// How many tiles the grid sets side by side.
+    static let columns = 2
+
+    /// The tiles as the grid lays them out, `columns` to a row. **A lone last tile is a
+    /// row of its own**, which the grid draws the full width, so no row leaves half the
+    /// screen empty (SPEC §15.4).
+    var rows: [[LibraryTile]] {
+        stride(from: 0, to: tiles.count, by: Self.columns).map {
+            Array(tiles[$0..<min($0 + Self.columns, tiles.count)])
+        }
+    }
 
     /// This section as a drop target, so the highlight can be compared without the
     /// double-optional an `Identifiable` with an optional id would otherwise force on

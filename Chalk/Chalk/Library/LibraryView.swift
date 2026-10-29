@@ -290,15 +290,23 @@ struct LibraryView: View {
         let isTarget = dropTarget == section.dropTarget
         return VStack(alignment: .leading, spacing: 8) {
             header(section)
-            LazyVGrid(columns: Self.tileColumns, spacing: 10) {
-                ForEach(section.tiles) { tile in
-                    ExerciseTile(
-                        tile: tile,
-                        arranging: arranging,
-                        groups: model.groups.groups,
-                        onOpen: { opened.append(tile.exercise) },
-                        onAssign: { model.assign(tile.exercise, to: model.groups.group(id: $0)) }
-                    )
+            // A `Grid` rather than a `LazyVGrid`: a lone last tile spans both columns, so
+            // no row leaves half the screen empty, and the tiles in a row share its height
+            // when one's last entry takes a second line (SPEC §15.4).
+            Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+                ForEach(section.rows, id: \.first?.id) { row in
+                    GridRow {
+                        ForEach(row) { tile in
+                            ExerciseTile(
+                                tile: tile,
+                                arranging: arranging,
+                                groups: model.groups.groups,
+                                onOpen: { opened.append(tile.exercise) },
+                                onAssign: { model.assign(tile.exercise, to: model.groups.group(id: $0)) }
+                            )
+                            .gridCellColumns(row.count == 1 ? LibrarySection.columns : 1)
+                        }
+                    }
                 }
             }
         }
@@ -338,11 +346,6 @@ struct LibraryView: View {
         // Ungrouped is a bucket rather than a group of your own, and reads as one.
         .foregroundStyle(section.isUngrouped ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
     }
-
-    private static let tileColumns = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10),
-    ]
 
     // MARK: - Searching
 

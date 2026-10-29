@@ -39,14 +39,26 @@ struct ExerciseTile: View {
 
             // An exercise with nothing logged says nothing — a placeholder line here
             // would be a number that does not exist (SPEC §4).
-            if let subtitle = tile.subtitle() {
-                Text(subtitle)
-                    .font(.caption)
-                    .lineLimit(1)
-                    .foregroundStyle(.secondary)
+            //
+            // **Never truncated** (SPEC §15.4): one line where it fits, otherwise the day
+            // drops under what you did, which wraps if it must — `12 × 102.5 kg` over
+            // `3 days ago` on the smallest iPhone's half-width tile.
+            if let subtitle = tile.subtitleParts() {
+                ViewThatFits(in: .horizontal) {
+                    Text(subtitle.text)
+                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(subtitle.doneKeepingUnits)
+                        Text(subtitle.day)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // Both ways, so the tiles in a grid row split it evenly and share its height.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(12)
         .background(Color.surface, in: RoundedRectangle(cornerRadius: 14))
         .contentShape(RoundedRectangle(cornerRadius: 14))
