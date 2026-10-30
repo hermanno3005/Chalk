@@ -29,10 +29,13 @@ struct NewGymSheet: View {
                             "You already have a gym called \(match.name). Create this one only if it is a different place.",
                             systemImage: "exclamationmark.triangle"
                         )
-                        .foregroundStyle(.orange)
+                        // Orange is the goal's alone (SPEC §15.4).
+                        .foregroundStyle(.primary)
                     }
                 }
+                .chalkRows()
             }
+            .chalkScreen()
             .navigationTitle("New gym")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -269,5 +269,5 @@ struct HistorySheetModelTests {
 /// A weight as this device would write it — the tests assert the sheet's phrasing, not
 /// the decimal separator of whichever locale they happen to run in.
 private func kg(_ weight: Double) -> String {
-    weight.kilogramsText
+    weight.weightText
 }

@@ -38,11 +38,14 @@ struct EditGroupsSheet: View {
                     }
                 } header: {
                     Text("Groups")
+                        .foregroundStyle(.secondary)
                 } footer: {
                     Text("Drag to reorder — this is the order the sections appear in. Tap to rename. Deleting a group keeps its exercises and moves them to Ungrouped.")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
 
-                Section("Add a group") {
+                Section {
                     HStack {
                         TextField("Name", text: $newGroup)
                             .submitLabel(.done)
@@ -50,10 +53,15 @@ struct EditGroupsSheet: View {
                         Button("Add", action: add)
                             .disabled(trimmedNewGroup.isEmpty)
                     }
+                } header: {
+                    Text("Add a group")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
             }
             // Always arranging: the grips are the point of the screen.
             .environment(\.editMode, .constant(.active))
+            .chalkScreen()
             .navigationTitle("Groups")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -91,6 +99,11 @@ struct EditGroupsSheet: View {
             renamed = group.name
             renaming = group
         }
+        // `Core, 4 exercises`, a button that renames.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(group.name), \(String(localized: "\(group.exercises?.count ?? 0) exercises"))")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Renames this group")
     }
 
     private var trimmedNewGroup: String {

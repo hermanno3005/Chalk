@@ -12,7 +12,7 @@ import Foundation
 /// exercise, one machine's entries for a gym-bound one.
 struct Goal: Equatable {
     let reps: Int
-    /// Kilograms.
+    /// On the weight unit's scale, as an entry's weight is.
     let weight: Double
     /// When the goal was last set — the moment the ring counts from.
     ///
@@ -40,7 +40,19 @@ struct Goal: Equatable {
     }
 
     /// `140 × 5` — the goal as every surface names it.
-    var text: String { "\(weight.kilogramsText) × \(reps)" }
+    var text: String { "\(weight.weightText) × \(reps)" }
+
+    /// `text` as VoiceOver says it: `140 kilograms for 5 reps`.
+    func spokenText(in unit: WeightUnit) -> String {
+        String(localized: "\(unit.spokenText(weight)) for \(Spoken.reps(reps))")
+    }
+
+    /// The goal line as VoiceOver says it: `Goal 140 kilograms for 5 reps, 40 kilograms to
+    /// go`, or `…, reached`.
+    func spokenLine(in unit: WeightUnit) -> String {
+        let target = String(localized: "Goal \(spokenText(in: unit))")
+        return isReached ? String(localized: "\(target), reached") : String(localized: "\(target), \(unit.spokenText(gap)) to go")
+    }
 
     /// `best[reps] >= weight` — a 5-rep 95 reaches a 1-rep goal of 95.
     var isReached: Bool { (current ?? 0) >= weight }

@@ -39,10 +39,17 @@ struct HeartRateZones: Equatable {
         self.init(lowerBounds: stored)
     }
 
-    /// Writes these zones over whatever this device held. There is no way to clear them:
-    /// once set, nothing that depends on them is gated again.
+    /// Writes these zones over whatever this device held. Settings has no way to clear
+    /// them: once set, nothing that depends on them is gated again, short of a restore.
     func save(to defaults: UserDefaults) {
         defaults.set(lowerBounds, forKey: Self.key)
+    }
+
+    /// Unsets this device's zones, so every zone-gated screen is gated again. **Only a
+    /// restore calls this**, for a backup made before zones were set: it is the one way
+    /// zones are ever unset (SPEC §15.1).
+    static func clear(from defaults: UserDefaults) {
+        defaults.removeObject(forKey: key)
     }
 
     /// The zone, 1…5, a heart rate falls in. A heart rate exactly on a boundary is in the

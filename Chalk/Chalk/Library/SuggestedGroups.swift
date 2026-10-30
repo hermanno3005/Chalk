@@ -11,12 +11,22 @@ enum SuggestedGroups {
 
     /// `Compound` beside `Legs` is incoherent as a classification and entirely fine as a
     /// shelf you arranged yourself. The order is the order they seed in.
-    static let names = ["Compound", "Legs", "Push", "Pull", "Core"]
+    static let names = [
+        String(localized: "Compound"),
+        String(localized: "Legs"),
+        String(localized: "Push"),
+        String(localized: "Pull"),
+        String(localized: "Core"),
+    ]
 
     /// The endurance suggestion. **No *Other*** — Ungrouped is already the catch-all and
     /// sorts last — and **no *Ergs***, since every endurance machine is an erg, the
     /// treadmill included (SPEC §13.5).
-    static let enduranceNames = ["Treadmills", "Rowing & Ski", "Bikes"]
+    static let enduranceNames = [
+        String(localized: "Treadmills"),
+        String(localized: "Rowing & Ski"),
+        String(localized: "Bikes"),
+    ]
 
     /// Set once strength's seed has run. It lives in `UserDefaults` rather than the store
     /// because it is not part of the record — the store holds training, and adding a

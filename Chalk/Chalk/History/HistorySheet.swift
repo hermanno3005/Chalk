@@ -38,8 +38,10 @@ struct HistorySheet: View {
                             }
                         }
                 }
+                .chalkRows()
             }
             .listStyle(.plain)
+            .chalkScreen()
             .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -65,7 +67,7 @@ struct HistorySheet: View {
     private var confirmation: some View {
         if flashingConfirmation {
             Label("Saved", systemImage: "checkmark.circle.fill")
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(.regularMaterial, in: .capsule)
@@ -129,10 +131,10 @@ struct HistorySheet: View {
 
         private var accessibilityLabel: String {
             [
-                row.lift,
+                row.spokenLift,
                 row.day,
-                row.machine,
-                row.isBest ? "sets this best" : nil,
+                row.spokenMachine,
+                row.isBest ? String(localized: "sets this best") : nil,
             ]
             .compactMap { $0 }
             .joined(separator: ", ")

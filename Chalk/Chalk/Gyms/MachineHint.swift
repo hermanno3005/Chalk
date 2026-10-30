@@ -26,21 +26,38 @@ struct MachineHint: Equatable {
     /// to walk.
     let machineName: String
 
+    /// The scale `weight` is written on.
+    let weightUnit: WeightUnit
+
     /// `55 kg × 5 on Hammer Strength` — the clause both surfaces draw, and the whole of
     /// what the lookup found.
     var text: String {
-        "\(weight.kilogramsText) kg × \(Self.reps) on \(machineName)"
+        String(localized: "\(weightUnit.text(weight)) × \(Self.reps) on \(machineName)")
     }
 
     /// The line under the empty state's text, on the detail screen (SPEC §5.4).
-    var emptyStateLine: String { "No entries here — \(text)" }
+    var emptyStateLine: String { String(localized: "No entries here — \(text)") }
+
+    /// `emptyStateLine` as VoiceOver says it: `No entries here. 55 kilograms for 5 reps on
+    /// Hammer Strength`.
+    var spokenEmptyStateLine: String {
+        String(localized: "No entries here. \(spokenText)")
+    }
+
+    /// `text` as VoiceOver says it: `55 kilograms for 5 reps on Hammer Strength`.
+    private var spokenText: String {
+        String(localized: "\(weightUnit.spokenText(weight)) for \(Spoken.reps(Self.reps)) on \(machineName)")
+    }
 
     /// The verdict line's fifth state, in the log sheet (SPEC §6.5).
     ///
     /// The two lead-ins are the spec's own words, kept here beside the clause they wrap
     /// so the app's copy for one idea lives in one place rather than either surface's
     /// view code.
-    var verdictLine: String { "No history here — \(text)" }
+    var verdictLine: String { String(localized: "No history here — \(text)") }
+
+    /// `verdictLine` as VoiceOver says it.
+    var spokenVerdictLine: String { String(localized: "No history here. \(spokenText)") }
 
     /// The hint for one gym-bound screen, or `nil` where there is nothing honest to say.
     ///
@@ -61,11 +78,16 @@ struct MachineHint: Equatable {
     /// **An archived gym's machine is quotable like any other.** Archived is a matter of
     /// display, and no rep-max is affected by it — the numbers you lifted there are still
     /// yours, and nothing in the spec ranks siblings beyond the date.
-    static func lookUp(_ exercise: Exercise, scopedTo machine: Machine?) -> MachineHint? {
+    static func lookUp(
+        _ exercise: Exercise,
+        scopedTo machine: Machine?,
+        weightUnit: WeightUnit
+    ) -> MachineHint? {
         lookUp(
             exercise,
             scopedTo: machine,
-            historyHere: MachineScope.entries(of: exercise, on: machine)
+            historyHere: MachineScope.entries(of: exercise, on: machine),
+            weightUnit: weightUnit
         )
     }
 
@@ -76,7 +98,8 @@ struct MachineHint: Equatable {
     static func lookUp(
         _ exercise: Exercise,
         scopedTo machine: Machine?,
-        historyHere entries: [Entry]
+        historyHere entries: [Entry],
+        weightUnit: WeightUnit
     ) -> MachineHint? {
         guard exercise.isGymBound else { return nil }
         // A machine with a lift on it speaks for itself.
@@ -87,7 +110,7 @@ struct MachineHint: Equatable {
               let best = RepMaxCurve.best(atLeast: reps, in: sibling.entries ?? [])
         else { return nil }
 
-        return MachineHint(weight: best, machineName: sibling.name)
+        return MachineHint(weight: best, machineName: sibling.name, weightUnit: weightUnit)
     }
 
     /// The machine a hint quotes from: **the most recently used** of the exercise's other

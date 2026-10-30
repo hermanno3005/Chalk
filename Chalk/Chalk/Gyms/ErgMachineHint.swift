@@ -12,9 +12,15 @@ struct ErgMachineHint: Equatable {
     /// `6:00 in Z4 at 15.0 km/h · 1 % on Technogym Run · Urban Gym` — the clause the
     /// lead-in wraps.
     let text: String
+    /// `text` as VoiceOver says it: `6 minutes in zone 4 at 15.0 kilometres per hour, 1
+    /// percent incline, on Technogym Run at Urban Gym`.
+    let spoken: String
 
     /// The line under the empty state's text, as strength's `MachineHint.emptyStateLine`.
-    var emptyStateLine: String { "No entries here — \(text)" }
+    var emptyStateLine: String { String(localized: "No entries here — \(text)") }
+
+    /// `emptyStateLine` as VoiceOver says it.
+    var spokenEmptyStateLine: String { String(localized: "No entries here. \(spoken)") }
 
     /// The hint for one gym-bound erg screen, or `nil` where there is nothing honest to say:
     ///
@@ -24,8 +30,13 @@ struct ErgMachineHint: Equatable {
     /// - a sibling with **no valid interval**, or whose most recent one is **not a point
     ///   on its line** (over 20:00) — never another point instead (§5.4's rule).
     ///
-    /// `zones` is passed in, read live by the caller (ADR-0005).
-    static func lookUp(_ erg: Exercise, scopedTo machine: Machine?, zones: HeartRateZones?) -> ErgMachineHint? {
+    /// `zones` and `distanceUnit` are passed in, read live by the caller (ADR-0005).
+    static func lookUp(
+        _ erg: Exercise,
+        scopedTo machine: Machine?,
+        zones: HeartRateZones?,
+        distanceUnit: DistanceUnit
+    ) -> ErgMachineHint? {
         guard erg.isErg, erg.isGymBound, let unit = erg.ergUnit, let zones else { return nil }
         guard !MachineScope.entries(of: erg, on: machine).contains(where: \.isAnInterval) else { return nil }
 
@@ -38,12 +49,16 @@ struct ErgMachineHint: Equatable {
         let line = ZoneLine(entries: sibling.entries ?? [], zones: zones, unit: unit, zone: zone, incline: latest.incline)
         guard let point = line.points.first(where: { $0.duration == latest.duration }) else { return nil }
 
-        var text = "\(EnduranceText.clock(point.duration)) in Z\(zone) at \(EnduranceText.intensity(point.intensity, unit, pace: false))"
+        var text = String(localized: "\(EnduranceText.clock(point.duration)) in Z\(zone) at \(EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false))")
         // As the written form: incline on a speed erg only, and left out at 0 % (SPEC §13.2).
         let incline = ErgUnit.roundedIncline(latest.incline)
         if unit.hasIncline, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
-        text += " on \(sibling.caption)"
-        return ErgMachineHint(text: text)
+        text += String(localized: " on \(sibling.caption)")
+
+        var spoken = String(localized: "\(Spoken.duration(point.duration)) in zone \(zone) at \(EnduranceText.spokenIntensity(point.intensity, unit, distanceUnit))")
+        if unit.hasIncline, incline > 0 { spoken += ", \(Spoken.incline(incline))," }
+        spoken += String(localized: " on \(sibling.spokenCaption)")
+        return ErgMachineHint(text: text, spoken: spoken)
     }
 
     /// **The same model at another gym** — a case-insensitive equal model name — that has

@@ -19,12 +19,15 @@ struct ErgHistorySheet: View {
                 Section {
                     ForEach(model.rows) { row($0) }
                 }
+                .chalkRows()
                 if !model.older.isEmpty {
                     Section {
                         ForEach(model.older) { row($0) }
                     } header: {
                         Text(ErgHistoryModel.divider)
+                            .foregroundStyle(.secondary)
                     }
+                    .chalkRows()
                 }
             }
             .listStyle(.plain)
@@ -33,9 +36,17 @@ struct ErgHistorySheet: View {
                     ContentUnavailableView("No entries left", systemImage: "tray")
                 }
             }
+            .chalkScreen()
             .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // The title drawn as before, said in words: `6:00` is not a time of day.
+                ToolbarItem(placement: .principal) {
+                    Text(model.title)
+                        .font(.headline)
+                        .accessibilityLabel(model.spokenTitle)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
@@ -67,6 +78,8 @@ struct ErgHistorySheet: View {
             Text(row.text)
                 .monospacedDigit()
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel(row.spoken)
+                .accessibilityAddTraits(.isButton)
                 .accessibilityHint("Edits this entry")
         }
     }

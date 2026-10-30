@@ -14,19 +14,20 @@ enum EnduranceField: CaseIterable, Hashable {
         unit.hasIncline ? allCases : allCases.filter { $0 != .incline }
     }
 
-    /// The grid's column title: `Time | km/h | % | Avg | Peak`, or the unit's own word.
-    func columnTitle(_ unit: ErgUnit) -> String {
+    /// The grid's column title: `Time | km/h | % | Avg | Peak`, a speed in the distance
+    /// unit (`mph`), or the unit's own word.
+    func columnTitle(_ unit: ErgUnit, _ distance: DistanceUnit) -> String {
         switch self {
-        case .duration: "Time"
+        case .duration: String(localized: "Time")
         case .incline: "%"
-        case .averageHeartRate: "Avg"
-        case .peakHeartRate: "Peak"
+        case .averageHeartRate: String(localized: "Avg")
+        case .peakHeartRate: String(localized: "Peak")
         case .intensity:
             switch unit {
-            case .speed: "km/h"
-            case .watts: "W"
-            case .split: "/500 m"
-            case .level: "Level"
+            case .speed: distance.speedSymbol
+            case .watts: String(localized: "W")
+            case .split: String(localized: "/500 m")
+            case .level: String(localized: "Level")
             }
         }
     }
@@ -34,16 +35,16 @@ enum EnduranceField: CaseIterable, Hashable {
     /// The field's name in words, over the keypad: `Row 2 · Average heart rate`.
     func name(_ unit: ErgUnit) -> String {
         switch self {
-        case .duration: "Duration"
-        case .incline: "Incline"
-        case .averageHeartRate: "Average heart rate"
-        case .peakHeartRate: "Peak heart rate"
+        case .duration: String(localized: "Duration")
+        case .incline: String(localized: "Incline")
+        case .averageHeartRate: String(localized: "Average heart rate")
+        case .peakHeartRate: String(localized: "Peak heart rate")
         case .intensity:
             switch unit {
-            case .speed: "Speed"
-            case .watts: "Power"
-            case .split: "Split"
-            case .level: "Level"
+            case .speed: String(localized: "Speed")
+            case .watts: String(localized: "Power")
+            case .split: String(localized: "Split")
+            case .level: String(localized: "Level")
             }
         }
     }

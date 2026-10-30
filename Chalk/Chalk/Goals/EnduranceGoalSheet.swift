@@ -18,7 +18,9 @@ struct EnduranceGoalSheet: View {
             VStack(spacing: 12) {
                 Picker("Zone", selection: $model.zone) {
                     ForEach(ZoneLine.zones, id: \.self) { zone in
-                        Text("Z\(zone)").tag(Int?.some(zone))
+                        Text("Z\(zone)")
+                            .accessibilityLabel("Zone \(zone)")
+                            .tag(Int?.some(zone))
                     }
                 }
                 .pickerStyle(.segmented)
@@ -29,7 +31,7 @@ struct EnduranceGoalSheet: View {
                         if field != model.rows.last { Divider() }
                     }
                 }
-                .background(Color.secondary.opacity(0.08), in: .rect(cornerRadius: 10))
+                .background(Color.grey.opacity(0.08), in: .rect(cornerRadius: 10))
 
                 Text(model.line?.text ?? " ")
                     .font(.subheadline)
@@ -37,6 +39,8 @@ struct EnduranceGoalSheet: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, minHeight: 22)
                     .animation(.snappy(duration: 0.2), value: model.line)
+                    .accessibilityLabel(model.spokenLine ?? "")
+                    .accessibilityHidden(model.line == nil)
 
                 Spacer(minLength: 0)
                 NumberKeypad(decimalIsDead: model.decimalIsDead) { key in
@@ -53,6 +57,7 @@ struct EnduranceGoalSheet: View {
             .padding(.horizontal)
             .padding(.top, 8)
             .padding(.bottom, 12)
+            .chalkScreen()
             .navigationTitle(model.hasGoal ? "Change goal" : "Set a goal")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -97,6 +102,9 @@ struct EnduranceGoalSheet: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(field.name(model.unit))
+        .accessibilityValue(model.spokenText(field))
         .accessibilityAddTraits(isFocused ? .isSelected : [])
     }
 
@@ -104,7 +112,7 @@ struct EnduranceGoalSheet: View {
         switch field {
         case .incline: " %"
         // A level's row is already named `Level`.
-        case .intensity: model.unit == .level ? "" : " " + field.columnTitle(model.unit)
+        case .intensity: model.unit == .level ? "" : " " + field.columnTitle(model.unit, model.distanceUnit)
         default: ""
         }
     }

@@ -35,28 +35,29 @@ struct GoalDonut: View {
 extension Color {
     /// The goal colour, or grey once reached — **a reached goal is always grey**, on every
     /// surface that draws one (SPEC §12.5).
-    static func goal(reached: Bool) -> Color { reached ? .secondary : .goal }
+    static func goal(reached: Bool) -> Color { reached ? .grey : .goal }
 }
 
 /// The detail screen's goal line: `Goal 140 × 5 · 40 kg to go`, led by the donut, both
 /// in the goal colour — and both grey once reached.
 ///
-/// **No `›`**, unlike the readout's subhead above it: two stacked tappable rows are told
-/// apart by the chevron, and this one opens a sheet about the goal, not a list.
+/// **No `›`**, unlike the rows under the chart: a `›` opens a list of entries, and this
+/// opens a sheet about the goal.
 struct GoalLineView: View {
     let line: GoalLine
 
     var body: some View {
         HStack(spacing: 8) {
             GoalDonut(progress: line.progress, isReached: line.isReached)
-            Text(line.text)
+            Text(line.text.unbrokenAtSlashes)
                 .font(.subheadline)
                 .contentTransition(.numericText())
         }
         .foregroundStyle(Color.goal(reached: line.isReached))
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(line.spoken)
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Changes the goal")
     }
@@ -64,9 +65,9 @@ struct GoalLineView: View {
 
 #Preview {
     VStack(alignment: .leading, spacing: 16) {
-        GoalLineView(line: .init(text: "Goal 140 × 5 · 140 kg to go", isReached: false, progress: 0))
-        GoalLineView(line: .init(text: "Goal 140 × 5 · 40 kg to go", isReached: false, progress: 0.33))
-        GoalLineView(line: .init(text: "Goal 140 × 5 · reached", isReached: true, progress: 1))
+        GoalLineView(line: .init(text: "Goal 140 × 5 · 140 kg to go", spoken: "", isReached: false, progress: 0))
+        GoalLineView(line: .init(text: "Goal 140 × 5 · 40 kg to go", spoken: "", isReached: false, progress: 0.33))
+        GoalLineView(line: .init(text: "Goal 140 × 5 · reached", spoken: "", isReached: true, progress: 1))
     }
     .padding()
 }

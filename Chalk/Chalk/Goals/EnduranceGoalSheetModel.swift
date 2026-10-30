@@ -18,6 +18,9 @@ final class EnduranceGoalSheetModel: Identifiable {
 
     let unit: ErgUnit
 
+    /// The scale a speed is typed and written in (SPEC §15.2).
+    let distanceUnit: DistanceUnit
+
     /// `Z1`–`Z5`, segmented. Nil only with nothing scrubbed to seed it from.
     var zone: Int?
 
@@ -48,17 +51,19 @@ final class EnduranceGoalSheetModel: Identifiable {
         scope: GoalScope,
         selection: ErgReading.Selection?,
         zones: HeartRateZones?,
+        distanceUnit: DistanceUnit,
         context: ModelContext,
         onChange: @escaping () -> Void = {}
     ) {
         guard let zones, let unit = scope.unit else { return nil }
         self.unit = unit
+        self.distanceUnit = distanceUnit
         self.scope = scope
         self.zones = zones
         self.context = context
         self.onChange = onChange
         entries = scope.entries
-        hasGoal = scope.enduranceGoal(zones: zones) != nil
+        hasGoal = scope.enduranceGoal(zones: zones, distanceUnit: distanceUnit) != nil
 
         // The point first, then the number at it — not the grid's watch order.
         rows = unit.hasIncline ? [.duration, .incline, .intensity] : [.duration, .intensity]
@@ -76,6 +81,11 @@ final class EnduranceGoalSheetModel: Identifiable {
     /// What a row shows: the keys as typed, or the value in its format.
     func text(_ field: EnduranceField) -> String {
         inputs[field]?.text ?? ""
+    }
+
+    /// A row's value as VoiceOver says it, as the lap-list grid's cells are said.
+    func spokenText(_ field: EnduranceField) -> String {
+        EnduranceInput.spoken(inputs[field], field, unit, distanceUnit)
     }
 
     /// Moves the keypad to another row, settling the one it leaves — a stray tap puts
@@ -134,6 +144,15 @@ final class EnduranceGoalSheetModel: Identifiable {
 
     // MARK: - The live line
 
+    /// `line` as VoiceOver says it: `0.4 kilometres per hour above your 6 minutes in zone
+    /// 4 at 1 percent incline`.
+    var spokenLine: String? {
+        guard line != nil, let goal = goal(intensity: value(.intensity) ?? 0) else { return nil }
+        guard let current = goal.current, let gap = goal.gap else { return String(localized: "Not held yet at \(goal.spokenPoint)") }
+        if gap > 0 { return String(localized: "\(EnduranceText.spokenSteps(gap, unit, distanceUnit)) above your \(goal.spokenPoint)") }
+        return String(localized: "Already reached. Your \(goal.spokenPoint) is \(EnduranceText.spokenIntensity(current, unit, distanceUnit))")
+    }
+
     /// The one line under the intensity: how the goal on screen stands against **the
     /// exact point the rows name** — its ten-visit mean, read through `EnduranceGoal` so
     /// the steps compare as they will on the detail screen. Grey where the number is one
@@ -143,16 +162,16 @@ final class EnduranceGoalSheetModel: Identifiable {
     /// an intensity to compare: "already reached" at nothing would be true and useless.
     var line: GoalSheetModel.Line? {
         guard let goal = goal(intensity: value(.intensity) ?? 0) else { return nil }
-        let point = "\(EnduranceText.clock(goal.duration)) in Z\(goal.zone)"
+        let point = String(localized: "\(EnduranceText.clock(goal.duration)) in Z\(goal.zone)")
         guard let current = goal.current, let gap = goal.gap else {
-            return .init(text: "Not held yet — \(goal.pointText)", isReached: false)
+            return .init(text: String(localized: "Not held yet — \(goal.pointText)"), isReached: false)
         }
         guard goal.intensity > 0 else { return nil }
         if gap > 0 {
-            return .init(text: "\(EnduranceText.steps(gap, unit)) above your \(point)", isReached: false)
+            return .init(text: String(localized: "\(EnduranceText.steps(gap, unit, distanceUnit)) above your \(point)"), isReached: false)
         }
         return .init(
-            text: "Already reached — your \(point) is \(EnduranceText.intensity(current, unit, pace: false))",
+            text: String(localized: "Already reached — your \(point) is \(EnduranceText.intensity(current, unit, distanceUnit, pace: false))"),
             isReached: true
         )
     }
@@ -169,7 +188,8 @@ final class EnduranceGoalSheetModel: Identifiable {
             setAt: .now,
             entries: entries,
             zones: zones,
-            unit: unit
+            unit: unit,
+            distanceUnit: distanceUnit
         )
     }
 

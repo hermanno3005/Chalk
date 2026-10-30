@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// One exercise in the grid, with what you last did for it already read off the store
 /// (SPEC §7.1). The tile view is handed this rather than an `Exercise`, so nothing
@@ -14,25 +15,39 @@ struct LibraryTile: Identifiable {
     /// Arrange mode's group picker can tick the current group without faulting the
     /// relationship back in behind `var body`.
     let groupID: UUID?
+    /// The scale the subtitle writes a lift's weight on.
+    let weightUnit: WeightUnit
+    /// The scale the subtitle writes an erg's speed on.
+    let distanceUnit: DistanceUnit
 
     var id: UUID { exercise.id }
     var name: String { exercise.name }
 
-    init(exercise: Exercise, lastEntry: LastEntry?, lastInterval: LastInterval? = nil) {
+    init(
+        exercise: Exercise,
+        lastEntry: LastEntry?,
+        lastInterval: LastInterval? = nil,
+        weightUnit: WeightUnit,
+        distanceUnit: DistanceUnit
+    ) {
         self.exercise = exercise
         self.lastEntry = lastEntry
         self.lastInterval = lastInterval
         self.groupID = exercise.group?.id
+        self.weightUnit = weightUnit
+        self.distanceUnit = distanceUnit
     }
 
     /// The tile for `exercise`, with its last entry read off the store: a lift's for a
     /// lift, a valid interval's for an erg.
-    init(exercise: Exercise) {
+    init(exercise: Exercise, weightUnit: WeightUnit, distanceUnit: DistanceUnit) {
         let entries = exercise.entries ?? []
         self.init(
             exercise: exercise,
             lastEntry: exercise.isErg ? nil : LastEntry.latest(in: entries),
-            lastInterval: exercise.isErg ? LastInterval.latest(in: entries) : nil
+            lastInterval: exercise.isErg ? LastInterval.latest(in: entries) : nil,
+            weightUnit: weightUnit,
+            distanceUnit: distanceUnit
         )
     }
 
@@ -43,7 +58,53 @@ struct LibraryTile: Identifiable {
     /// an erg's without its heart rates (SPEC §13.5). `nil` with nothing logged: that
     /// tile shows no subtitle at all.
     func subtitle(asOf now: Date = .now) -> String? {
-        lastEntry?.text(asOf: now) ?? lastInterval?.tileText(asOf: now)
+        subtitleParts(asOf: now)?.text
+    }
+
+    /// The subtitle in its two halves, so a tile too narrow for the one line sets the day
+    /// under what you did rather than cutting either off (SPEC §15.4).
+    func subtitleParts(asOf now: Date = .now) -> SubtitleParts? {
+        if let lastEntry {
+            return SubtitleParts(
+                done: lastEntry.lift(in: weightUnit),
+                day: lastEntry.day(asOf: now),
+                spokenDone: lastEntry.spokenLift(in: weightUnit)
+            )
+        }
+        if let lastInterval {
+            return SubtitleParts(
+                done: lastInterval.tileText(in: distanceUnit),
+                day: lastInterval.day(asOf: now),
+                spokenDone: lastInterval.spokenTileText(in: distanceUnit)
+            )
+        }
+        return nil
+    }
+
+    /// What you last did, `12 × 102.5 kg`, and the day you did it, `3 days ago`.
+    struct SubtitleParts: Equatable {
+        let done: String
+        let day: String
+        /// `done` as VoiceOver says it, `12 reps at 102.5 kilograms`.
+        var spokenDone: String?
+
+        /// The two on one line, the way the subtitle is written wherever it fits.
+        var text: String { "\(done) · \(day)" }
+
+        /// The two as VoiceOver says them: `12 reps at 102.5 kilograms, 3 days ago`.
+        var spoken: String { "\(spokenDone ?? done), \(day)" }
+
+        /// `done` for a tile too narrow for it, free to break only after `×`, `at` or a
+        /// `·`, so a number never leaves its unit: `1:45.3 /500 m` moves to the next line
+        /// whole. A slash is a break of its own to the line breaker, so it is joined to
+        /// what follows it too.
+        var doneKeepingUnits: String {
+            done.replacingOccurrences(of: " ", with: "\u{00A0}")
+                .replacingOccurrences(of: "/", with: "/\u{2060}")
+                .replacingOccurrences(of: "\u{00A0}×\u{00A0}", with: "\u{00A0}× ")
+                .replacingOccurrences(of: "\u{00A0}at\u{00A0}", with: "\u{00A0}at ")
+                .replacingOccurrences(of: "\u{00A0}·\u{00A0}", with: "\u{00A0}· ")
+        }
     }
 }
 
@@ -57,6 +118,31 @@ struct LibrarySection: Identifiable {
     let tiles: [LibraryTile]
 
     var isUngrouped: Bool { id == nil }
+
+    /// The header as VoiceOver says it, the count said as what it counts: `Compound, 4
+    /// exercises`, `Rowing, 2 ergs`.
+    var spokenHeader: String {
+        let count = tiles.first?.exercise.isErg == true
+            ? String(localized: "\(tiles.count) ergs")
+            : String(localized: "\(tiles.count) exercises")
+        return "\(title), \(count)"
+    }
+
+    /// How many tiles the grid sets side by side: two, and **one at an accessibility
+    /// text size**, where a half-width tile would break a name mid-word (SPEC §15.6).
+    static func columns(at size: DynamicTypeSize) -> Int {
+        size.isAccessibilitySize ? 1 : 2
+    }
+
+    /// The tiles as the grid lays them out, `columns(at:)` to a row. **A lone last tile
+    /// is a row of its own**, which the grid draws the full width, so no row leaves half
+    /// the screen empty (SPEC §15.4).
+    func rows(at size: DynamicTypeSize) -> [[LibraryTile]] {
+        let columns = Self.columns(at: size)
+        return stride(from: 0, to: tiles.count, by: columns).map {
+            Array(tiles[$0..<min($0 + columns, tiles.count)])
+        }
+    }
 
     /// This section as a drop target, so the highlight can be compared without the
     /// double-optional an `Identifiable` with an optional id would otherwise force on
@@ -93,6 +179,10 @@ struct LibraryResume {
     /// interval's machine for a gym-bound erg, the erg for a transferable one — under the
     /// same rule. Nil on strength's card.
     let enduranceGoal: EnduranceGoal?
+    /// The scale strength's card writes its weight on.
+    let weightUnit: WeightUnit
+    /// The scale endurance's card writes its speed on.
+    let distanceUnit: DistanceUnit
 
     /// What the card's ring draws: how far from the goal's origin you have come, clamped
     /// to 0…1, and whether it is reached. The same for both halves.
@@ -108,32 +198,60 @@ struct LibraryResume {
         return nil
     }
 
-    init(exercise: Exercise, lastEntry: LastEntry, goal: Goal?) {
+    init(
+        exercise: Exercise,
+        lastEntry: LastEntry,
+        goal: Goal?,
+        weightUnit: WeightUnit,
+        distanceUnit: DistanceUnit
+    ) {
         self.exercise = exercise
         self.lastEntry = lastEntry
         self.lastInterval = nil
         self.goal = goal
         self.enduranceGoal = nil
+        self.weightUnit = weightUnit
+        self.distanceUnit = distanceUnit
     }
 
     /// An erg's card.
-    init(exercise: Exercise, lastInterval: LastInterval, goal: EnduranceGoal?) {
+    init(
+        exercise: Exercise,
+        lastInterval: LastInterval,
+        goal: EnduranceGoal?,
+        weightUnit: WeightUnit,
+        distanceUnit: DistanceUnit
+    ) {
         self.exercise = exercise
         self.lastEntry = nil
         self.lastInterval = lastInterval
         self.goal = nil
         self.enduranceGoal = goal
+        self.weightUnit = weightUnit
+        self.distanceUnit = distanceUnit
     }
 
     /// The card's line: `8 × 52.5 kg · today`, or an erg's last entry in the written form
     /// with its heart rates — `6:00 at 15.0 km/h (4:00 /km) · 1 % · 168/174 bpm · today`.
     func text(asOf now: Date = .now) -> String {
-        lastEntry?.text(asOf: now) ?? lastInterval?.text(asOf: now) ?? ""
+        lastEntry?.text(in: weightUnit, asOf: now) ?? lastInterval?.text(in: distanceUnit, asOf: now) ?? ""
+    }
+
+    /// The card's line as VoiceOver says it: `8 reps at 52.5 kilograms, today`.
+    func spoken(asOf now: Date = .now) -> String {
+        lastEntry?.spokenText(in: weightUnit, asOf: now) ?? lastInterval?.spoken(in: distanceUnit, asOf: now) ?? ""
     }
 
     /// The card for `exercise`, or nil when it has nothing to resume. `zones` are the
-    /// heart-rate zones, read live by the caller — an endurance goal is judged in them.
-    init?(exercise: Exercise, zones: HeartRateZones? = nil) {
+    /// heart-rate zones and the units the weight and distance units, all read live by the
+    /// caller — an endurance goal is judged in the zones, and every number written on its
+    /// half's unit.
+    init?(
+        exercise: Exercise,
+        zones: HeartRateZones? = nil,
+        weightUnit: WeightUnit,
+        distanceUnit: DistanceUnit
+    ) {
         if exercise.isErg {
             guard let entry = LastInterval.latestEntry(in: exercise.entries ?? []),
                   let lastInterval = LastInterval(entry)
@@ -141,7 +259,10 @@ struct LibraryResume {
             self.init(
                 exercise: exercise,
                 lastInterval: lastInterval,
-                goal: GoalScope(exercise: exercise, machine: entry.machine)?.enduranceGoal(zones: zones)
+                goal: GoalScope(exercise: exercise, machine: entry.machine)?
+                    .enduranceGoal(zones: zones, distanceUnit: distanceUnit),
+                weightUnit: weightUnit,
+                distanceUnit: distanceUnit
             )
             return
         }
@@ -151,7 +272,9 @@ struct LibraryResume {
         self.init(
             exercise: exercise,
             lastEntry: lastEntry,
-            goal: GoalScope(exercise: exercise, machine: entry.machine)?.goal
+            goal: GoalScope(exercise: exercise, machine: entry.machine)?.goal,
+            weightUnit: weightUnit,
+            distanceUnit: distanceUnit
         )
     }
 }
@@ -174,17 +297,26 @@ struct LibraryLayout {
     let resume: LibraryResume?
 
     /// The last section's title. Not a group name — no `ExerciseGroup` is ever called this.
-    static let ungroupedTitle = "Ungrouped"
+    static let ungroupedTitle = String(localized: "Ungrouped")
 
-    /// `zones` are the heart-rate zones, read live by the caller: the endurance card's
-    /// ring is judged in them.
-    init(exercises: [Exercise], groups: [ExerciseGroup], zones: HeartRateZones? = nil) {
-        tiles = Self.byRecency(exercises)
+    /// `zones` are the heart-rate zones and the units the weight and distance units, all
+    /// read live by the caller: the endurance card's ring is judged in the zones, every
+    /// lift is written on the weight unit and every speed on the distance unit.
+    init(
+        exercises: [Exercise],
+        groups: [ExerciseGroup],
+        zones: HeartRateZones? = nil,
+        weightUnit: WeightUnit,
+        distanceUnit: DistanceUnit
+    ) {
+        tiles = Self.byRecency(exercises, weightUnit: weightUnit, distanceUnit: distanceUnit)
         sections = Self.sections(tiles: tiles, groups: groups)
         // The tiles are in recency order, so the library's most recent entry is the
         // first tile's — if that tile has one at all. The entry is read again for its
         // machine, once, rather than carried on every tile: only the card needs a scope.
-        resume = tiles.first.flatMap { LibraryResume(exercise: $0.exercise, zones: zones) }
+        resume = tiles.first.flatMap {
+            LibraryResume(exercise: $0.exercise, zones: zones, weightUnit: weightUnit, distanceUnit: distanceUnit)
+        }
     }
 
     /// The tiles whose name contains `query`, ignoring case and diacritics, in the same
@@ -244,9 +376,13 @@ struct LibraryLayout {
     /// Recency is the last *lift* — on an erg, the last *valid interval* — the same value
     /// the subtitle draws: a zeroed row is not something you did (SPEC §3), so it neither
     /// writes a subtitle nor floats a tile.
-    private static func byRecency(_ exercises: [Exercise]) -> [LibraryTile] {
+    private static func byRecency(
+        _ exercises: [Exercise],
+        weightUnit: WeightUnit,
+        distanceUnit: DistanceUnit
+    ) -> [LibraryTile] {
         Recency.order(
-            exercises.map(LibraryTile.init(exercise:)),
+            exercises.map { LibraryTile(exercise: $0, weightUnit: weightUnit, distanceUnit: distanceUnit) },
             lastUsed: \.lastDate,
             name: \.name
         )

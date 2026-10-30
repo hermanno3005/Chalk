@@ -67,6 +67,15 @@ final class Exercise {
     /// Whether this row is an erg: it speaks a unit.
     var isErg: Bool { unit != nil }
 
+    /// The half this row belongs to: an erg's is endurance, read off its unit (ADR-0008).
+    var half: Half { isErg ? .endurance : .strength }
+
+    /// When you last logged this, `nil` for one never logged: its latest lift, or on an
+    /// erg its latest valid interval, as `Machine.lastLogged` reads a machine.
+    var lastLogged: Date? {
+        (entries ?? []).filter { $0.isALift || $0.isAnInterval }.map(\.date).max()
+    }
+
     init(
         id: UUID = UUID(),
         name: String = "",

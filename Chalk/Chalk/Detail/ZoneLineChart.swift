@@ -1,8 +1,9 @@
 import Charts
 import SwiftUI
 
-/// One zone's line on the erg detail screen (SPEC §13.8): 150 pt, in the accent colour,
-/// a point on every duration done, joined by straight segments.
+/// One zone's line on the erg detail screen (SPEC §13.8): in the accent colour, joined by
+/// straight segments, with a point on the selected duration only. Its height is the
+/// screen's to give: `detailChart()` lets it give way from 210 to 110 pt (§15.4).
 ///
 /// **No ghost and no band** — nothing is drawn that you have not held. Drawn only where
 /// the zone has a line: the empty and no-line states show text instead, so this view
@@ -11,11 +12,17 @@ struct ZoneLineChart: View {
     let points: [ZoneLine.Point]
     let unit: ErgUnit
     let selectedDuration: Int
+    /// What VoiceOver plays and says for the line (SPEC §15.6).
+    let audioGraph: AudioGraph
+    /// The readout at the selected point, as VoiceOver says it.
+    let spokenValue: String
     /// `chartXSelection` writes `nil` here on lift; the model ignores that and snaps
     /// every real value to a duration done, which is the sticky, snapping scrub.
     let onSelect: (Int?) -> Void
 
-    static let height: CGFloat = 150
+    /// Whether a finger is on the chart — between a selection and the `nil` of its lift —
+    /// so the tick is the scrub's alone (SPEC §15.4).
+    @State private var isScrubbing = false
 
     var body: some View {
         Chart {
@@ -27,61 +34,73 @@ struct ZoneLineChart: View {
                 // Straight segments: nothing between two points is a number you held,
                 // so nothing is smoothed into one.
                 .interpolationMethod(.linear)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .lineStyle(StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
                 .foregroundStyle(Color.accentColor)
+            }
 
+            if let selected = points.first(where: { $0.duration == selectedDuration }) {
                 PointMark(
-                    x: .value("Duration", point.duration),
-                    y: .value("Intensity", plotted(point.intensity))
+                    x: .value("Duration", selected.duration),
+                    y: .value("Intensity", plotted(selected.intensity))
                 )
-                .symbolSize(point.duration == selectedDuration ? 90 : 26)
+                .symbolSize(90)
                 .foregroundStyle(Color.accentColor)
             }
 
             RuleMark(x: .value("Duration", selectedDuration))
                 .lineStyle(StrokeStyle(lineWidth: 1))
-                .foregroundStyle(Color.secondary.opacity(0.4))
+                .foregroundStyle(Color.grey.opacity(0.4))
                 .zIndex(-1)
         }
         // **Linear and fixed at 0–20:00 on every erg and zone**, so lines compare and
-        // switching zones never rescales the chart under your thumb.
+        // switching zones never rescales the chart under your thumb. The inset keeps
+        // `0:00`, centred under its tick, clear of the leading edge the chart bleeds off.
         .chartXScale(
             domain: 0...ZoneLine.axisEnd,
-            range: .plotDimension(startPadding: 12, endPadding: 16)
+            range: .plotDimension(startPadding: 20, endPadding: 16)
         )
         .chartYScale(domain: yDomain)
         .chartXAxis {
-            AxisMarks(values: [0, 300, 600, 900, 1200]) { value in
-                AxisGridLine()
+            // The axis's labels only: no grid and no y axis, as §5.2's curve has none.
+            AxisMarks(preset: .aligned, values: [0, 300, 600, 900, 1200]) { value in
                 AxisValueLabel {
                     if let seconds = value.as(Int.self) {
                         Text(EnduranceText.clock(seconds))
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            // Capped as the curve's are (SPEC §15.4).
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     }
                 }
             }
         }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
-                AxisGridLine()
-                AxisValueLabel {
-                    if let plotted = value.as(Double.self) {
-                        Text(EnduranceText.intensityNumber(unplotted(plotted), unit))
-                    }
-                }
+        .chartYAxis(.hidden)
+        .chartXSelection(value: Binding<Int?>(get: { selectedDuration }, set: {
+            isScrubbing = $0 != nil
+            onSelect($0)
+        }))
+        // A tick at each duration the scrub snaps to (SPEC §15.4). A zone tab or the
+        // incline menu re-snapping the selection stays silent.
+        .sensoryFeedback(.selection, trigger: selectedDuration) { _, _ in isScrubbing }
+        // One element VoiceOver scrubs as a finger does, a swipe up or down a point, and
+        // plays as an audio graph from its rotor (SPEC §15.6).
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(audioGraph.title)
+        .accessibilityValue(spokenValue)
+        .accessibilityAdjustableAction { direction in
+            guard let index = points.firstIndex(where: { $0.duration == selectedDuration }) else { return }
+            switch direction {
+            case .increment: if index + 1 < points.count { onSelect(points[index + 1].duration) }
+            case .decrement: if index > 0 { onSelect(points[index - 1].duration) }
+            @unknown default: break
             }
         }
-        .chartXSelection(value: Binding<Int?>(get: { selectedDuration }, set: { onSelect($0) }))
-        .frame(height: Self.height)
-        .accessibilityLabel("Zone line")
+        .accessibilityChartDescriptor(audioGraph)
     }
 
     /// **A split is plotted upside down**, so harder is up on every erg.
     private func plotted(_ intensity: Double) -> Double {
         intensity * unit.hardnessSign
-    }
-
-    private func unplotted(_ value: Double) -> Double {
-        value * unit.hardnessSign
     }
 
     /// Framed to the data with a little air, never anchored at 0, as §5.2's is. One

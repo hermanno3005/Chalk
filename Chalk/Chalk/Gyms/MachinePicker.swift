@@ -39,6 +39,8 @@ struct MachinePicker: View {
                             Text(machine.caption)
                         }
                     }
+                    .accessibilityLabel(machine.spokenCaption)
+                    .accessibilityAddTraits(machine === selected ? .isSelected : [])
                 }
                 // Never in the `Archived` section: it is the tail of a picker, and
                 // making a machine at a gym you have stopped visiting is not a thing to

@@ -6,9 +6,10 @@ import SwiftUI
 /// and a free-weight one shows **no qualifier at all** — not a disabled one, not a
 /// placeholder (§5.3).
 ///
-/// Top to bottom: the scrub readout, the 150 pt curve, empty space, the Log bar. **The
-/// empty space ships empty**: it keeps the Log bar high and thumb-reachable, and is not
-/// a slot for a recent-entries list or a rep-max strip.
+/// Top to bottom, as Trade Republic's stock screen (§15.4): the name in grey over the
+/// number and its `× N`, the goal line, the curve, two rows, empty space, the Log bar.
+/// **The empty space ships empty**: it keeps the Log bar high and thumb-reachable, and is
+/// not a slot for a recent-entries list or a rep-max strip.
 struct ExerciseDetailView: View {
     /// Held in `@State` for the life of the push: `navigationDestination` rebuilds its
     /// destination as the library behind it changes, and the model handed to every
@@ -30,35 +31,13 @@ struct ExerciseDetailView: View {
     @State private var flashingConfirmation = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            if model.hasCurve {
-                if let readout = model.readout {
-                    // The one way into raw history (SPEC §5.6). A plain tap on the
-                    // readout, not a `Button`: the number keeps its own colour, and
-                    // nothing on this screen should look tappable twice over. An
-                    // unproven cell hands back no sheet, and shows no chevron.
-                    VStack(alignment: .leading, spacing: 6) {
-                        ScrubReadout(readout: readout)
-                            .contentShape(.rect)
-                            .onTapGesture { history = model.historySheet() }
-                        goalLine
-                    }
-                }
-                StrengthCurve(
-                    curve: model.curve,
-                    selectedReps: model.selectedReps,
-                    onSelect: model.select
-                )
-            } else {
-                empty
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal)
-        .padding(.top, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        DetailBody { content }
+        .chalkScreen()
+        // The name is the readout's (SPEC §5.1); kept as the title for the back menu
+        // and VoiceOver, never drawn in the bar.
         .navigationTitle(model.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(removing: .title)
         // The back button is the `NavigationStack`'s own — nothing here hides it, and
         // nothing here draws a second one.
         .toolbar {
@@ -154,6 +133,46 @@ struct ExerciseDetailView: View {
         }
     }
 
+    /// Top to bottom, as the type's doc says; `DetailBody` decides whether it scrolls.
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let readout = model.readout {
+                // One of two ways into raw history (SPEC §5.6), with the first row. A
+                // plain tap, not a `Button`: the number keeps its own colour. An
+                // unproven cell hands back no sheet.
+                DetailHead(
+                    name: model.name,
+                    number: readout.weightWithUnit,
+                    aside: readout.aside,
+                    dimmed: readout.weight == nil,
+                    spoken: readout.spoken,
+                    opensHistory: readout.weight != nil
+                )
+                .onTapGesture { history = model.historySheet() }
+                goalLine
+                    .padding(.top, 12)
+                StrengthCurve(
+                    curve: model.curve,
+                    selectedReps: model.selectedReps,
+                    audioGraph: model.audioGraph,
+                    spokenValue: readout.spoken,
+                    onSelect: model.select
+                )
+                .detailChart()
+                .padding(.top, 40)
+                rows(readout)
+                    .padding(.top, 28)
+            } else {
+                DetailHead(name: model.name)
+                empty
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal)
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     /// The machine qualifier — **gym-bound only** (SPEC §5.3). Switching re-scopes the
     /// screen and re-derives the whole curve, because a gym-bound exercise's rep-maxes
     /// come from one machine's entries and nothing else.
@@ -173,12 +192,30 @@ struct ExerciseDetailView: View {
             // The machine in scope, said out loud: the number below it means nothing
             // without it. An exercise with no machine yet says so rather than staying
             // blank — the qualifier reads as unset until the first log makes one.
-            Label(model.machine?.name ?? "No machine", systemImage: "square.stack.3d.up")
+            Label(model.machine?.name ?? MachineCaption.noMachine, systemImage: "square.stack.3d.up")
         }
         .disabled(model.machines.isEmpty)
     }
 
-    /// The goal, one line under the readout's subhead — or under the empty state's text
+    /// The two rows under the curve (SPEC §5.1). `Entries at N+ reps M ›` opens §5.6's
+    /// sheet, and has no `›` and no sheet on an unproven cell; `Logged K entries` counts
+    /// every entry in scope.
+    private func rows(_ readout: ExerciseDetailModel.Readout) -> some View {
+        VStack(spacing: 0) {
+            FactRow(
+                label: String(localized: "Entries at \(readout.reps)+ reps"),
+                value: readout.entriesBehind.formatted(),
+                spokenLabel: String(localized: "Entries at \(readout.reps) or more reps"),
+                action: readout.weight == nil ? nil : { history = model.historySheet() }
+            )
+            FactRow(
+                label: String(localized: "Logged"),
+                value: String(localized: "\(readout.entriesInScope) entries")
+            )
+        }
+    }
+
+    /// The goal, one line under the number — or under the empty state's text
     /// — and **never on the chart** (#74). Tapping it opens the goal sheet: the thing you
     /// are looking at is also the door to changing it.
     @ViewBuilder
@@ -196,7 +233,7 @@ struct ExerciseDetailView: View {
     private var confirmation: some View {
         if flashingConfirmation {
             Label("Logged", systemImage: "checkmark.circle.fill")
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(.regularMaterial, in: .capsule)
@@ -210,6 +247,8 @@ struct ExerciseDetailView: View {
 
     private func flashConfirmation() {
         withAnimation(.snappy) { flashingConfirmation = true }
+        // Said as well as shown: VoiceOver's focus is wherever the sheet left it.
+        AccessibilityNotification.Announcement(String(localized: "Logged")).post()
         Task {
             try? await Task.sleep(for: .seconds(1.4))
             withAnimation(.easeOut) { flashingConfirmation = false }
@@ -228,7 +267,7 @@ struct ExerciseDetailView: View {
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
-                .font(.title3.weight(.medium))
+                .font(.title3.weight(.semibold))
             Text(emptyDetail)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -236,13 +275,14 @@ struct ExerciseDetailView: View {
                 Text(hint.emptyStateLine)
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
+                    .accessibilityLabel(hint.spokenEmptyStateLine)
                     .padding(.top, 2)
             }
             // After the prompt to go and log, never ahead of it.
             goalLine
                 .padding(.top, 6)
         }
-        .padding(.top, 8)
+        .padding(.top, 16)
     }
 
     /// A gym-bound exercise with no machine yet keeps its numbers per machine and has
@@ -250,8 +290,8 @@ struct ExerciseDetailView: View {
     /// makes the first machine lives in the sheet's own picker (SPEC §6.4).
     private var emptyDetail: String {
         model.needsFirstMachine
-            ? "Its numbers are kept per machine. Log a lift and name the one you are at."
-            : "Log a lift and your curve starts here."
+            ? String(localized: "Its numbers are kept per machine. Log a lift and name the one you are at.")
+            : String(localized: "Log a lift and your curve starts here.")
     }
 
     /// Full width, pinned at the bottom. Opens the log sheet (SPEC §6.1), handing it the
@@ -266,6 +306,7 @@ struct ExerciseDetailView: View {
         } label: {
             Text("Log")
                 .font(.headline)
+                .foregroundStyle(Color.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
         }

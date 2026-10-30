@@ -176,3 +176,13 @@ struct EnduranceInput: Equatable {
         }
     }
 }
+
+extension EnduranceInput {
+    /// An input as VoiceOver says it, in a grid cell or a goal row: its value in words once
+    /// it holds one, what is typed while it is being typed, and `Blank` when empty.
+    static func spoken(_ input: EnduranceInput?, _ field: EnduranceField, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
+        guard let input, !input.text.isEmpty else { return String(localized: "Blank") }
+        guard !input.isTyping, let value = input.value else { return input.text }
+        return EnduranceText.spokenCell(value, field, unit, distance)
+    }
+}

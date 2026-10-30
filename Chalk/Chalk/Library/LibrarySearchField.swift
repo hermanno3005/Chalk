@@ -12,12 +12,13 @@ struct LibrarySearchField: View {
     @FocusState.Binding var isFocused: Bool
     /// The half's own words: *an exercise* on strength, *an erg* on endurance (SPEC
     /// §13.5).
-    var prompt = "Search or add an exercise"
+    var prompt = String(localized: "Search or add an exercise")
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             TextField(prompt, text: $query)
                 .focused($isFocused)
                 // An exit in its own right: submit resigns focus.
@@ -39,7 +40,7 @@ struct LibrarySearchField: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(Color(.secondarySystemBackground), in: Capsule())
+        .background(Color.surface, in: Capsule())
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.bar)

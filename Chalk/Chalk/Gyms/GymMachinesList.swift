@@ -19,8 +19,8 @@ struct GymMachinesList {
 
         var title: String {
             switch self {
-            case .strength: "Strength"
-            case .endurance: "Endurance"
+            case .strength: String(localized: "Strength")
+            case .endurance: String(localized: "Endurance")
             }
         }
     }

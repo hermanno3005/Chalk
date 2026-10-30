@@ -183,7 +183,8 @@ final class LibraryFixture {
         ExerciseDetailModel(
             exercise: exercise,
             context: context,
-            gyms: gyms ?? gymsModel()
+            gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults)
         ) { library?.refresh() }
     }
 
@@ -219,6 +220,7 @@ final class LibraryFixture {
             editing: editing,
             context: context,
             gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults),
             onSave: onSave
         )
     }
@@ -262,6 +264,7 @@ final class LibraryFixture {
             atLeast: reps,
             context: context,
             gyms: gyms ?? gymsModel(),
+            weightUnit: WeightUnit(defaults: defaults),
             onChange: onChange
         )
     }
@@ -279,6 +282,7 @@ final class LibraryFixture {
             scope: GoalScope(exercise: exercise, machine: machine)!,
             reps: reps,
             context: context,
+            weightUnit: WeightUnit(defaults: defaults),
             onChange: onChange
         )
     }
@@ -288,6 +292,17 @@ final class LibraryFixture {
     /// set, which is every zone-gated screen's first state.
     func zones(_ z2: Int, _ z3: Int, _ z4: Int, _ z5: Int) {
         HeartRateZones(lowerBounds: [z2, z3, z4, z5])!.save(to: defaults)
+    }
+
+    /// Sets this fixture's weight unit, in its own defaults suite. A fixture that never
+    /// calls this has none stored, which reads as kg.
+    func weightUnit(_ unit: WeightUnit) {
+        unit.save(to: defaults)
+    }
+
+    /// Stores `unit` as this fixture's distance unit, as onboarding or a restore would.
+    func distanceUnit(_ unit: DistanceUnit) {
+        unit.save(to: defaults)
     }
 
     /// The zones this fixture holds, read the one way the app reads them.
@@ -300,6 +315,11 @@ final class LibraryFixture {
         libraryModel().settings()
     }
 
+    /// Onboarding over this store, as a launch with no units stored opens it.
+    func onboardingModel() -> OnboardingModel {
+        OnboardingModel(defaults: defaults, container: store.container)
+    }
+
     /// The same file read through a second container, so what a test asserts is what
     /// reached the disk rather than what is sitting in this context's cache.
     func afterRelaunch() throws -> ModelContext {
@@ -309,7 +329,11 @@ final class LibraryFixture {
 
 extension Date {
     /// A date `days` back, for seeding history that has to come out in a known order.
+    ///
+    /// **Calendar days, never 86,400 seconds**: across a daylight-saving change, a late
+    /// evening minus whole seconds lands past midnight, on the same day as the one after
+    /// it, and two visits collapse into one.
     static func days(ago days: Int) -> Date {
-        .now.addingTimeInterval(-Double(days) * 86_400)
+        Calendar.current.date(byAdding: .day, value: -days, to: .now)!
     }
 }

@@ -33,6 +33,9 @@ struct CreateExerciseSheet: View {
     let onCreate: (String, ExerciseKind, ExerciseGroup?, Gym?, String?) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    /// The weight unit, for the free-weight footer's example. Read through the key
+    /// `WeightUnit` owns, so it says what every other surface says (SPEC §15.2).
+    @AppStorage(WeightUnit.key) private var weightUnit: WeightUnit = .kg
     @State private var name: String
     @State private var kind: ExerciseKind = .freeWeight
     /// The group the exercise is filed on, **held as its id** for the same reason `gymID`
@@ -86,6 +89,7 @@ struct CreateExerciseSheet: View {
                         Text(LibraryLayout.ungroupedTitle).tag(UUID?.none)
                     }
                 }
+                .chalkRows()
 
                 Section {
                     Picker("Kind", selection: $kind) {
@@ -99,13 +103,16 @@ struct CreateExerciseSheet: View {
                     // colloquially a machine — a cable stack is gym-bound.
                     Text(kind == .gymBound
                          ? "Does the load transfer between gyms? No — the weight means something different at each gym, so its numbers are kept per machine."
-                         : "Does the load transfer between gyms? Yes — 60 kg is 60 kg wherever you lift it, so its numbers are kept together.")
+                         : "Does the load transfer between gyms? Yes — \(weightUnit.text(60)) is \(weightUnit.text(60)) wherever you lift it, so its numbers are kept together.")
+                    .foregroundStyle(.secondary)
                 }
+                .chalkRows()
 
                 if kind == .gymBound {
                     machineSection
                 }
             }
+            .chalkScreen()
             .navigationTitle("New exercise")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -152,7 +159,9 @@ struct CreateExerciseSheet: View {
             Text(gym == nil
                  ? "Its numbers are kept per machine, so pick the gym you use it at — or leave this and the first entry you log will make the machine."
                  : "What is written on the stack — Hammer Strength, Technogym. One gym can hold several of these and their numbers stay separate.")
+            .foregroundStyle(.secondary)
         }
+        .chalkRows()
     }
 
     /// The picked gym, resolved from the id the picker holds. A gym that has gone since

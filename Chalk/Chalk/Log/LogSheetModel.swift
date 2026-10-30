@@ -82,7 +82,7 @@ final class LogSheetModel: Identifiable {
     /// The giant number itself — staging, steppers, keypad — **shared with the goal
     /// sheet and carrying none of this sheet's meaning** (#73). Everything below reads
     /// it; only the seeding rules decide what goes into it.
-    var number = TwoStageNumber(reps: nil, weight: nil)
+    var number: TwoStageNumber
 
     @ObservationIgnored private let context: ModelContext
     /// The gyms, for the three things the sheet does with them: sectioning the picker,
@@ -115,6 +115,7 @@ final class LogSheetModel: Identifiable {
         editing: Entry? = nil,
         context: ModelContext,
         gyms: GymsModel,
+        weightUnit: WeightUnit,
         onSave: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
@@ -129,11 +130,13 @@ final class LogSheetModel: Identifiable {
         self.context = context
         self.gyms = gyms
         self.onSave = onSave
+        // Blank only until the seed below, which reads the entries this scopes.
+        number = TwoStageNumber(reps: nil, weight: nil, weightUnit: weightUnit)
         rescopeEntries()
 
         if let editing {
             // Seeded from *that* entry — the numbers you tapped, ready to be corrected.
-            number = TwoStageNumber(reps: editing.reps, weight: editing.weight)
+            number = TwoStageNumber(reps: editing.reps, weight: editing.weight, weightUnit: weightUnit)
         } else {
             number = TwoStageNumber(
                 // **Reps seed from your most recent entry on any machine** — rep counts
@@ -141,7 +144,8 @@ final class LogSheetModel: Identifiable {
                 reps: LastEntry.latest(in: entriesOnAnyMachine)?.reps ?? Self.defaultReps,
                 // **The weight only from this exact machine**, so no number you have
                 // never lifted *there* is ever one tap from Save.
-                weight: LastEntry.latest(in: entries)?.weight
+                weight: LastEntry.latest(in: entries)?.weight,
+                weightUnit: weightUnit
             )
         }
     }
@@ -156,7 +160,7 @@ final class LogSheetModel: Identifiable {
         // Off the same array the verdict derives against, so "nothing lifted here" means
         // one thing on this sheet: an edit whose only entry on this machine is the one
         // being corrected is a machine with nothing else to say.
-        hint = MachineHint.lookUp(exercise, scopedTo: machine, historyHere: entries)
+        hint = MachineHint.lookUp(exercise, scopedTo: machine, historyHere: entries, weightUnit: number.weightUnit)
         goal = GoalScope(exercise: exercise, machine: machine)?.goal(judgedAgainst: entries)
     }
 
@@ -183,6 +187,7 @@ final class LogSheetModel: Identifiable {
     /// the layout and stops being trusted. A gym-bound sheet with nothing resolved yet
     /// says so, which is the state the first log at a new gym opens in.
     var machineCaption: String? { caption.text }
+    var spokenMachineCaption: String? { caption.spokenText }
 
     // The number's own readings and verbs, forwarded so the sheet's tests read the same
     // as before the number was shared (#73). The view binds `number` directly.
@@ -212,23 +217,37 @@ final class LogSheetModel: Identifiable {
     var verdict: Verdict? {
         guard stage == .weight, let reps else { return nil }
         if let goal, let weight, goal.isCrossed(byReps: reps, weight: weight) {
-            return .goal("Reaches your goal of \(goal.text)")
+            return .goal(String(localized: "Reaches your goal of \(goal.text)"))
         }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
             if let hint {
                 return .hint(hint.verdictLine)
             }
-            return .measured("First entry at \(reps) reps")
+            return .measured(String(localized: "First entry at \(reps) reps"))
         }
         // A blank weight compares as the nothing it is, which reads as "below".
         let weight = weight ?? 0
         if weight > best {
-            return .measured("Beats your \(reps)-rep best by \((weight - best).kilogramsText) kg")
+            return .measured(String(localized: "Beats your \(reps)-rep best by \(number.weightUnit.text(weight - best))"))
         }
         if weight == best {
-            return .measured("Matches your \(reps)-rep best")
+            return .measured(String(localized: "Matches your \(reps)-rep best"))
         }
-        return .measured("Your \(reps)-rep best is \(best.kilogramsText) kg")
+        return .measured(String(localized: "Your \(reps)-rep best is \(number.weightUnit.text(best))"))
+    }
+
+    /// `verdict` as VoiceOver says it, where the drawn line carries a `×`.
+    var spokenVerdict: String? {
+        switch verdict {
+        case .goal:
+            return goal.map { String(localized: "Reaches your goal of \($0.spokenText(in: number.weightUnit))") }
+        case .hint:
+            return hint?.spokenVerdictLine
+        case .measured(let text):
+            return text
+        case nil:
+            return nil
+        }
     }
 
     var canAdvance: Bool { number.canAdvance }
@@ -312,8 +331,15 @@ final class LogSheetModel: Identifiable {
     /// Writes the entry — a new one, or the one being edited, in place. The caller
     /// closes the sheet: after saving it never stays open
     /// to log again, because sessions are not modelled (SPEC §6.7).
-    func save() {
-        guard canSave, let reps, let weight else { return }
+    ///
+    /// Answers with the haptic the Save plays (SPEC §15.4), or nil where nothing was
+    /// saved. **A save reaches the goal exactly where the line said it would** — the
+    /// crossing, judged before the write against the same entries and scope the verdict
+    /// is, so an edit is judged against every other entry.
+    @discardableResult
+    func save() -> SaveHaptic? {
+        guard canSave, let reps, let weight else { return nil }
+        let haptic: SaveHaptic = goal?.isCrossed(byReps: reps, weight: weight) == true ? .reachedGoal : .saved
         if let editing {
             // In place, and the date stays where it was (SPEC §6.6). An edit that drops
             // the entry out of the history sheet it was opened from is that sheet's
@@ -344,5 +370,6 @@ final class LogSheetModel: Identifiable {
         // As elsewhere: v1 has no error state past §3's container failure.
         try? context.save()
         onSave()
+        return haptic
     }
 }

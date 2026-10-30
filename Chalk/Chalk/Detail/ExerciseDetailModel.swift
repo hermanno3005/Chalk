@@ -15,14 +15,34 @@ final class ExerciseDetailModel {
     /// What the readout above the curve says. Absent altogether when there is no curve
     /// at all — the zero-entry screen has no readout (SPEC §5.4).
     struct Readout: Equatable {
-        /// The selected rep count, the `N` in `best for N reps`.
+        /// The selected rep count, the `N` in `× N` and `Entries at N+ reps`.
         let reps: Int
         /// `best[N]`, the large number — **and nil where that cell is unproven.** An
         /// absent cell is "not yet proven", never zero (SPEC §4), so the readout shows
         /// an absence rather than a number from somewhere else.
         let weight: Double?
-        /// Entries with `reps >= N`, the `M` in `· M records ›`.
+        /// Entries with `reps >= N`, the `M` in `Entries at N+ reps M ›`.
         let entriesBehind: Int
+        /// Every entry in scope, the `K` in `Logged K entries` (SPEC §5.1): one machine's
+        /// on a gym-bound exercise, reps above 12 included.
+        let entriesInScope: Int
+        /// The scale `weight` is written on.
+        let weightUnit: WeightUnit
+
+        /// The aside beside the number, `× 5`.
+        var aside: String { "× \(reps)" }
+
+        /// The large number with its unit, `52.5 kg`, or `—` on an unproven cell.
+        var weightWithUnit: String {
+            weight.map(weightUnit.text) ?? "—"
+        }
+
+        /// The number and its aside as VoiceOver says them: `102.5 pounds for 5 reps`, or
+        /// `Not yet proven at 9 reps`.
+        var spoken: String {
+            guard let weight else { return String(localized: "Not yet proven at \(Spoken.reps(reps))") }
+            return String(localized: "\(weightUnit.spokenText(weight)) for \(Spoken.reps(reps))")
+        }
     }
 
     let exercise: Exercise
@@ -76,6 +96,10 @@ final class ExerciseDetailModel {
     /// never asks it (SPEC §6.4). Readable so the two doors this screen opens onto a gym
     /// — the log sheet and `Change kind`'s machine prompt — are handed the same one.
     @ObservationIgnored let gyms: GymsModel
+    /// The scale every weight on this screen is written on, handed on to every sheet it
+    /// opens (SPEC §15.2). Read by the library as the screen opens: nothing behind a
+    /// detail screen can change it.
+    @ObservationIgnored let weightUnit: WeightUnit
     @ObservationIgnored private let onLibraryChange: () -> Void
 
     /// The rep count the screen opens on (SPEC §5.2) — held even by an exercise with no
@@ -87,11 +111,13 @@ final class ExerciseDetailModel {
         exercise: Exercise,
         context: ModelContext,
         gyms: GymsModel,
+        weightUnit: WeightUnit,
         onLibraryChange: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
         self.context = context
         self.gyms = gyms
+        self.weightUnit = weightUnit
         self.onLibraryChange = onLibraryChange
         refresh()
     }
@@ -114,17 +140,27 @@ final class ExerciseDetailModel {
         return Readout(
             reps: selectedReps,
             weight: curve.best[selectedReps],
-            entriesBehind: curve.entriesBehind[selectedReps] ?? 0
+            entriesBehind: curve.entriesBehind[selectedReps] ?? 0,
+            entriesInScope: curve.entryCount,
+            weightUnit: weightUnit
         )
+    }
+
+    /// The curve as VoiceOver plays and says it, the goal in its words (SPEC §15.6).
+    var audioGraph: AudioGraph {
+        AudioGraph(curve: curve, weightUnit: weightUnit, goal: goal)
     }
 
     /// Nil without a goal: **the screen gains nothing** where no goal is set, and the
     /// chart never carries one either way.
     var goalLine: GoalLine? {
         guard let goal else { return nil }
-        let target = "Goal \(goal.text)"
+        let target = String(localized: "Goal \(goal.text)")
         return GoalLine(
-            text: goal.isReached ? "\(target) · reached" : "\(target) · \(goal.gap.kilogramsText) kg to go",
+            text: goal.isReached
+                ? String(localized: "\(target) · reached")
+                : String(localized: "\(target) · \(weightUnit.text(goal.gap)) to go"),
+            spoken: goal.spokenLine(in: weightUnit),
             isReached: goal.isReached,
             progress: goal.progress
         )
@@ -135,15 +171,15 @@ final class ExerciseDetailModel {
     /// to act on is left out rather than greyed (SPEC §7.5).
     var goalMenuLabel: String? {
         guard !needsFirstMachine else { return nil }
-        return goal == nil ? "Set a goal…" : "Change goal…"
+        return goal == nil ? String(localized: "Set a goal…") : String(localized: "Change goal…")
     }
 
     /// The destructive confirmation, phrased as the outcome with its count (SPEC §5.5).
     /// An exercise with nothing logged is not asked about entries it does not have.
     var deleteConfirmation: String {
-        guard entryCount > 0 else { return "Delete \(name)?" }
-        let entries = entryCount == 1 ? "1 entry" : "\(entryCount) entries"
-        return "Delete \(name) and its \(entries)?"
+        guard entryCount > 0 else { return String(localized: "Delete \(name)?") }
+        let entries = String(localized: "\(entryCount) entries")
+        return String(localized: "Delete \(name) and its \(entries)?")
     }
 
     /// Re-scopes the screen to another machine and **re-derives the whole curve**
@@ -187,8 +223,9 @@ final class ExerciseDetailModel {
     }
 
     /// `Change kind` over this exercise — the words the confirmation and the machine
-    /// prompt say (SPEC §8).
-    var kindChange: KindChange { KindChange(exercise: exercise) }
+    /// prompt say (SPEC §8). A lift's goal holds no speed, so the distance unit never
+    /// reaches its words.
+    var kindChange: KindChange { KindChange(exercise: exercise, distanceUnit: .km) }
 
     /// **Free-weight → gym-bound**, with the one machine the existing entries belong to
     /// (SPEC §8). The machine is created at `gym` — a free-weight exercise has none to
@@ -270,7 +307,8 @@ final class ExerciseDetailModel {
             exercise: exercise,
             machine: machine,
             context: context,
-            gyms: gyms
+            gyms: gyms,
+            weightUnit: weightUnit
         ) { [weak self] in
             self?.backInStep()
             onSave()
@@ -293,7 +331,8 @@ final class ExerciseDetailModel {
             machine: machine,
             atLeast: selectedReps,
             context: context,
-            gyms: gyms
+            gyms: gyms,
+            weightUnit: weightUnit
         ) { [weak self] in
             self?.backInStep()
         }
@@ -309,7 +348,8 @@ final class ExerciseDetailModel {
         return GoalSheetModel(
             scope: scope,
             reps: readout?.reps ?? Self.defaultReps,
-            context: context
+            context: context,
+            weightUnit: weightUnit
         ) { [weak self] in
             self?.backInStep()
         }
@@ -349,7 +389,7 @@ final class ExerciseDetailModel {
         }
 
         curve = RepMaxCurve(entries: MachineScope.entries(of: exercise, on: machine))
-        hint = MachineHint.lookUp(exercise, scopedTo: machine)
+        hint = MachineHint.lookUp(exercise, scopedTo: machine, weightUnit: weightUnit)
         goal = GoalScope(exercise: exercise, machine: machine)?.goal
     }
 

@@ -26,34 +26,37 @@ enum EnduranceText {
     static func intensityNumber(_ value: Double, _ unit: ErgUnit) -> String {
         switch unit {
         case .speed: value.formatted(.number.precision(.fractionLength(1)).grouping(.never))
-        case .watts, .level: String(Int(value.rounded()))
+        case .watts, .level: Int(value.rounded()).formatted(.number.grouping(.never))
         case .split: split(value)
         }
     }
 
-    /// The intensity in its unit: `15.0 km/h (4:00 /km)`, `220 W`, `1:45 /500 m`,
-    /// `Level 12`. `pace` adds a speed's pace beside it.
-    static func intensity(_ value: Double, _ unit: ErgUnit, pace: Bool = true) -> String {
+    /// The intensity in its unit: `15.0 km/h (4:00 /km)`, `9.3 mph (6:27 /mi)`, `220 W`,
+    /// `1:45 /500 m`, `Level 12`. `pace` adds a speed's pace beside it. Only a speed reads
+    /// `distance`: the other units have no scale.
+    static func intensity(_ value: Double, _ unit: ErgUnit, _ distance: DistanceUnit, pace: Bool = true) -> String {
         let number = intensityNumber(value, unit)
         switch unit {
         case .speed:
-            return pace && value > 0 ? "\(number) km/h (\(Self.pace(value)))" : "\(number) km/h"
-        case .watts: return "\(number) W"
-        case .split: return "\(number) /500 m"
-        case .level: return "Level \(number)"
+            let speed = "\(number) \(distance.speedSymbol)"
+            return pace && value > 0 ? "\(speed) (\(Self.pace(value, distance)))" : speed
+        case .watts: return String(localized: "\(number) W")
+        case .split: return String(localized: "\(number) /500 m")
+        case .level: return String(localized: "Level \(number)")
         }
     }
 
     /// The intensity as a goal names it: no pace, so the line stays short, and a level
     /// written `L12` rather than `Level 12` (SPEC §13.2, §13.10).
-    static func goalIntensity(_ value: Double, _ unit: ErgUnit) -> String {
-        unit == .level ? "L\(intensityNumber(value, unit))" : intensity(value, unit, pace: false)
+    static func goalIntensity(_ value: Double, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
+        unit == .level ? String(localized: "L\(intensityNumber(value, unit))") : intensity(value, unit, distance, pace: false)
     }
 
-    /// A speed's pace, `60 / km/h` to the whole second — the one number ever worked out
-    /// from an intensity, and for display only (SPEC §13.2).
-    static func pace(_ kmh: Double) -> String {
-        "\(clock(Int((3600 / kmh).rounded()))) /km"
+    /// A speed's pace, `60 / speed` minutes per km or per mile to the whole second — the
+    /// one number ever worked out from an intensity, and for display only (SPEC §13.2,
+    /// §15.2): `4:00 /km`, `6:00 /mi`.
+    static func pace(_ speed: Double, _ distance: DistanceUnit) -> String {
+        "\(clock(Int((3600 / speed).rounded()))) \(distance.paceSymbol)"
     }
 
     /// An incline: `0`, `1`, `1.5`.
@@ -67,11 +70,50 @@ enum EnduranceText {
         case .duration: clock(Int(value.rounded()))
         case .intensity: intensityNumber(value, unit)
         case .incline: incline(value)
-        case .averageHeartRate, .peakHeartRate: String(Int(value.rounded()))
+        case .averageHeartRate, .peakHeartRate: Int(value.rounded()).formatted(.number.grouping(.never))
         }
     }
 
     private static func pad(_ value: Int) -> String {
         value < 10 ? "0\(value)" : "\(value)"
+    }
+}
+
+// MARK: - Spoken
+
+extension EnduranceText {
+    /// An intensity as VoiceOver says it: `15.0 kilometres per hour`, `220 watts`,
+    /// `1 minute 45.3 seconds per 500 metres`, `level 12`.
+    static func spokenIntensity(_ value: Double, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
+        switch unit {
+        case .speed: return "\(intensityNumber(value, unit)) \(distance.spokenSpeedName)"
+        case .watts: return String(localized: "\(Int(value.rounded())) watts")
+        case .level: return String(localized: "level \(intensityNumber(value, unit))")
+        case .split:
+            let tenths = Int((value * 10).rounded())
+            let minutes = tenths / 600
+            let seconds = Double(tenths % 600) / 10
+            let secondsText = Spoken.seconds(seconds, written: seconds.formatted(.number.precision(.fractionLength(0...1))))
+            let minutesText = String(localized: "\(minutes) minutes")
+            let clock = minutes > 0 ? "\(minutesText) \(secondsText)" : secondsText
+            return String(localized: "\(clock) per 500 metres")
+        }
+    }
+
+    /// One cell's value as VoiceOver says it, where `cell(_:_:_:)` draws it: `6 minutes 30
+    /// seconds`, `9.5 miles per hour`, `1.5 percent`, `164 beats per minute`.
+    static func spokenCell(_ value: Double, _ field: EnduranceField, _ unit: ErgUnit, _ distance: DistanceUnit) -> String {
+        switch field {
+        case .duration: Spoken.duration(Int(value.rounded()))
+        case .intensity: spokenIntensity(value, unit, distance)
+        case .incline: String(localized: "\(incline(value)) percent")
+        case .averageHeartRate, .peakHeartRate: Spoken.heartRate(Int(value.rounded()))
+        }
+    }
+
+    /// A speed's pace in words, as `pace(_:_:)` writes it: `4 minutes per kilometre`, `6
+    /// minutes 27 seconds per mile`.
+    static func spokenPace(_ speed: Double, _ distance: DistanceUnit) -> String {
+        String(localized: "\(Spoken.duration(Int((3600 / speed).rounded()))) per \(distance.spokenPaceDistance)")
     }
 }

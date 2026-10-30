@@ -24,6 +24,8 @@ final class HistorySheetModel: Identifiable {
     struct Row: Identifiable {
         let id: UUID
         let lift: String
+        /// `lift` as VoiceOver says it: `5 reps at 75 kilograms`.
+        let spokenLift: String
         /// The day, in the words the tiles and the resume card use.
         let day: String
         /// Whether this is the entry currently setting `best[N]`.
@@ -31,6 +33,8 @@ final class HistorySheetModel: Identifiable {
         /// The machine the entry was logged on, for a gym-bound exercise (SPEC §5.6).
         /// `nil` for a free-weight one, which has no machine to name.
         let machine: String?
+        /// `machine` as VoiceOver says it, `Hammer Strength at Fitness X`.
+        let spokenMachine: String?
 
         /// The entry the row stands for, which edit and delete act on. Held rather than
         /// looked up again: the row is the thing your thumb is on. **Not for reading
@@ -58,6 +62,9 @@ final class HistorySheetModel: Identifiable {
     /// picker is sectioned by gym, and **an edit never moves the current gym** (SPEC
     /// §6.4). Nothing on this sheet reads them.
     @ObservationIgnored private let gyms: GymsModel
+    /// The scale the rows are written on, carried through to the log sheet an edited row
+    /// opens.
+    @ObservationIgnored private let weightUnit: WeightUnit
     /// The screens behind the sheet — the detail curve and the library — which every
     /// write here has to put back in step.
     @ObservationIgnored private let onChange: () -> Void
@@ -68,6 +75,7 @@ final class HistorySheetModel: Identifiable {
         atLeast reps: Int,
         context: ModelContext,
         gyms: GymsModel,
+        weightUnit: WeightUnit,
         onChange: @escaping () -> Void = {}
     ) {
         self.exercise = exercise
@@ -75,13 +83,14 @@ final class HistorySheetModel: Identifiable {
         self.reps = reps
         self.context = context
         self.gyms = gyms
+        self.weightUnit = weightUnit
         self.onChange = onChange
         refresh()
     }
 
     /// The sheet's title: the filter, said out loud, so the list is never mistaken for
     /// the entries at exactly `N` reps.
-    var title: String { reps == 1 ? "1 rep and above" : "\(reps) reps and above" }
+    var title: String { String(localized: "\(reps) reps and above") }
 
     /// **The sheet has outlived the cell it was opened from.** Reachable two ways —
     /// deleting the last row, or editing one below the threshold — and neither is a
@@ -104,7 +113,8 @@ final class HistorySheetModel: Identifiable {
             machine: row.entry.machine,
             editing: row.entry,
             context: context,
-            gyms: gyms
+            gyms: gyms,
+            weightUnit: weightUnit
         ) { [weak self] in
             self?.refresh()
             self?.onChange()
@@ -144,10 +154,12 @@ final class HistorySheetModel: Identifiable {
             guard let lift = LastEntry(entry) else { return nil }
             return Row(
                 id: entry.id,
-                lift: lift.lift,
+                lift: lift.lift(in: weightUnit),
+                spokenLift: lift.spokenLift(in: weightUnit),
                 day: lift.day(),
                 isBest: entry === setter,
                 machine: entry.machine?.caption,
+                spokenMachine: entry.machine?.spokenCaption,
                 entry: entry
             )
         }

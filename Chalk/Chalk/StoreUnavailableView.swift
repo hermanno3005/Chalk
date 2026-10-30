@@ -23,6 +23,7 @@ struct StoreUnavailableView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .chalkScreen()
     }
 }
 

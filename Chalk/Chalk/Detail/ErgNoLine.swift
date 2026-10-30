@@ -16,15 +16,21 @@ struct ErgNoLine: Equatable {
     /// One neighbouring zone's point: `Z5 3:00 at 16.5 km/h — too hard`.
     struct Quote: Equatable {
         let zone: Int
+        /// The quote as VoiceOver says it: `Zone 5, 3 minutes at 16.5 kilometres per
+        /// hour, too hard`.
+        let spoken: String
         /// The quote without its zone — `3:00 at 16.5 km/h — too hard` — for a view that
         /// draws the zone as a tag of its own.
         let clause: String
 
-        var text: String { "Z\(zone) \(clause)" }
+        var text: String { String(localized: "Z\(zone) \(clause)") }
     }
 
     let title: String
     let detail: String
+    /// `title` and `detail` as VoiceOver says them.
+    let spokenTitle: String
+    let spokenDetail: String
 
     /// The nearest zone above with a line, then the nearest below — none, one or both.
     let quotes: [Quote]
@@ -35,20 +41,23 @@ struct ErgNoLine: Equatable {
         guard let selection = reading.selection, let zones = reading.zones, let unit = reading.unit,
               !reading.hasLine(selection.zone)
         else { return nil }
-        title = "No Z\(selection.zone) on this \(place) yet."
-        detail = "Nothing you've logged here averaged \(zones.range(of: selection.zone))."
+        title = String(localized: "No Z\(selection.zone) on this \(place) yet.")
+        detail = String(localized: "Nothing you've logged here averaged \(zones.range(of: selection.zone)).")
+        spokenTitle = String(localized: "No zone \(selection.zone) on this \(place) yet.")
+        spokenDetail = String(localized: "Nothing you've logged here averaged \(zones.spokenRange(of: selection.zone)).")
 
         let withLines = ZoneLine.zones.filter(reading.hasLine)
         let above = withLines.first { $0 > selection.zone }
         let below = withLines.last { $0 < selection.zone }
-        quotes = [(above, "too hard"), (below, "too easy")].compactMap { zone, verdict in
+        quotes = [(above, String(localized: "too hard")), (below, String(localized: "too easy"))].compactMap { zone, verdict in
             // `.points` holds on-axis durations only, so a quote never reads past 20:00.
             guard let zone, let points = reading.lines[zone]?.points,
                   let point = Self.nearest(to: selection.duration, in: points)
             else { return nil }
             return Quote(
                 zone: zone,
-                clause: "\(EnduranceText.clock(point.duration)) at \(EnduranceText.intensity(point.intensity, unit, pace: false)) — \(verdict)"
+                spoken: String(localized: "Zone \(zone), \(Spoken.duration(point.duration)) at \(EnduranceText.spokenIntensity(point.intensity, unit, reading.distanceUnit)), \(verdict)"),
+                clause: String(localized: "\(EnduranceText.clock(point.duration)) at \(EnduranceText.intensity(point.intensity, unit, reading.distanceUnit, pace: false)) — \(verdict)")
             )
         }
     }

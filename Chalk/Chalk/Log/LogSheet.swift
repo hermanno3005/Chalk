@@ -40,6 +40,7 @@ struct LogSheet: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
+            .chalkScreen()
             .navigationTitle(model.exercise.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -54,7 +55,7 @@ struct LogSheet: View {
                             .disabled(!model.canAdvance)
                     case .weight:
                         Button("Save") {
-                            model.save()
+                            model.save()?.play()
                             // Never stays open to log again: sessions are not modelled
                             // (SPEC §6.7).
                             dismiss()
@@ -91,6 +92,7 @@ struct LogSheet: View {
         if let machineCaption = model.machineCaption {
             MachineCaptionMenu(
                 text: machineCaption,
+                spokenText: model.spokenMachineCaption ?? machineCaption,
                 menu: model.machineMenu,
                 selected: model.machine,
                 onSelect: model.select,
@@ -144,6 +146,9 @@ struct LogSheet: View {
         }
         .frame(maxWidth: .infinity, minHeight: 22)
         .animation(.snappy(duration: 0.2), value: model.verdict)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.spokenVerdict ?? "")
+        .accessibilityHidden(model.verdict == nil)
     }
 
     private var verdictStyle: AnyShapeStyle {

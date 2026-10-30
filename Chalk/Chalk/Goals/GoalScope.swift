@@ -59,10 +59,18 @@ enum GoalScope {
         }
     }
 
-    /// The endurance goal set here, judged against this scope's entries and `zones`, read
-    /// live by the caller. **Nil on a lift**, and unless every field is set — a speed goal
-    /// with its incline.
-    func enduranceGoal(zones: HeartRateZones?, calendar: Calendar = .current) -> EnduranceGoal? {
+    /// The endurance goal set here, judged against this scope's entries and `zones`, and
+    /// written in `distanceUnit`, both read live by the caller. **Nil on a lift**, and
+    /// unless every field is set — a speed goal with its incline.
+    ///
+    /// `entries` judges it against those rather than all of this scope's — the lap-list
+    /// sheet's save, which asks whether the goal was reached without what it writes.
+    func enduranceGoal(
+        judgedAgainst entries: [Entry]? = nil,
+        zones: HeartRateZones?,
+        distanceUnit: DistanceUnit,
+        calendar: Calendar = .current
+    ) -> EnduranceGoal? {
         guard let unit else { return nil }
         let stored: (zone: Int?, duration: Int?, intensity: Double?, incline: Double?, setAt: Date?) = switch self {
         case .exercise(let e): (e.goalZone, e.goalDuration, e.goalIntensity, e.goalIncline, e.goalSetAt)
@@ -74,9 +82,10 @@ enum GoalScope {
             intensity: stored.intensity,
             incline: stored.incline,
             setAt: stored.setAt,
-            entries: entries,
+            entries: entries ?? self.entries,
             zones: zones,
             unit: unit,
+            distanceUnit: distanceUnit,
             calendar: calendar
         )
     }
@@ -138,9 +147,10 @@ enum GoalScope {
     /// fields happen to be set (§13.1). What the repairs weigh by `setAt` and name.
     ///
     /// Read without zones: a repair carries the fields and never judges the goal, so
-    /// whether it is reached plays no part.
-    var heldGoal: (any HeldGoal)? {
-        unit == nil ? goal : enduranceGoal(zones: nil)
+    /// whether it is reached plays no part. `distanceUnit` is the scale its words write a
+    /// speed goal in.
+    func heldGoal(distanceUnit: DistanceUnit) -> (any HeldGoal)? {
+        unit == nil ? goal : enduranceGoal(zones: nil, distanceUnit: distanceUnit)
     }
 
     /// Moves the goal set at `source` here, **keeping its `goalSetAt`** — the goal is the
@@ -148,7 +158,8 @@ enum GoalScope {
     /// — and clears `source`. The kind change's move and pool (SPEC §8), and the merge's
     /// survivor (§7.5), **in either half** (§13.11).
     func takeGoal(from source: GoalScope) {
-        switch source.heldGoal {
+        // The fields move as they are: the scale they are on plays no part.
+        switch source.heldGoal(distanceUnit: .km) {
         case let goal as Goal:
             set(reps: goal.reps, weight: goal.weight, at: goal.setAt)
         case let goal as EnduranceGoal:

@@ -42,6 +42,9 @@ final class ErgHistoryModel: Identifiable {
         let intensity: String
         /// `164/170 bpm`.
         let heartRate: String
+        /// The whole row as VoiceOver says it: `yesterday, 15.0 kilometres per hour, pace
+        /// 4 minutes per kilometre, average 164, peak 170 beats per minute`.
+        let spoken: String
 
         /// The whole row in the spec's order: `date · duration · intensity · avg/peak bpm`.
         var text: String {
@@ -54,7 +57,7 @@ final class ErgHistoryModel: Identifiable {
     }
 
     /// Where the point's window ends, between `rows` and `older`.
-    static let divider = "Older — not in the line"
+    static let divider = String(localized: "Older — not in the line")
 
     let id = UUID()
     let listing: Listing
@@ -77,7 +80,8 @@ final class ErgHistoryModel: Identifiable {
     @ObservationIgnored private let context: ModelContext
     /// Carried through to the log sheet an edited row opens; nothing here reads them.
     @ObservationIgnored private let gyms: GymsModel
-    /// Where the zones are held, read live on every refresh (ADR-0005).
+    /// Where the zones and the distance unit are held, read live on every refresh
+    /// (ADR-0005).
     @ObservationIgnored private let defaults: UserDefaults
     /// The screens behind the sheet — the detail screen and the library — which every
     /// write here has to put back in step.
@@ -110,10 +114,20 @@ final class ErgHistoryModel: Identifiable {
     /// `Over 20:00 in Z4`, with the incline on a speed erg (`· 1 %`).
     var title: String {
         var title = switch listing {
-        case .point(let duration): "\(EnduranceText.clock(duration)) in Z\(zone)"
-        case .overTheAxis: "Over \(EnduranceText.clock(ZoneLine.axisEnd)) in Z\(zone)"
+        case .point(let duration): String(localized: "\(EnduranceText.clock(duration)) in Z\(zone)")
+        case .overTheAxis: String(localized: "Over \(EnduranceText.clock(ZoneLine.axisEnd)) in Z\(zone)")
         }
         if erg.ergUnit?.hasIncline == true { title += " · \(EnduranceText.incline(incline)) %" }
+        return title
+    }
+
+    /// `title` as VoiceOver says it: `6 minutes in zone 4, 1 percent incline`.
+    var spokenTitle: String {
+        var title = switch listing {
+        case .point(let duration): String(localized: "\(Spoken.duration(duration)) in zone \(zone)")
+        case .overTheAxis: String(localized: "Over \(Spoken.duration(ZoneLine.axisEnd)) in zone \(zone)")
+        }
+        if erg.ergUnit?.hasIncline == true { title += ", \(Spoken.incline(incline))" }
         return title
     }
 
@@ -168,25 +182,35 @@ final class ErgHistoryModel: Identifiable {
             zone: zone,
             incline: incline
         )
+        let distanceUnit = DistanceUnit(defaults: defaults)
         switch listing {
         case .point(let duration):
             let entries = line.entries(at: duration)
             let cutOff = line.cutOff(at: duration) ?? .distantPast
-            rows = entries.filter { $0.date >= cutOff }.map { row($0, unit, duration: false) }
-            older = entries.filter { $0.date < cutOff }.map { row($0, unit, duration: false) }
+            rows = entries.filter { $0.date >= cutOff }.map { row($0, unit, distanceUnit, duration: false) }
+            older = entries.filter { $0.date < cutOff }.map { row($0, unit, distanceUnit, duration: false) }
         case .overTheAxis:
-            rows = line.entriesOverTheAxis.map { row($0, unit, duration: true) }
+            rows = line.entriesOverTheAxis.map { row($0, unit, distanceUnit, duration: true) }
             older = []
         }
     }
 
-    private func row(_ entry: Entry, _ unit: ErgUnit, duration: Bool) -> Row {
-        Row(
+    private func row(_ entry: Entry, _ unit: ErgUnit, _ distanceUnit: DistanceUnit, duration: Bool) -> Row {
+        let day = RelativeDay.text(for: entry.date, asOf: .now)
+        let pace = unit == .speed && entry.intensity > 0 ? String(localized: "pace \(EnduranceText.spokenPace(entry.intensity, distanceUnit))") : nil
+        return Row(
             id: entry.id,
-            day: RelativeDay.text(for: entry.date, asOf: .now),
+            day: day,
             duration: duration ? EnduranceText.clock(entry.duration) : nil,
-            intensity: EnduranceText.intensity(entry.intensity, unit),
-            heartRate: "\(entry.averageHeartRate)/\(entry.peakHeartRate) bpm",
+            intensity: EnduranceText.intensity(entry.intensity, unit, distanceUnit),
+            heartRate: String(localized: "\(entry.averageHeartRate)/\(entry.peakHeartRate) bpm"),
+            spoken: [
+                day,
+                duration ? Spoken.duration(entry.duration) : nil,
+                EnduranceText.spokenIntensity(entry.intensity, unit, distanceUnit),
+                pace,
+                String(localized: "average \(entry.averageHeartRate), peak \(Spoken.heartRate(entry.peakHeartRate))"),
+            ].compactMap(\.self).joined(separator: ", "),
             entry: entry
         )
     }

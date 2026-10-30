@@ -14,9 +14,12 @@ struct MachineGoals {
     /// machine's id, so even a tie picks the same winner whichever way round you ask.
     private let latestFirst: [(machine: Machine, goal: any HeldGoal)]
 
-    init(_ machines: [Machine]) {
+    /// `distanceUnit` is the scale the lost-goal clause writes a speed goal in.
+    init(_ machines: [Machine], distanceUnit: DistanceUnit) {
         latestFirst = machines
-            .compactMap { machine in GoalScope.machine(machine).heldGoal.map { (machine, $0) } }
+            .compactMap { machine in
+                GoalScope.machine(machine).heldGoal(distanceUnit: distanceUnit).map { (machine, $0) }
+            }
             .sorted {
                 $0.goal.setAt != $1.goal.setAt
                     ? $0.goal.setAt > $1.goal.setAt

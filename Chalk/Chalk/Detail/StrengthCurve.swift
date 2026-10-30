@@ -1,7 +1,8 @@
 import Charts
 import SwiftUI
 
-/// The strength curve and the ghost behind it (SPEC §5.2).
+/// The strength curve and the ghost behind it (SPEC §5.2). Its height is the screen's to
+/// give: `detailChart()` lets it give way from 210 to 110 pt (§15.4).
 ///
 /// **Drawn only where there is something to draw.** The zero-entry screen shows text
 /// instead — no axes, no flat line, no ghost (§5.4), so this view never has to render an
@@ -9,13 +10,17 @@ import SwiftUI
 struct StrengthCurve: View {
     let curve: RepMaxCurve
     let selectedReps: Int
+    /// What VoiceOver plays and says for the curve (SPEC §15.6).
+    let audioGraph: AudioGraph
+    /// The readout at the selected rep count, as VoiceOver says it.
+    let spokenValue: String
     /// `chartXSelection` writes `nil` here on lift; the model ignores that and keeps the
     /// last real value, which is what makes the selection sticky.
     let onSelect: (Int?) -> Void
 
-    /// 150 pt. Full-bleed was tried and rejected: it makes the screen read as a chart
-    /// rather than as an exercise (SPEC §5.1).
-    static let height: CGFloat = 150
+    /// Whether a finger is on the chart — between a selection and the `nil` of its lift —
+    /// so the tick is the scrub's alone (SPEC §15.4).
+    @State private var isScrubbing = false
 
     var body: some View {
         Chart {
@@ -28,15 +33,15 @@ struct StrengthCurve: View {
                     series: .value("Series", "ghost")
                 )
                 .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 2, dash: [4, 5]))
-                // Grey and dashed against a solid tinted line, rather than a paler
+                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, dash: [0.1, 6]))
+                // Grey and dotted against a thick solid line, rather than a paler
                 // shade of the same thing: the first scaffolding drew both as thin
                 // dashed grey and failed both halves of the rule (SPEC §5.2).
-                .foregroundStyle(Color.secondary.opacity(0.55))
+                .foregroundStyle(Color.grey)
             }
 
-            // Stepped, with a point on every rep count: monotonic backfill repeats the
-            // value above, so the honest picture is a staircase and not a slope.
+            // Stepped: monotonic backfill repeats the value above, so the honest
+            // picture is a staircase and not a slope.
             ForEach(best) { point in
                 LineMark(
                     x: .value("Reps", point.reps),
@@ -44,14 +49,17 @@ struct StrengthCurve: View {
                     series: .value("Series", "best")
                 )
                 .interpolationMethod(.stepEnd)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .lineStyle(StrokeStyle(lineWidth: 3.5, lineCap: .round, lineJoin: .round))
                 .foregroundStyle(Color.accentColor)
+            }
 
+            // A point on the selected rep count only (SPEC §5.2).
+            if let selected = best.first(where: { $0.reps == selectedReps }) {
                 PointMark(
-                    x: .value("Reps", point.reps),
-                    y: .value("Rep-max", point.weight)
+                    x: .value("Reps", selected.reps),
+                    y: .value("Rep-max", selected.weight)
                 )
-                .symbolSize(point.reps == selectedReps ? 90 : 22)
+                .symbolSize(90)
                 .foregroundStyle(Color.accentColor)
             }
 
@@ -60,7 +68,7 @@ struct StrengthCurve: View {
             // what says which cell it is talking about.
             RuleMark(x: .value("Reps", selectedReps))
                 .lineStyle(StrokeStyle(lineWidth: 1))
-                .foregroundStyle(Color.secondary.opacity(0.4))
+                .foregroundStyle(Color.grey.opacity(0.4))
                 // Behind the marks above it, so the thumb tracker never covers the
                 // point it is tracking.
                 .zIndex(-1)
@@ -76,23 +84,45 @@ struct StrengthCurve: View {
         // a zero-based axis flattens them into the top third.
         .chartYScale(domain: yDomain)
         .chartXAxis {
+            // The axis's labels only: no grid and no y axis (SPEC §5.2). The readout
+            // says the number; the selected rep count's label is the primary.
             AxisMarks(preset: .aligned, values: [1, 3, 5, 8, 12]) { value in
-                AxisGridLine()
                 AxisValueLabel {
                     if let reps = value.as(Int.self) {
                         Text("\(reps)")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(reps == selectedReps ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                            // Past xxxLarge the labels no longer fit between their
+                            // ticks; the readout says the selected count at full size
+                            // (SPEC §15.4).
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     }
                 }
             }
         }
-        .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 3))
-        }
+        .chartYAxis(.hidden)
         // Charts' own selection. A `DragGesture` in a `chartOverlay` with a tap gesture
         // over it is the failure this replaces: the two fight and the drag does nothing.
-        .chartXSelection(value: Binding<Int?>(get: { selectedReps }, set: { onSelect($0) }))
-        .frame(height: Self.height)
+        .chartXSelection(value: Binding<Int?>(get: { selectedReps }, set: {
+            isScrubbing = $0 != nil
+            onSelect($0)
+        }))
+        // A tick at each rep count the scrub lands on (SPEC §15.4). Anything else that
+        // moves the selection, such as correcting the machine, stays silent.
+        .sensoryFeedback(.selection, trigger: selectedReps) { _, _ in isScrubbing }
+        // One element VoiceOver scrubs as a finger does, a swipe up or down a rep count,
+        // and plays as an audio graph from its rotor (SPEC §15.6).
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Strength curve")
+        .accessibilityValue(spokenValue)
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: onSelect(selectedReps + 1)
+            case .decrement: onSelect(selectedReps - 1)
+            @unknown default: break
+            }
+        }
+        .accessibilityChartDescriptor(audioGraph)
     }
 
     private var best: [CurvePoint] { Self.points(curve.best) }
@@ -131,24 +161,32 @@ struct StrengthCurve: View {
 }
 
 #Preview("A curve with shape") {
+    let curve = RepMaxCurve(entries: [
+        Entry(reps: 1, weight: 120), Entry(reps: 3, weight: 110),
+        Entry(reps: 5, weight: 100), Entry(reps: 8, weight: 85),
+    ])
     StrengthCurve(
-        curve: RepMaxCurve(entries: [
-            Entry(reps: 1, weight: 120), Entry(reps: 3, weight: 110),
-            Entry(reps: 5, weight: 100), Entry(reps: 8, weight: 85),
-        ]),
+        curve: curve,
         selectedReps: 5,
+        audioGraph: AudioGraph(curve: curve, weightUnit: .kg, goal: nil),
+        spokenValue: "",
         onSelect: { _ in }
     )
+    .frame(height: 210)
     .padding()
 }
 
 /// The case the ghost has to survive: one entry, a flat curve, and a projection that
 /// still has to read as guidance rather than as a record (SPEC §5.2).
 #Preview("A single entry") {
+    let curve = RepMaxCurve(entries: [Entry(reps: 5, weight: 55)])
     StrengthCurve(
-        curve: RepMaxCurve(entries: [Entry(reps: 5, weight: 55)]),
+        curve: curve,
         selectedReps: 5,
+        audioGraph: AudioGraph(curve: curve, weightUnit: .kg, goal: nil),
+        spokenValue: "",
         onSelect: { _ in }
     )
+    .frame(height: 210)
     .padding()
 }

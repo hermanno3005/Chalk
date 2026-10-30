@@ -14,7 +14,9 @@ struct LibraryLayoutTests {
     private func layout(_ fixture: LibraryFixture) throws -> LibraryLayout {
         LibraryLayout(
             exercises: try fixture.allExercises(),
-            groups: try fixture.allGroups()
+            groups: try fixture.allGroups(),
+            weightUnit: .kg,
+            distanceUnit: .km
         )
     }
 
@@ -86,6 +88,41 @@ struct LibraryLayoutTests {
         #expect(try layout(fixture).sections[0].tiles.map(\.name) == ["Squat", "Bench Press"])
     }
 
+    @Test("A section's tiles pair into rows, and a lone last tile takes a row of its own")
+    func tilesPairIntoRows() throws {
+        let fixture = try LibraryFixture()
+        let legs = fixture.group("Legs", sortIndex: 0)
+        let push = fixture.group("Push", sortIndex: 1)
+        let now = Date.now
+        fixture.log(fixture.exercise("Squat", group: legs), on: now)
+        fixture.log(fixture.exercise("Leg Curl", group: legs), on: now.addingTimeInterval(-60))
+        fixture.log(fixture.exercise("Lunge", group: legs), on: now.addingTimeInterval(-120))
+        fixture.exercise("Bench Press", group: push)
+        fixture.exercise("Dip", group: push)
+        try fixture.save()
+
+        let sections = try layout(fixture).sections
+
+        #expect(sections[0].rows(at: .large).map { $0.map(\.name) } == [["Squat", "Leg Curl"], ["Lunge"]])
+        #expect(sections[1].rows(at: .xxxLarge).map { $0.map(\.name) } == [["Bench Press", "Dip"]])
+    }
+
+    @Test("At an accessibility text size every tile takes a row of its own")
+    func accessibilitySizesLayOneTileToARow() throws {
+        let fixture = try LibraryFixture()
+        let legs = fixture.group("Legs", sortIndex: 0)
+        let now = Date.now
+        fixture.log(fixture.exercise("Squat", group: legs), on: now)
+        fixture.log(fixture.exercise("Leg Curl", group: legs), on: now.addingTimeInterval(-60))
+        fixture.log(fixture.exercise("Bulgarian Split Squat", group: legs), on: now.addingTimeInterval(-120))
+        try fixture.save()
+
+        let section = try layout(fixture).sections[0]
+
+        #expect(section.rows(at: .accessibility1).map { $0.map(\.name) } == [["Squat"], ["Leg Curl"], ["Bulgarian Split Squat"]])
+        #expect(section.rows(at: .accessibility5).count == 3)
+    }
+
     // MARK: - Subtitles
 
     @Test("A tile carries what you last did for it; an unlogged exercise carries nothing")
@@ -100,8 +137,50 @@ struct LibraryLayoutTests {
 
         let tiles = try layout(fixture).tiles
 
-        #expect(tiles[0].lastEntry?.text(asOf: now) == "8 × \(52.5.kilogramsText) kg · today")
+        #expect(tiles[0].subtitle(asOf: now) == "8 × \(52.5.weightText) kg · today")
         #expect(tiles[1].lastEntry == nil)
+    }
+
+    @Test("A tile's subtitle splits into what you did and the day, which the tile can set apart")
+    func aSubtitleSplitsAtTheDay() throws {
+        let fixture = try LibraryFixture()
+        let now = Date.now
+        fixture.log(fixture.exercise("Squat"), reps: 12, weight: 100, on: now.addingTimeInterval(-86_400))
+        fixture.interval(
+            fixture.erg("Treadmill", kind: .freeWeight),
+            duration: 750, intensity: 15, incline: 2, on: now.addingTimeInterval(-86_400 * 3)
+        )
+        fixture.exercise("Ab Wheel")
+        try fixture.save()
+
+        let tiles = try LibraryLayout(
+            exercises: try fixture.allExercises(),
+            groups: [],
+            weightUnit: .kg,
+            distanceUnit: .km
+        ).tiles
+
+        let squat = tiles.first { $0.name == "Squat" }?.subtitleParts(asOf: now)
+        #expect(squat?.done == "12 × 100 kg")
+        #expect(squat?.day == "yesterday")
+        let treadmill = tiles.first { $0.name == "Treadmill" }?.subtitleParts(asOf: now)
+        #expect(treadmill?.done.decimalPoint == "12:30 at 15.0 km/h · 2 %")
+        #expect(treadmill?.day == "3 days ago")
+        #expect(tiles.first { $0.name == "Ab Wheel" }?.subtitleParts(asOf: now) == nil)
+    }
+
+    @Test("A tile's line breaks only after ×, at or ·, so a number never leaves its unit")
+    func aLineBreaksOnlyBetweenNumbers() {
+        func breaks(_ done: String) -> [String] {
+            LibraryTile.SubtitleParts(done: done, day: "today").doneKeepingUnits
+                .split(separator: " ")
+                .map { $0.replacingOccurrences(of: "\u{00A0}", with: " ").replacingOccurrences(of: "\u{2060}", with: "") }
+        }
+
+        #expect(breaks("12 × 102.5 kg") == ["12 ×", "102.5 kg"])
+        #expect(breaks("1:12:30 at 1:45.3 /500 m") == ["1:12:30 at", "1:45.3 /500 m"])
+        #expect(breaks("12:30 at 15.0 km/h · 12.5 %") == ["12:30 at", "15.0 km/h ·", "12.5 %"])
+        #expect(breaks("20:00 at Level 12") == ["20:00 at", "Level 12"])
     }
 
     @Test("A zeroed row is not what you last did")
@@ -128,7 +207,7 @@ struct LibraryLayoutTests {
         let resume = try #require(try layout(fixture).resume)
 
         #expect(resume.exercise.name == "Bench Press")
-        #expect(resume.text(asOf: now) == "8 × \(52.5.kilogramsText) kg · today")
+        #expect(resume.text(asOf: now) == "8 × \(52.5.weightText) kg · today")
     }
 
     @Test("A library with nothing logged has no resume card")
@@ -228,7 +307,7 @@ struct LibraryLayoutTests {
 
         // The subtitle is all a tile says: it has no goal to read at all, since a tile
         // would have to resolve a scope through the current gym.
-        #expect(tile.lastEntry?.text(asOf: .now) == "5 × 100 kg · today")
+        #expect(tile.subtitle(asOf: .now) == "5 × 100 kg · today")
     }
 
     // MARK: - Search

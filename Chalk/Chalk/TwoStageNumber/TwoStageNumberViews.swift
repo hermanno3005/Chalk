@@ -14,7 +14,7 @@ struct RepsBackButton: View {
             withAnimation(.snappy) { number.backToReps() }
         } label: {
             Label(number.repsLabel, systemImage: "chevron.left")
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
         }
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
@@ -31,23 +31,20 @@ struct GiantNumber: View {
         Button {
             withAnimation(.snappy) { number.tapNumber() }
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(number.numberText)
-                    .font(.system(size: 92, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .animation(.snappy(duration: 0.2), value: number.numberText)
-                    .minimumScaleFactor(0.4)
-                    .lineLimit(1)
-                Text(number.unitText)
-                    .font(.title2.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 110)
-            .contentShape(.rect)
+            // The unit at the number's own size and weight (SPEC §15.4), in one text so
+            // the two shrink together when a long number has to fit.
+            Text([number.numberText, number.unitText].filter { !$0.isEmpty }.joined(separator: " "))
+                .font(.system(size: 92, weight: .bold))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .animation(.snappy(duration: 0.2), value: number.numberText)
+                .minimumScaleFactor(0.4)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, minHeight: 110)
+                .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(number.numberText.isEmpty ? "Blank" : number.numberText) \(number.unitText)")
+        .accessibilityLabel(number.spokenNumber)
         .accessibilityHint(number.mode == .keypad ? "Shows the steppers" : "Types a number")
     }
 }
@@ -63,9 +60,9 @@ struct TwoStageNumberInput: View {
         }
     }
 
-    /// **±1 rep, ±2.5 kg**, and on weight the step snaps to the grid rather than adding
-    /// (SPEC §6.2). Tap only — no hold-to-repeat and no acceleration, so these are plain
-    /// buttons and nothing here recognises a long press.
+    /// **±1 rep, ±one step of the grid**, and on weight the step snaps to the grid rather
+    /// than adding (SPEC §6.2). Tap only — no hold-to-repeat and no acceleration, so these
+    /// are plain buttons and nothing here recognises a long press.
     private var steppers: some View {
         HStack(spacing: 16) {
             stepper(-1, symbol: "minus")
@@ -83,14 +80,6 @@ struct TwoStageNumberInput: View {
         }
         .buttonStyle(.bordered)
         .buttonBorderShape(.roundedRectangle(radius: 16))
-        .accessibilityLabel(stepperLabel(direction))
-    }
-
-    private func stepperLabel(_ direction: Int) -> String {
-        let up = direction > 0
-        switch number.stage {
-        case .reps: return up ? "One rep more" : "One rep fewer"
-        case .weight: return up ? "Up to the next 2.5 kilograms" : "Down to the next 2.5 kilograms"
-        }
+        .accessibilityLabel(number.stepperLabel(direction))
     }
 }

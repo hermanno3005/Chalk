@@ -158,6 +158,25 @@ struct LapListEditTests {
         #expect(entry.machine === old)
     }
 
+    @Test("Raising an interval past its machine's goal plays the goal's haptic")
+    func raisingAnIntervalPastTheGoalPlaysItsHaptic() throws {
+        let fixture = try LibraryFixture()
+        fixture.zones(120, 140, 155, 170)
+        let treadmill = fixture.erg("Treadmill")
+        let run = fixture.machine(for: treadmill, at: fixture.gym("Urban Gym"), label: "Technogym Run")
+        fixture.interval(treadmill, machine: run, intensity: 14.0, average: 164, on: .days(ago: 9))
+        let entry = fixture.interval(treadmill, machine: run, intensity: 14.0, average: 164, on: .days(ago: 2))
+        GoalScope.machine(run).set(zone: 4, duration: 360, intensity: 15.0, incline: 0, at: .days(ago: 5))
+        try fixture.save()
+
+        let model = fixture.lapListModel(for: treadmill, editing: entry)
+        model.select(.init(row: 0, field: .intensity))
+        model.type("16.0")
+
+        // Judged without the entry being corrected, the point is 14.0; with it, 15.0.
+        #expect(model.save() == .reachedGoal)
+    }
+
     @Test("Picking another gym's machine on an edit leaves the current gym where it was")
     func anEditPickLeavesTheGym() throws {
         let fixture = try LibraryFixture()

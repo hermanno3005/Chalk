@@ -10,10 +10,6 @@ struct LibraryView: View {
     let model: LibraryModel
 
     @State private var creating: CreateRequest?
-    /// What is pushed on top of the library. A path of its own rather than
-    /// `NavigationLink`-per-tile: a tile is a plain view so Arrange mode (#30) can drag
-    /// it, and a link would claim the press exactly as a `Button` does (SPEC §7.2).
-    @State private var opened: [Exercise] = []
     /// The exercise *Log again* has the log sheet open over, captured at the tap. Held
     /// rather than re-read from `model.resume` at presentation: the card moves the
     /// instant anything is logged, and a sheet in flight must not change the exercise
@@ -44,10 +40,14 @@ struct LibraryView: View {
     /// is cached in `LibraryModel` and refreshed on mutation, so a drag re-renders the
     /// grid without re-sorting a thing.
     @State private var dropTarget: LibraryDropTarget?
+    /// Which sets the grid's columns: one tile to a row at an accessibility size.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        NavigationStack(path: $opened) {
+        @Bindable var model = model
+        return NavigationStack(path: $model.path) {
             keyboardDismissingContent
+                .chalkScreen()
                 .navigationDestination(for: Exercise.self) { exercise in
                     if exercise.isErg {
                         ErgDetailView(model: model.ergDetail(for: exercise))
@@ -63,11 +63,15 @@ struct LibraryView: View {
                 // rides along to a screen with no field under it — unless something
                 // resigns it as the push begins. Dropping it here also means a swipe
                 // back reveals the grid rather than a stale results list.
-                .onChange(of: opened) { previous, current in
+                .onChange(of: model.path) { previous, current in
                     guard current.count > previous.count else { return }
                     searchFocused = false
                     model.endSearch()
                 }
+                // A Spotlight result or a shortcut does what a swipe-down would do to
+                // everything over the library (SPEC §15.5). A sheet over a detail screen
+                // it replaced went with that screen.
+                .onChange(of: model.closings) { closeEverything() }
                 // Never drawn — the switch stands in its place — but it is what a
                 // pushed screen's back button says.
                 .navigationTitle(model.half.title)
@@ -110,7 +114,7 @@ struct LibraryView: View {
                             }
                         ),
                         isFocused: $searchFocused,
-                        prompt: model.half == .endurance ? "Search or add an erg" : "Search or add an exercise"
+                        prompt: model.half == .endurance ? String(localized: "Search or add an erg") : String(localized: "Search or add an exercise")
                     )
                 }
                 .sheet(item: $loggingAgain) { request in
@@ -146,7 +150,8 @@ struct LibraryView: View {
                     // behind the sheet is already in step when it closes.
                     ManageGymsSheet(gyms: model.gyms)
                 }
-                .sheet(item: $settings) { settings in
+                // A relabel or a convert there moves the scale every tile and the resume card write in.
+                .sheet(item: $settings, onDismiss: model.refresh) { settings in
                     SettingsSheet(model: settings)
                 }
                 .sheet(isPresented: $creatingGym) {
@@ -155,6 +160,21 @@ struct LibraryView: View {
                     NewGymSheet(gyms: model.gyms) { model.gyms.select($0) }
                 }
         }
+        // Read by the lap-list grid, at any depth, which a result has to ask first.
+        .environment(model)
+    }
+
+    /// Closes every sheet the library has open, silently, ends Arrange as Done does and
+    /// puts the keyboard away. Alerts inside those sheets close with them, as cancelled.
+    private func closeEverything() {
+        creating = nil
+        loggingAgain = nil
+        creatingGym = false
+        editingGroups = false
+        managingGyms = false
+        settings = nil
+        arranging = false
+        searchFocused = false
     }
 
     /// The `Strength | Endurance` control (SPEC §13.5). Leaving a half leaves its modes
@@ -263,7 +283,7 @@ struct LibraryView: View {
                 if let resume = model.resume, !arranging {
                     ResumeCard(
                         resume: resume,
-                        onOpen: { opened.append(resume.exercise) },
+                        onOpen: { model.path.append(resume.exercise) },
                         onLogAgain: { loggingAgain = LoggingRequest(exercise: resume.exercise) }
                     )
                 }
@@ -286,17 +306,26 @@ struct LibraryView: View {
     /// every group, empty ones included.
     private func section(_ section: LibrarySection) -> some View {
         let isTarget = dropTarget == section.dropTarget
+        let columns = LibrarySection.columns(at: dynamicTypeSize)
         return VStack(alignment: .leading, spacing: 8) {
             header(section)
-            LazyVGrid(columns: Self.tileColumns, spacing: 10) {
-                ForEach(section.tiles) { tile in
-                    ExerciseTile(
-                        tile: tile,
-                        arranging: arranging,
-                        groups: model.groups.groups,
-                        onOpen: { opened.append(tile.exercise) },
-                        onAssign: { model.assign(tile.exercise, to: model.groups.group(id: $0)) }
-                    )
+            // A `Grid` rather than a `LazyVGrid`: a lone last tile spans both columns, so
+            // no row leaves half the screen empty, and the tiles in a row share its height
+            // when one's last entry takes a second line (SPEC §15.4).
+            Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+                ForEach(section.rows(at: dynamicTypeSize), id: \.first?.id) { row in
+                    GridRow {
+                        ForEach(row) { tile in
+                            ExerciseTile(
+                                tile: tile,
+                                arranging: arranging,
+                                groups: model.groups.groups,
+                                onOpen: { model.path.append(tile.exercise) },
+                                onAssign: { model.assign(tile.exercise, to: model.groups.group(id: $0)) }
+                            )
+                            .gridCellColumns(row.count == 1 ? columns : 1)
+                        }
+                    }
                 }
             }
         }
@@ -335,12 +364,11 @@ struct LibraryView: View {
         }
         // Ungrouped is a bucket rather than a group of your own, and reads as one.
         .foregroundStyle(section.isUngrouped ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+        // `Compound, 4 exercises`: the count said as what it counts.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(section.spokenHeader)
+        .accessibilityAddTraits(.isHeader)
     }
-
-    private static let tileColumns = [
-        GridItem(.flexible(), spacing: 10),
-        GridItem(.flexible(), spacing: 10),
-    ]
 
     // MARK: - Searching
 
@@ -350,7 +378,7 @@ struct LibraryView: View {
         List {
             ForEach(matches) { tile in
                 Button {
-                    opened.append(tile.exercise)
+                    model.path.append(tile.exercise)
                 } label: {
                     Text(tile.name)
                         .foregroundStyle(.primary)
@@ -358,14 +386,17 @@ struct LibraryView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityValue(tile.subtitleParts()?.spoken ?? "")
             }
+            .chalkRows()
             if let createSuggestion {
                 Button {
                     creating = CreateRequest(name: createSuggestion, half: model.half)
                 } label: {
                     Label("Create “\(createSuggestion)”", systemImage: "plus.circle.fill")
-                        .font(.body.weight(.medium))
+                        .font(.body.weight(.semibold))
                 }
+                .chalkRows()
             }
         }
         .listStyle(.plain)
@@ -394,8 +425,8 @@ private extension Half {
     /// The half's name, on the switch and on a pushed screen's back button.
     var title: String {
         switch self {
-        case .strength: "Strength"
-        case .endurance: "Endurance"
+        case .strength: String(localized: "Strength")
+        case .endurance: String(localized: "Endurance")
         }
     }
 }
@@ -409,6 +440,15 @@ private extension Half {
         ("Squat", "Compound"), ("Bench Press", "Compound"),
         ("Leg Curl", "Legs"), ("Ab Wheel", nil),
     ])
+}
+
+/// One tile to a row, and the resume card's *Log again* under its text (SPEC §15.6).
+#Preview("Grid, AX5") {
+    LibraryPreview.view(exercises: [
+        ("Squat", "Compound"), ("Bulgarian Split Squat", "Legs"),
+        ("Leg Curl", "Legs"), ("Ab Wheel", nil),
+    ])
+    .dynamicTypeSize(.accessibility5)
 }
 
 /// An in-memory library, so the previews above are the real screen over the real model.

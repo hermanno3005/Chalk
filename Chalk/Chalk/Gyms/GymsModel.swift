@@ -200,7 +200,7 @@ final class GymsModel {
             return
         }
 
-        if MachineMerge(loser: loser, sibling: sibling).losersGoalIsKept {
+        if MachineMerge(loser: loser, sibling: sibling, distanceUnit: DistanceUnit(defaults: defaults)).losersGoalIsKept {
             GoalScope.machine(sibling).takeGoal(from: .machine(loser))
         }
         for entry in loser.entries ?? [] {

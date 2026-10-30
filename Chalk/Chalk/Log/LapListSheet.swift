@@ -10,6 +10,9 @@ struct LapListSheet: View {
     @State var model: LapListModel
 
     @Environment(\.dismiss) private var dismiss
+    /// The library under the sheet, told while the grid is up so a Spotlight result asks
+    /// here first (SPEC §15.5). Absent in a preview.
+    @Environment(LibraryModel.self) private var library: LibraryModel?
     @State private var confirmingDiscard = false
     /// The gym `New machine here` was tapped in, held while its one-field alert is up —
     /// always asked, as strength's is (SPEC §6.4).
@@ -24,6 +27,7 @@ struct LapListSheet: View {
                 if let machineCaption = model.machineCaption {
                     MachineCaptionMenu(
                         text: machineCaption,
+                        spokenText: model.spokenMachineCaption ?? machineCaption,
                         menu: model.machineMenu,
                         selected: model.machine,
                         onSelect: model.select,
@@ -40,7 +44,7 @@ struct LapListSheet: View {
                                 withAnimation(.snappy) { model.addRow() }
                             } label: {
                                 Label("Add an entry", systemImage: "plus")
-                                    .font(.subheadline.weight(.medium))
+                                    .font(.subheadline.weight(.semibold))
                                     .frame(maxWidth: .infinity, minHeight: 40)
                             }
                             .buttonStyle(.bordered)
@@ -60,6 +64,7 @@ struct LapListSheet: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
+            .chalkScreen()
             // The erg while logging; the entry's date, not editable, on an edit.
             .navigationTitle(model.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -71,26 +76,45 @@ struct LapListSheet: View {
                         // An untouched sheet closes without asking.
                         if model.isTouched { confirmingDiscard = true } else { dismiss() }
                     }
+                    // **One question for Cancel and for a result opened over the grid**
+                    // (SPEC §15.5), so a result arriving while Cancel's is up takes it
+                    // over rather than waiting behind it. The held result is answered
+                    // only by these buttons, never by the dialog's own dismissal.
                     .confirmationDialog(
                         model.discardConfirmation,
-                        isPresented: $confirmingDiscard,
+                        isPresented: Binding(
+                            get: { confirmingDiscard || model.isHoldingAnOpen },
+                            set: { if !$0 { confirmingDiscard = false } }
+                        ),
                         titleVisibility: .visible
                     ) {
                         Button(discardTitle, role: .destructive) {
-                            dismiss()
+                            if model.isHoldingAnOpen { model.discardForHeldOpen() } else { dismiss() }
                         }
-                        Button("Keep Typing", role: .cancel) {}
+                        Button(model.isHoldingAnOpen ? "Keep Editing" : "Keep Typing", role: .cancel) {
+                            model.keepEditing()
+                        }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.saveTitle) {
-                        model.save()
+                        // Once for the block, however many rows it writes (SPEC §15.4).
+                        model.save()?.play()
                         dismiss()
                     }
                     .fontWeight(.semibold)
                     .disabled(!model.canSave)
                 }
             }
+            // What a swipe-down would do to what is over the grid, so its question can
+            // show: the gym sheet closes and the naming alert closes as cancelled.
+            .onChange(of: model.isHoldingAnOpen) { _, holding in
+                guard holding else { return }
+                naming = nil
+                creatingGym = false
+            }
+            .onAppear { library?.presented(model) }
+            .onDisappear { library?.dismissed(model) }
             .namingMachine(at: $naming, check: { model.nearModel(named: $1, at: $0) }) { gym, name in
                 model.createMachine(at: gym, named: name)
             }
@@ -103,17 +127,20 @@ struct LapListSheet: View {
     private static let addRowID = "add-row"
 
     private var discardTitle: String {
-        if !model.canAddRows { return "Discard Changes" }
-        return model.rows.count == 1 ? "Discard Entry" : "Discard \(model.rows.count) Entries"
+        if !model.canAddRows { return String(localized: "Discard Changes") }
+        return String(localized: "Discard \(model.rows.count) Entries")
     }
 
     private var grid: some View {
         Grid(horizontalSpacing: 5, verticalSpacing: 6) {
             GridRow {
                 ForEach(model.columns, id: \.self) { field in
-                    Text(field.columnTitle(model.unit))
+                    Text(field.columnTitle(model.unit, model.distanceUnit))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+                        // Each cell names its own column, so the titles are not said
+                        // twice.
+                        .accessibilityHidden(true)
                 }
                 Color.clear.frame(width: 34, height: 1)
             }
@@ -135,7 +162,7 @@ struct LapListSheet: View {
             withAnimation(.snappy(duration: 0.15)) { model.select(cell) }
         } label: {
             Text(text.isEmpty ? "–" : text)
-                .font(.system(.title3, design: .rounded).weight(.semibold))
+                .font(.title3.weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
@@ -143,7 +170,7 @@ struct LapListSheet: View {
                 .frame(maxWidth: .infinity, minHeight: 46)
                 .background(
                     RoundedRectangle(cornerRadius: 9)
-                        .fill(focused ? Color.accentColor.opacity(0.2) : Color(.secondarySystemFill))
+                        .fill(focused ? Color.accentColor.opacity(0.2) : Color.surface)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 9)
@@ -155,7 +182,8 @@ struct LapListSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Row \(cell.row + 1), \(cell.field.name(model.unit))")
-        .accessibilityValue(text.isEmpty ? "Blank" : text)
+        .accessibilityValue(model.spokenText(cell))
+        .accessibilityAddTraits(focused ? .isSelected : [])
     }
 
     /// A row added one too many is deleted from the row itself. The last remaining row
@@ -197,13 +225,17 @@ struct LapListSheet: View {
         .font(.subheadline)
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, minHeight: 22)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.spokenLine ?? "")
+        .accessibilityHidden(model.line == nil)
     }
 
     private var header: some View {
         HStack {
             Text(model.focusTitle)
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
+                .accessibilityLabel(model.spokenFocusTitle)
             Spacer()
             Button {
                 withAnimation(.snappy(duration: 0.15)) { model.next() }

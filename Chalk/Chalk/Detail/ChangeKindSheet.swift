@@ -28,7 +28,8 @@ struct ChangeKindSheet: View {
                     Text(change.promptDetail)
                         .foregroundStyle(.secondary)
                 }
-                Section(change.prompt) {
+                .chalkRows()
+                Section {
                     // Not archived and the current gym first: `gyms.gyms` is the same
                     // list the current-gym picker offers, and a gym you have stopped
                     // visiting is not where this exercise has been lifted (§7.4).
@@ -42,8 +43,13 @@ struct ChangeKindSheet: View {
                     // The exercise may predate every gym you have — this is often the
                     // first moment one is needed at all.
                     Button("New gym…", systemImage: "plus") { creatingGym = true }
+                } header: {
+                    Text(change.prompt)
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
             }
+            .chalkScreen()
             .navigationTitle("Change kind")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

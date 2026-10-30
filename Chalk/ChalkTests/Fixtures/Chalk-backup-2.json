@@ -1,0 +1,185 @@
+{
+  "exercises" : [
+    {
+      "entries" : [
+        {
+          "date" : "2026-03-12T09:20:00.000001Z",
+          "id" : "0642DEF2-F3B0-4329-B59C-303EFEBE8E53",
+          "reps" : 5,
+          "weight" : 57.5
+        },
+        {
+          "date" : "2026-03-13T13:06:40.3Z",
+          "id" : "BC1FD02A-2D13-411D-B234-C8F5081D760D",
+          "reps" : 3,
+          "weight" : 0.1
+        }
+      ],
+      "goalReps" : 5,
+      "goalSetAt" : "2026-03-12T09:21:09.1234567Z",
+      "goalWeight" : 102.3,
+      "group" : "4B4A8BD7-9FF8-4695-B57D-31914E6BA432",
+      "id" : "3A5B42A9-A490-451F-8362-E293915E29E5",
+      "name" : "Bench Press"
+    },
+    {
+      "group" : "4B4A8BD7-9FF8-4695-B57D-31914E6BA432",
+      "id" : "2F2EC160-19B0-4251-9852-87960D94EF35",
+      "kind" : "gymBound",
+      "machines" : [
+        {
+          "entries" : [
+            {
+              "date" : "2026-03-17T00:26:40Z",
+              "id" : "056E83EA-ADD5-4C51-85E4-42E393DFD836",
+              "reps" : 12,
+              "weight" : 41.25
+            }
+          ],
+          "gym" : "7B529F3A-68A9-46B7-A1AC-F555EC519437",
+          "id" : "33B79240-AF99-48C6-8D5E-15E61D879386",
+          "manufacturer" : "Technogym"
+        },
+        {
+          "entries" : [
+            {
+              "date" : "2026-03-15T20:40:00.25Z",
+              "id" : "757CAE3F-B290-43D0-BC51-36F33ABA55B8",
+              "reps" : 8,
+              "weight" : 60
+            }
+          ],
+          "goalReps" : 8,
+          "goalSetAt" : "2026-03-14T16:53:20.5Z",
+          "goalWeight" : 72.5,
+          "gym" : "1095C3FB-41AA-41EC-9EBB-6056D92D3AED",
+          "id" : "CABF284E-3012-4C43-9E68-D091F028B262",
+          "label" : "Plate-loaded",
+          "manufacturer" : "Hammer Strength"
+        },
+        {
+          "entries" : [
+            {
+              "date" : "2026-03-18T04:13:20.75Z",
+              "id" : "9EAE2D0E-B147-4F93-BFE7-BA34E26D5646",
+              "reps" : 10,
+              "weight" : 45
+            }
+          ],
+          "id" : "DBAD2895-0361-44C9-A24B-B0FE51AAA0F1",
+          "label" : "By the window"
+        }
+      ],
+      "name" : "Chest Press"
+    },
+    {
+      "goalDuration" : 1800,
+      "goalIncline" : 0,
+      "goalIntensity" : 10.2,
+      "goalSetAt" : "2026-03-19T21:53:20.9Z",
+      "goalZone" : 2,
+      "group" : "4606355E-1658-4F79-B190-4352F608C70F",
+      "id" : "CDA98821-3CD2-431D-9028-91BA6A180901",
+      "name" : "Curved Treadmill",
+      "unit" : "speed"
+    },
+    {
+      "entries" : [
+        {
+          "averageHeartRate" : 151,
+          "date" : "2026-03-20T11:46:40.2Z",
+          "duration" : 1210,
+          "id" : "530D553E-B65A-40EF-9A81-8B573B6C3FA4",
+          "intensity" : 118.9,
+          "peakHeartRate" : 163
+        }
+      ],
+      "goalDuration" : 1200,
+      "goalIntensity" : 118.4,
+      "goalSetAt" : "2026-03-19T08:00:00.1Z",
+      "goalZone" : 3,
+      "id" : "5EF61C88-24CE-42C5-BCCE-280F779CA39B",
+      "name" : "Rower",
+      "unit" : "split"
+    },
+    {
+      "group" : "4606355E-1658-4F79-B190-4352F608C70F",
+      "id" : "B77019DB-9A4F-4849-ABAA-962980092B80",
+      "kind" : "gymBound",
+      "machines" : [
+        {
+          "entries" : [
+            {
+              "averageHeartRate" : 164,
+              "date" : "2026-03-22T19:20:00.000001Z",
+              "duration" : 362,
+              "id" : "EC04DE49-3F21-40C5-B5F3-9851F4F8616C",
+              "incline" : 1,
+              "intensity" : 15.1,
+              "peakHeartRate" : 171
+            },
+            {
+              "averageHeartRate" : 121,
+              "date" : "2026-03-22T19:20:00.000002Z",
+              "duration" : 90,
+              "id" : "3B5457DF-114E-46A6-BB87-F556E8F28F90",
+              "incline" : 0.5,
+              "intensity" : 9.5,
+              "peakHeartRate" : 130
+            }
+          ],
+          "goalDuration" : 360,
+          "goalIncline" : 1.5,
+          "goalIntensity" : 15.1,
+          "goalSetAt" : "2026-03-21T15:33:20.33Z",
+          "goalZone" : 4,
+          "gym" : "1095C3FB-41AA-41EC-9EBB-6056D92D3AED",
+          "id" : "7E6E5549-DC75-4FB9-B85D-23EB43FFBA42",
+          "label" : "Technogym Excite"
+        }
+      ],
+      "name" : "Treadmill",
+      "unit" : "speed"
+    }
+  ],
+  "format" : "Chalk backup",
+  "groups" : [
+    {
+      "half" : "endurance",
+      "id" : "4606355E-1658-4F79-B190-4352F608C70F",
+      "name" : "Treadmills",
+      "sortIndex" : 1
+    },
+    {
+      "id" : "6832FAF9-20BD-428A-8979-0190A40991F2",
+      "name" : "Legs"
+    },
+    {
+      "id" : "4B4A8BD7-9FF8-4695-B57D-31914E6BA432",
+      "name" : "Push/Pull",
+      "sortIndex" : 2
+    }
+  ],
+  "gyms" : [
+    {
+      "id" : "1095C3FB-41AA-41EC-9EBB-6056D92D3AED",
+      "name" : "Fitness X"
+    },
+    {
+      "id" : "7B529F3A-68A9-46B7-A1AC-F555EC519437",
+      "isArchived" : true,
+      "name" : "Old Gym"
+    }
+  ],
+  "madeAt" : "2026-10-29T20:53:20.9876543Z",
+  "settings" : {
+    "heartRateZones" : [
+      117,
+      140,
+      158,
+      170
+    ],
+    "weightUnit" : "lb"
+  },
+  "version" : 2
+}

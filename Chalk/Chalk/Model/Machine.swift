@@ -56,10 +56,18 @@ final class Machine {
     /// intentionally produced, but it can arrive from a gym deletion and it still
     /// derives normally (SPEC §3, invariant 3).
     var caption: String {
-        guard let gymName = gym?.name.trimmingCharacters(in: .whitespacesAndNewlines),
-              !gymName.isEmpty
-        else { return name }
-        return "\(name) · \(gymName)"
+        gymName.map { "\(name) · \($0)" } ?? name
+    }
+
+    /// `caption` as VoiceOver says it: `Technogym Run at Urban Gym`.
+    var spokenCaption: String {
+        gymName.map { String(localized: "\(name) at \($0)") } ?? name
+    }
+
+    /// The gym's name as the caption reads it, nil where there is none to read.
+    private var gymName: String? {
+        guard let gymName = gym?.name.trimmingCharacters(in: .whitespacesAndNewlines), !gymName.isEmpty else { return nil }
+        return gymName
     }
 
     /// When you last logged on this machine, `nil` for one you have never logged on: its
@@ -69,7 +77,7 @@ final class Machine {
         (entries ?? []).filter { $0.isALift || $0.isAnInterval }.map(\.date).max()
     }
 
-    static let unlabelled = "Unlabelled"
+    static let unlabelled = String(localized: "Unlabelled")
 
     /// The optional one-field answer to `Name this machine`, normalised: **a blank name
     /// is no name at all**, and renders as `Unlabelled` rather than as an empty row.

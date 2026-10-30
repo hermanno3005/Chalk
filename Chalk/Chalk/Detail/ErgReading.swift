@@ -23,21 +23,36 @@ struct ErgReading {
         var incline: Double
     }
 
-    /// The scrub readout: `15.0 km/h`, `4:00 /km`, `6:00 in Z4 · 164 bpm · 12 entries`.
-    /// **The entry count is the uncertainty** — no ± band is drawn (SPEC §13.8).
+    /// The scrub readout: `15.0 km/h` with `6:00 in Z4` beside it, and the rows under the
+    /// line, `Pace 4:00 /km` (or `9.3 mph`, `6:27 /mi`), `Heart rate 164 bpm` and
+    /// `Entries 12 ›`. **The entry count is the uncertainty** — no ± band is drawn (SPEC
+    /// §13.8).
     struct Readout: Equatable {
         /// The point's mean intensity in its unit, the large number.
         let intensity: String
-        /// A speed's pace under it; nil on every other unit.
+        /// The point's duration and zone, beside the number.
+        let aside: String
+        /// A speed's pace, its own row; nil on every other unit.
         let pace: String?
-        /// The point's duration, zone, mean heart rate and entry count. The view adds the
-        /// `›`.
-        let detail: String
+        /// The point's mean average heart rate, `164 bpm`.
+        let averageHeartRate: String
+        /// The entries in the point, the rows of its sheet above the divider (§13.9).
+        let entryCount: Int
+        /// The number and its aside as VoiceOver says them: `9.3 miles per hour for 6
+        /// minutes in zone 4`.
+        let spoken: String
+        /// The pace in words, `6 minutes 27 seconds per mile`; nil where `pace` is.
+        let spokenPace: String?
+        /// `164 beats per minute`.
+        let spokenHeartRate: String
     }
 
     let unit: ErgUnit?
 
-    /// Nil until zones are set — the zones gate: no buttons, readout or line (SPEC §13.8).
+    /// The scale a speed is written on, read live by the caller as the zones are.
+    let distanceUnit: DistanceUnit
+
+    /// Nil until zones are set — the zones gate: no tabs, readout or line (SPEC §13.8).
     let zones: HeartRateZones?
 
     /// Nil while there is nothing to look at: zones not set, or no valid interval on
@@ -45,7 +60,7 @@ struct ErgReading {
     private(set) var selection: Selection?
 
     /// Every zone's line, Z1 to Z5, on this scope at the selected incline — what the zone
-    /// buttons dim by. Empty with no selection.
+    /// tabs dim by. Empty with no selection.
     private(set) var lines: [Int: ZoneLine] = [:]
 
     /// The incline menu's choices on a speed erg: every incline a valid interval on this
@@ -63,8 +78,15 @@ struct ErgReading {
     ///   across a write, a machine switch or a zones edit, as strength's scrub does
     ///   (SPEC §5.2). Nil opens on the zone, duration and incline of the scope's most
     ///   recent valid interval.
-    init(entries: [Entry], zones: HeartRateZones?, unit: ErgUnit?, keeping previous: Selection?) {
+    init(
+        entries: [Entry],
+        zones: HeartRateZones?,
+        unit: ErgUnit?,
+        distanceUnit: DistanceUnit,
+        keeping previous: Selection?
+    ) {
         self.unit = unit
+        self.distanceUnit = distanceUnit
         self.zones = zones
         intervals = entries.filter(\.isAnInterval)
         isEmpty = intervals.isEmpty
@@ -111,11 +133,15 @@ struct ErgReading {
 
     var readout: Readout? {
         guard let selection, let point, let unit else { return nil }
-        let entries = point.entryCount == 1 ? "1 entry" : "\(point.entryCount) entries"
         return Readout(
-            intensity: EnduranceText.intensity(point.intensity, unit, pace: false),
-            pace: unit == .speed && point.intensity > 0 ? EnduranceText.pace(point.intensity) : nil,
-            detail: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone) · \(point.averageHeartRate) bpm · \(entries)"
+            intensity: EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false),
+            aside: String(localized: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone)"),
+            pace: unit == .speed && point.intensity > 0 ? EnduranceText.pace(point.intensity, distanceUnit) : nil,
+            averageHeartRate: String(localized: "\(point.averageHeartRate) bpm"),
+            entryCount: point.entryCount,
+            spoken: String(localized: "\(EnduranceText.spokenIntensity(point.intensity, unit, distanceUnit)) for \(Spoken.duration(point.duration)) in zone \(selection.zone)"),
+            spokenPace: unit == .speed && point.intensity > 0 ? EnduranceText.spokenPace(point.intensity, distanceUnit) : nil,
+            spokenHeartRate: Spoken.heartRate(point.averageHeartRate)
         )
     }
 
@@ -124,12 +150,18 @@ struct ErgReading {
     /// so they move no point (SPEC §13.8).
     var overTheAxisCaption: String? {
         guard let count = line?.entriesOverTheAxis.count, count > 0 else { return nil }
-        return count == 1 ? "1 entry over 20:00" : "\(count) entries over 20:00"
+        return String(localized: "\(count) entries over 20:00")
+    }
+
+    /// The caption as VoiceOver says it: `2 entries over 20 minutes`.
+    var spokenOverTheAxisCaption: String? {
+        guard let count = line?.entriesOverTheAxis.count, count > 0 else { return nil }
+        return String(localized: "\(count) entries over \(Spoken.duration(ZoneLine.axisEnd))")
     }
 
     // MARK: - Selecting
 
-    /// A zone button. Every zone is tappable, a dimmed one too; the duration moves onto
+    /// A zone tab. Every zone is tappable, a dimmed one too; the duration moves onto
     /// the nearest one done in the new zone, or stays put where it has no line.
     mutating func select(zone: Int) {
         guard selection != nil, ZoneLine.zones.contains(zone) else { return }

@@ -22,8 +22,7 @@ extension HeldGoal {
     /// set wins, in either half (§13.11). It names this goal, the survivor, and counts the
     /// ones that go.
     func lostGoalClause(clearing cleared: Int) -> String {
-        let others = cleared == 1 ? "1 other goal is" : "\(cleared) other goals are"
-        return "Your goal of \(text) is kept; \(others) cleared."
+        String(localized: "Your goal of \(text) is kept; \(cleared) other goals are cleared.")
     }
 }
 

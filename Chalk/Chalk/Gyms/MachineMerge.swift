@@ -18,6 +18,9 @@ struct MachineMerge {
     /// The machine they land on — the sibling that survives.
     let sibling: Machine
 
+    /// The scale the question writes a speed goal in (SPEC §15.2).
+    let distanceUnit: DistanceUnit
+
     /// The machines `Merge into…` offers for `machine`: **same gym, same exercise
     /// siblings only**, most recently logged first. Merging across gyms is incoherent by
     /// construction — a gym-bound exercise's load does not transfer — and merging across
@@ -47,7 +50,7 @@ struct MachineMerge {
     /// The two machines' goals — **the most recently set one ends up on the sibling**
     /// (SPEC §7.5, #68), the same rule as a kind change (§8). Which machine is the loser
     /// plays no part, so direction cannot cost you your only goal.
-    private var machineGoals: MachineGoals { MachineGoals([loser, sibling]) }
+    private var machineGoals: MachineGoals { MachineGoals([loser, sibling], distanceUnit: distanceUnit) }
 
     /// Whether the loser's goal is the one kept — and so has to be written onto the
     /// sibling before the delete cascades over it.
@@ -67,11 +70,11 @@ struct MachineMerge {
     var question: String {
         let outcome: String
         if movingCount > 0 {
-            outcome = "Move \(entries(movingCount)) to \(siblingName) and delete \(loserName)?"
+            outcome = String(localized: "Move \(entries(movingCount)) to \(siblingName) and delete \(loserName)?")
         } else if losersGoalIsKept, let kept = machineGoals.kept {
-            outcome = "Move your goal of \(kept.text) to \(siblingName) and delete \(loserName)?"
+            outcome = String(localized: "Move your goal of \(kept.text) to \(siblingName) and delete \(loserName)?")
         } else {
-            outcome = "Delete \(loserName)?"
+            outcome = String(localized: "Delete \(loserName)?")
         }
         guard let clause = machineGoals.lostGoalClause else { return outcome }
         return "\(outcome) \(clause)"
@@ -81,9 +84,9 @@ struct MachineMerge {
     /// them back.
     var detail: String {
         guard movingCount > 0 else {
-            return "\(loserName) holds no entries. \(siblingName) keeps its \(entries(resultingCount)). This cannot be undone."
+            return String(localized: "\(loserName) holds no entries. \(siblingName) keeps its \(entries(resultingCount)). This cannot be undone.")
         }
-        return "\(siblingName) holds \(entries(resultingCount)) afterwards. This cannot be undone."
+        return String(localized: "\(siblingName) holds \(entries(resultingCount)) afterwards. This cannot be undone.")
     }
 
     /// The machines as the confirmation names them: by name between same-gym siblings,
@@ -95,6 +98,6 @@ struct MachineMerge {
     private var siblingName: String { crossesGyms ? sibling.caption : sibling.name }
 
     private func entries(_ count: Int) -> String {
-        count == 1 ? "1 entry" : "\(count) entries"
+        String(localized: "\(count) entries")
     }
 }

@@ -12,12 +12,18 @@ struct ResumeCard: View {
     let onOpen: () -> Void
     let onLogAgain: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        // *Log again* drops under the text at an accessibility size, which would
+        // otherwise squeeze the name to a word a line (SPEC §15.6).
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+        layout {
             VStack(alignment: .leading, spacing: 4) {
                 Text(resume.exercise.name)
                     .font(.title3.weight(.semibold))
-                    .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 HStack(spacing: 8) {
                     goalSlot
@@ -30,17 +36,19 @@ struct ResumeCard: View {
             .contentShape(Rectangle())
             .onTapGesture(perform: onOpen)
             .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(resume.exercise.name), \(resume.spoken())")
             .accessibilityAddTraits(.isButton)
             .accessibilityHint("Opens this exercise")
 
             Button("Log again", action: onLogAgain)
                 .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.onAccent)
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.capsule)
                 .controlSize(.large)
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(Color.surface, in: RoundedRectangle(cornerRadius: 18))
     }
 
     /// The goal's ring, with no words, in a slot **reserved whether or not there is a
@@ -73,7 +81,9 @@ struct ResumeCard: View {
                 resume: LibraryResume(
                     exercise: Exercise(name: "Bench Press"),
                     lastEntry: lastEntry,
-                    goal: goals[index]
+                    goal: goals[index],
+                    weightUnit: .kg,
+                    distanceUnit: .km
                 ),
                 onOpen: {},
                 onLogAgain: {}

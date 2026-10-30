@@ -12,7 +12,7 @@ struct TwoStageNumberTests {
 
     @Test("It opens on reps with the steppers, showing the seed")
     func opensOnReps() {
-        let number = TwoStageNumber(reps: 8, weight: 62.5)
+        let number = TwoStageNumber(reps: 8, weight: 62.5, weightUnit: .kg)
 
         #expect(number.stage == .reps)
         #expect(number.mode == .steppers)
@@ -22,7 +22,7 @@ struct TwoStageNumberTests {
 
     @Test("Advancing shows the weight, and going back shows the reps")
     func advancesAndReturns() {
-        var number = TwoStageNumber(reps: 8, weight: 62.5)
+        var number = TwoStageNumber(reps: 8, weight: 62.5, weightUnit: .kg)
 
         number.advance()
         #expect(number.stage == .weight)
@@ -38,7 +38,7 @@ struct TwoStageNumberTests {
 
     @Test("A blank weight opens with the keypad up")
     func aBlankWeightOpensOnTheKeypad() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
 
         number.advance()
         #expect(number.mode == .keypad)
@@ -50,7 +50,7 @@ struct TwoStageNumberTests {
 
     @Test("There is no advancing without a rep count")
     func noAdvanceWithoutReps() {
-        var number = TwoStageNumber(reps: nil, weight: 60)
+        var number = TwoStageNumber(reps: nil, weight: 60, weightUnit: .kg)
 
         #expect(number.canAdvance == false)
         number.advance()
@@ -59,7 +59,7 @@ struct TwoStageNumberTests {
 
     @Test("One rep is not phrased as many")
     func oneRepInflects() {
-        var number = TwoStageNumber(reps: 1, weight: 60)
+        var number = TwoStageNumber(reps: 1, weight: 60, weightUnit: .kg)
         #expect(number.unitText == "rep")
         number.advance()
         #expect(number.repsLabel == "1 rep")
@@ -69,7 +69,7 @@ struct TwoStageNumberTests {
 
     @Test("Reps step by one and clamp at one")
     func repsStepAndClamp() {
-        var number = TwoStageNumber(reps: 3, weight: nil)
+        var number = TwoStageNumber(reps: 3, weight: nil, weightUnit: .kg)
 
         number.step(+1)
         #expect(number.reps == 4)
@@ -79,18 +79,18 @@ struct TwoStageNumberTests {
 
     @Test("A blank rep count steps from nothing, landing on one either way")
     func blankRepsStep() {
-        var up = TwoStageNumber(reps: nil, weight: nil)
+        var up = TwoStageNumber(reps: nil, weight: nil, weightUnit: .kg)
         up.step(+1)
         #expect(up.reps == 1)
 
-        var down = TwoStageNumber(reps: nil, weight: nil)
+        var down = TwoStageNumber(reps: nil, weight: nil, weightUnit: .kg)
         down.step(-1)
         #expect(down.reps == 1)
     }
 
     @Test("On-grid weight steps by 2.5")
     func onGridWeightSteps() {
-        var number = TwoStageNumber(reps: 5, weight: 60)
+        var number = TwoStageNumber(reps: 5, weight: 60, weightUnit: .kg)
         number.advance()
 
         number.step(+1)
@@ -102,14 +102,14 @@ struct TwoStageNumberTests {
 
     @Test("Off-grid weight snaps to the next multiple in the direction tapped")
     func offGridWeightSnaps() {
-        var up = TwoStageNumber(reps: 5, weight: 57)
+        var up = TwoStageNumber(reps: 5, weight: 57, weightUnit: .kg)
         up.advance()
         up.step(+1)
         #expect(up.weight == 57.5)
         up.step(+1)
         #expect(up.weight == 60)
 
-        var down = TwoStageNumber(reps: 5, weight: 57)
+        var down = TwoStageNumber(reps: 5, weight: 57, weightUnit: .kg)
         down.advance()
         down.step(-1)
         #expect(down.weight == 55)
@@ -117,9 +117,49 @@ struct TwoStageNumberTests {
         #expect(down.weight == 52.5)
     }
 
+    @Test("On pounds, weight steps on a 5 lb grid, from on-grid and off-grid values")
+    func poundsStepOnAFiveGrid() {
+        var onGrid = TwoStageNumber(reps: 5, weight: 220, weightUnit: .lb)
+        onGrid.advance()
+        onGrid.step(+1)
+        #expect(onGrid.weight == 225)
+        onGrid.step(-1)
+        onGrid.step(-1)
+        #expect(onGrid.weight == 215)
+
+        var up = TwoStageNumber(reps: 5, weight: 137, weightUnit: .lb)
+        up.advance()
+        up.step(+1)
+        #expect(up.weight == 140)
+
+        var down = TwoStageNumber(reps: 5, weight: 137, weightUnit: .lb)
+        down.advance()
+        down.step(-1)
+        #expect(down.weight == 135)
+    }
+
+    @Test("On pounds, the weight is written and spoken in pounds")
+    func poundsAreWrittenAndSpoken() {
+        var number = TwoStageNumber(reps: 5, weight: 225, weightUnit: .lb)
+        number.advance()
+
+        #expect(number.unitText == "lb")
+        #expect(number.stepperLabel(+1) == "Up to the next 5 pounds")
+        #expect(number.stepperLabel(-1) == "Down to the next 5 pounds")
+    }
+
+    @Test("On kilograms, the steppers are spoken in kilograms")
+    func kilogramsAreSpoken() {
+        var number = TwoStageNumber(reps: 5, weight: 60, weightUnit: .kg)
+        number.advance()
+
+        #expect(number.stepperLabel(+1) == "Up to the next \(kg(2.5)) kilograms")
+        #expect(number.stepperLabel(-1) == "Down to the next \(kg(2.5)) kilograms")
+    }
+
     @Test("Weight clamps at zero, and a blank weight steps from zero")
     func weightClampsAtZero() {
-        var number = TwoStageNumber(reps: 5, weight: 1)
+        var number = TwoStageNumber(reps: 5, weight: 1, weightUnit: .kg)
         number.advance()
 
         number.step(-1)
@@ -128,7 +168,7 @@ struct TwoStageNumberTests {
         #expect(number.weight == 0)
         #expect(number.numberText == "0")
 
-        var blank = TwoStageNumber(reps: 5, weight: nil)
+        var blank = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
         blank.advance()
         blank.tapNumber()
         blank.step(+1)
@@ -139,7 +179,7 @@ struct TwoStageNumberTests {
 
     @Test("Tapping the number opens a blank keypad, and tapping again keeps what was typed")
     func tappingTogglesTheKeypad() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
 
         number.tapNumber()
         #expect(number.mode == .keypad)
@@ -158,7 +198,7 @@ struct TwoStageNumberTests {
 
     @Test("Closing the keypad without typing puts the number back")
     func aStrayTapCostsNothing() {
-        var number = TwoStageNumber(reps: 8, weight: 62.5)
+        var number = TwoStageNumber(reps: 8, weight: 62.5, weightUnit: .kg)
         number.advance()
 
         number.tapNumber()
@@ -171,7 +211,7 @@ struct TwoStageNumberTests {
 
     @Test("Typing brings the keypad up without tapping the number")
     func typingOpensTheKeypad() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
 
         number.type(.digit(8))
         #expect(number.mode == .keypad)
@@ -180,7 +220,7 @@ struct TwoStageNumberTests {
 
     @Test("The typed value flows in as you type")
     func typedValueFlowsIn() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
         number.advance()
 
         number.type(.digit(6))
@@ -206,7 +246,7 @@ struct TwoStageNumberTests {
 
     @Test("A leading decimal reads as a fraction, and a second decimal is ignored")
     func decimalPoints() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
         number.advance()
 
         number.type(.decimal)
@@ -217,7 +257,7 @@ struct TwoStageNumberTests {
 
     @Test("A lone leading zero is replaced by the next digit")
     func leadingZeroIsAPlaceholder() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
         number.advance()
 
         number.type(.digit(0))
@@ -228,7 +268,7 @@ struct TwoStageNumberTests {
 
     @Test("The decimal key does nothing on the reps stage")
     func decimalIsDeadOnReps() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
         number.tapNumber()
         number.type(.digit(8))
         number.type(.decimal)
@@ -240,7 +280,7 @@ struct TwoStageNumberTests {
 
     @Test("A thumb held on a key stops at six characters")
     func typingStopsAtSixCharacters() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
         number.advance()
         for _ in 0..<12 { number.type(.digit(9)) }
         number.type(.decimal)
@@ -251,7 +291,7 @@ struct TwoStageNumberTests {
 
     @Test("Changing stage closes the keypad and forgets what was typed")
     func stagingDropsTheDraft() {
-        var number = TwoStageNumber(reps: 5, weight: nil)
+        var number = TwoStageNumber(reps: 5, weight: nil, weightUnit: .kg)
         number.tapNumber()
         number.type(.digit(6))
         number.advance()
@@ -270,7 +310,7 @@ struct TwoStageNumberTests {
 
     @Test("A weight seeded on the weight stage reopens it over the new value")
     func seedingOnTheWeightStage() {
-        var number = TwoStageNumber(reps: 5, weight: 60)
+        var number = TwoStageNumber(reps: 5, weight: 60, weightUnit: .kg)
         number.advance()
         number.tapNumber()
         number.type(.digit(7))
@@ -287,7 +327,7 @@ struct TwoStageNumberTests {
 
     @Test("A weight seeded on the reps stage waits for the weight stage")
     func seedingOnTheRepsStage() {
-        var number = TwoStageNumber(reps: 5, weight: 60)
+        var number = TwoStageNumber(reps: 5, weight: 60, weightUnit: .kg)
 
         number.seedWeight(nil)
         #expect(number.stage == .reps)
@@ -299,5 +339,5 @@ struct TwoStageNumberTests {
 }
 
 private func kg(_ weight: Double) -> String {
-    weight.kilogramsText
+    weight.weightText
 }

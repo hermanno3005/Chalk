@@ -34,6 +34,9 @@ struct TwoStageNumber {
     private(set) var reps: Int?
     private(set) var weight: Double?
 
+    /// The scale the weight is written on, and so the grid it steps onto (SPEC §15.2).
+    let weightUnit: WeightUnit
+
     /// What the keypad has typed on the stage in view. Held as text, not a number, so
     /// a half-typed `62.` shows what your thumb typed rather than snapping to `62`.
     /// Cleared whenever the keypad opens or closes.
@@ -44,18 +47,15 @@ struct TwoStageNumber {
     /// opened over (SPEC §6.3).
     private var beforeKeypad: (reps: Int?, weight: Double?)?
 
-    /// The grid weight steps onto, in kilograms. **Global and hard-coded** — not
-    /// per-exercise, not per-machine, not a setting, and not a schema field (SPEC §6.2).
-    private static let weightGrid = 2.5
-
     /// The keypad's ceiling. Not a validation rule — there is no upper bound on a lift
     /// (SPEC §6.7) — just the point past which a thumb is holding a key down by mistake.
     private static let maxTypedLength = 6
 
     /// Opens on reps, with the steppers, over whatever the caller seeded.
-    init(reps: Int?, weight: Double?) {
+    init(reps: Int?, weight: Double?, weightUnit: WeightUnit) {
         self.reps = reps
         self.weight = weight
+        self.weightUnit = weightUnit
     }
 
     // MARK: - What it shows
@@ -68,23 +68,47 @@ struct TwoStageNumber {
         }
         switch stage {
         case .reps: return reps.map(String.init) ?? ""
-        case .weight: return weight.map(\.kilogramsText) ?? ""
+        case .weight: return weight.map(\.weightText) ?? ""
         }
     }
 
     /// The quiet unit beside the number.
     var unitText: String {
         switch stage {
-        case .reps: return reps == 1 ? "rep" : "reps"
-        case .weight: return "kg"
+        // The noun alone, with no number of its own, so not a catalog plural: a plural
+        // variant must say the number it varies by.
+        case .reps: return reps == 1 ? String(localized: "rep") : String(localized: "reps")
+        case .weight: return weightUnit.symbol
+        }
+    }
+
+    /// What VoiceOver says for the giant number: `8 reps`, `102.5 pounds`, `Blank pounds`.
+    var spokenNumber: String {
+        switch stage {
+        case .reps: return reps.map(Spoken.reps) ?? String(localized: "Blank reps")
+        case .weight:
+            return weight.map { weightUnit.spokenText($0, written: numberText) }
+                ?? String(localized: "Blank \(weightUnit.spokenName)")
+        }
+    }
+
+    /// What VoiceOver says for a stepper on the stage in view: the step said as the snap
+    /// it is, on the unit's grid — `Up to the next 5 pounds`.
+    func stepperLabel(_ direction: Int) -> String {
+        let up = direction > 0
+        switch stage {
+        case .reps: return up ? String(localized: "One rep more") : String(localized: "One rep fewer")
+        case .weight:
+            let grid = weightUnit.spokenText(weightUnit.grid)
+            return up ? String(localized: "Up to the next \(grid)") : String(localized: "Down to the next \(grid)")
         }
     }
 
     /// The stage-two header: the earlier answer, always visible and one tap from being
     /// corrected without cancelling (SPEC §6.1).
     var repsLabel: String {
-        guard let reps else { return "reps" }
-        return reps == 1 ? "1 rep" : "\(reps) reps"
+        guard let reps else { return String(localized: "reps") }
+        return Spoken.reps(reps)
     }
 
     var canAdvance: Bool { (reps ?? 0) >= 1 }
@@ -167,29 +191,31 @@ struct TwoStageNumber {
         applyTyped()
     }
 
-    /// One stepper tap: **±1 rep, ±2.5 kg**. Tap only — no hold-to-repeat and no
-    /// acceleration, because the correction for an overshoot overshoots back (SPEC §6.2).
+    /// One stepper tap: **±1 rep, ±one step of the grid**, 2.5 kg or 5 lb. Tap only — no
+    /// hold-to-repeat and no acceleration, because the correction for an overshoot
+    /// overshoots back (SPEC §6.2).
     mutating func step(_ direction: Int) {
         switch stage {
         case .reps:
             reps = max(1, (reps ?? 0) + direction)
         case .weight:
-            weight = Self.snapped(weight ?? 0, direction)
+            weight = Self.snapped(weight ?? 0, direction, onto: weightUnit.grid)
         }
     }
 
-    /// **The next multiple of 2.5 in the direction tapped — not an addition** (SPEC §6.2).
-    /// From a keypad-typed 57: `+` → 57.5 → 60; `−` → 55 → 52.5. On-grid values are
-    /// indistinguishable from plain arithmetic, which is the common case.
-    private static func snapped(_ weight: Double, _ direction: Int) -> Double {
-        let steps = weight / weightGrid
+    /// **The next multiple of the grid in the direction tapped — not an addition** (SPEC
+    /// §6.2). From a keypad-typed 57 kg: `+` → 57.5 → 60; `−` → 55 → 52.5. From 137 lb:
+    /// `+` → 140. On-grid values are indistinguishable from plain arithmetic, which is the
+    /// common case.
+    private static func snapped(_ weight: Double, _ direction: Int, onto grid: Double) -> Double {
+        let steps = weight / grid
         let nearest = steps.rounded()
         let onGrid = abs(steps - nearest) < 1e-9
         let target = onGrid
             ? nearest + Double(direction < 0 ? -1 : 1)
             : (direction < 0 ? steps.rounded(.down) : steps.rounded(.up))
-        // Never negative (SPEC §6.2). Whether 0 kg means anything is the caller's call.
-        return max(0, target * weightGrid)
+        // Never negative (SPEC §6.2). Whether 0 means anything is the caller's call.
+        return max(0, target * grid)
     }
 
     private mutating func applyTyped() {

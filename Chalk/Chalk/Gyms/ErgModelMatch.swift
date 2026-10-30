@@ -35,16 +35,16 @@ struct ErgModelMatch {
 
     /// *You have a Technogym Excite at FitX — same model?*
     var warning: String {
-        "You have a \(existing.name) at \(gymName) — same model?"
+        String(localized: "You have a \(existing.name) at \(gymName) — same model?")
     }
 
     /// Move's question, when the target gym already holds a passing machine for this
     /// erg: *FitX already has a Technogym Excite. Merge into it?*
     var moveQuestion: String {
-        "\(gymName) already has a \(existing.name). Merge into it?"
+        String(localized: "\(gymName) already has a \(existing.name). Merge into it?")
     }
 
-    private var gymName: String { existing.gym?.name ?? "no gym" }
+    private var gymName: String { existing.gym?.name ?? String(localized: "no gym") }
 
     // MARK: - The one entry point
 
@@ -102,11 +102,11 @@ struct ErgModelMatch {
     ///
     /// On Move the match is at the *target* gym, which the moving machine has not reached
     /// yet; the write for that is `GymsModel.move(_:mergingInto:)`.
-    func merge(from machine: Machine) -> MachineMerge? {
+    func merge(from machine: Machine, distanceUnit: DistanceUnit) -> MachineMerge? {
         guard isSameGym, existing !== machine, existing.exercise?.id == machine.exercise?.id else {
             return nil
         }
-        return MachineMerge(loser: machine, sibling: existing)
+        return MachineMerge(loser: machine, sibling: existing, distanceUnit: distanceUnit)
     }
 
     /// `Move to another gym…`'s check: **the target gym already has a passing machine for

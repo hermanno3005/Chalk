@@ -6,7 +6,7 @@ import SwiftData
 /// from the library model as `detail(for:)` is.
 ///
 /// The erg's name, the machine qualifier on a gym-bound erg, **the zone line read one
-/// zone at a time** — zone buttons, incline menu, scrub readout, the over-20:00 caption,
+/// zone at a time** — zone tabs, incline menu, readout, the over-20:00 caption,
 /// the zones gate and §5.4's empty state, all through `reading` — the Log bar's lap-list
 /// sheet, and the overflow's lifetime operations: Rename, *Change unit…* and Delete. The
 /// no-line text, hint, goal and the other sheets join it in later tickets.
@@ -42,7 +42,7 @@ final class ErgDetailModel {
     /// incline, every zone's line, the readout and the over-20:00 caption. **Re-derived on
     /// every refresh** — a write, a machine switch, zones set in Settings — with the
     /// selection carried over, so the screen stays where you left it (SPEC §5.2).
-    private(set) var reading = ErgReading(entries: [], zones: nil, unit: nil, keeping: nil)
+    private(set) var reading = ErgReading(entries: [], zones: nil, unit: nil, distanceUnit: .km, keeping: nil)
 
     /// The goal on the scope in view — the erg, or the machine the qualifier is on —
     /// judged against the same entries and live zones the line is (SPEC §13.10). Re-read
@@ -110,9 +110,9 @@ final class ErgDetailModel {
 
     /// The destructive confirmation, phrased as the outcome with its count (SPEC §5.5).
     var deleteConfirmation: String {
-        guard entryCount > 0 else { return "Delete \(name)?" }
-        let entries = entryCount == 1 ? "1 entry" : "\(entryCount) entries"
-        return "Delete \(name) and its \(entries)?"
+        guard entryCount > 0 else { return String(localized: "Delete \(name)?") }
+        let entries = String(localized: "\(entryCount) entries")
+        return String(localized: "Delete \(name) and its \(entries)?")
     }
 
     /// Changes the erg's unit, **refused once it has any entry** — there is no repair for
@@ -128,7 +128,9 @@ final class ErgDetailModel {
 
         // Named in the old unit, before it goes — and said, since nothing else would.
         let scopes = [GoalScope.exercise(erg)] + (erg.machines ?? []).map(GoalScope.machine)
-        clearedGoalNotice = EnduranceGoal.clearedNotice(scopes.compactMap { $0.enduranceGoal(zones: reading.zones) })
+        clearedGoalNotice = EnduranceGoal.clearedNotice(scopes.compactMap {
+            $0.enduranceGoal(zones: reading.zones, distanceUnit: reading.distanceUnit)
+        })
 
         erg.unit = newUnit.rawValue
         scopes.forEach { $0.clear() }
@@ -142,7 +144,7 @@ final class ErgDetailModel {
 
     /// `Change kind` over this erg — the words the confirmation and *Which machine is
     /// this on?* say. **Only the scope changes**: unit and incline are untouched.
-    var kindChange: KindChange { KindChange(exercise: erg) }
+    var kindChange: KindChange { KindChange(exercise: erg, distanceUnit: reading.distanceUnit) }
 
     /// **Transferable → gym-bound**: every entry moves to one new machine at `gym`, and
     /// the screen opens on it — the only one there is.
@@ -204,8 +206,25 @@ final class ErgDetailModel {
 
     var readout: ErgReading.Readout? { reading.readout }
 
+    /// The selected zone's line as VoiceOver plays and says it (SPEC §15.6); nil where the
+    /// zone has no line to play.
+    var audioGraph: AudioGraph? {
+        guard let selection, let unit, let points = reading.line?.points, !points.isEmpty else { return nil }
+        return AudioGraph(
+            zoneLine: points,
+            unit: unit,
+            distanceUnit: distanceUnit,
+            zone: selection.zone,
+            incline: unit.hasIncline ? selection.incline : nil,
+            goal: goal
+        )
+    }
+
+    /// The scale every speed on this screen is written on, read live on every refresh.
+    var distanceUnit: DistanceUnit { reading.distanceUnit }
+
     /// Zones not set: a *Set your heart-rate zones* row, opening Settings, stands in place
-    /// of the zone buttons, readout and line (SPEC §13.8). The Log bar works as normal.
+    /// of the zone tabs, readout and line (SPEC §13.8). The Log bar works as normal.
     var needsZones: Bool { reading.zones == nil }
 
     /// Nothing logged on the scope in view — §5.4's empty state. A gym-bound erg's scope
@@ -222,7 +241,7 @@ final class ErgDetailModel {
 
     /// The text and quotes in place of the chart when the selected zone has no line here;
     /// nil when it has one, or there is nothing to select.
-    var noLine: ErgNoLine? { ErgNoLine(reading, place: isGymBound ? "machine" : "erg") }
+    var noLine: ErgNoLine? { ErgNoLine(reading, place: isGymBound ? String(localized: "machine") : String(localized: "erg")) }
 
     /// Whether a zone has a line on this scope and incline. A zone without one is dimmed
     /// but still tappable.
@@ -237,7 +256,7 @@ final class ErgDetailModel {
     /// The incline menu, on a speed erg.
     func select(incline: Double) { reading.select(incline: incline) }
 
-    /// The point's sheet the readout's `12 entries ›` opens — **the chart's only door**
+    /// The point's sheet the readout and its `Entries 12 ›` row open — **the chart's only door**
     /// (SPEC §13.9) — at the selected duration, zone and incline on this scope. Nil
     /// without a readout: zones not set, or a zone with no line here.
     func historySheet() -> ErgHistoryModel? {
@@ -268,10 +287,17 @@ final class ErgDetailModel {
         }
     }
 
-    /// Settings, opened in place of the zone buttons while zones are not set. The screen
+    /// Settings, opened in place of the zone tabs while zones are not set. The screen
     /// re-reads when it closes: entries logged before the zones join the lines then.
     func settings() -> SettingsModel {
-        SettingsModel(defaults: defaults)
+        SettingsModel(defaults: defaults, container: context.container)
+    }
+
+    /// Settings has closed: re-reads, and puts the grid behind back in step, since a
+    /// relabel or a convert there moves the scale both write in.
+    func settingsClosed() {
+        refresh()
+        onLibraryChange()
     }
 
     // MARK: - The goal (SPEC §13.10)
@@ -285,7 +311,7 @@ final class ErgDetailModel {
     /// hold it.
     var goalMenuLabel: String? {
         guard !needsZones, goalScope != nil else { return nil }
-        return goal == nil ? "Set a goal…" : "Change goal…"
+        return goal == nil ? String(localized: "Set a goal…") : String(localized: "Change goal…")
     }
 
     /// The line under the readout, whatever zone is selected; nil without a goal.
@@ -300,6 +326,7 @@ final class ErgDetailModel {
             scope: goalScope,
             selection: selection,
             zones: reading.zones,
+            distanceUnit: reading.distanceUnit,
             context: context
         ) { [weak self] in
             self?.refresh()
@@ -382,15 +409,17 @@ final class ErgDetailModel {
             machineMenu = MachineMenu(machines: [])
         }
 
-        // The zones are read live, never cached (ADR-0005).
+        // The zones and the distance unit are read live, never cached (ADR-0005):
+        // Settings can move both behind this screen.
         reading = ErgReading(
             entries: MachineScope.entries(of: erg, on: machine),
             zones: HeartRateZones(defaults: defaults),
             unit: unit,
+            distanceUnit: DistanceUnit(defaults: defaults),
             keeping: reading.selection
         )
-        hint = ErgMachineHint.lookUp(erg, scopedTo: machine, zones: reading.zones)
-        goal = goalScope?.enduranceGoal(zones: reading.zones)
+        hint = ErgMachineHint.lookUp(erg, scopedTo: machine, zones: reading.zones, distanceUnit: reading.distanceUnit)
+        goal = goalScope?.enduranceGoal(zones: reading.zones, distanceUnit: reading.distanceUnit)
     }
 
     private func save() {

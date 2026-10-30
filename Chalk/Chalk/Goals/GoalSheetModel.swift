@@ -42,6 +42,7 @@ final class GoalSheetModel: Identifiable {
         scope: GoalScope,
         reps: Int,
         context: ModelContext,
+        weightUnit: WeightUnit,
         onChange: @escaping () -> Void = {}
     ) {
         self.scope = scope
@@ -51,22 +52,22 @@ final class GoalSheetModel: Identifiable {
         hasGoal = scope.goal != nil
         // **The weight opens blank with the keypad up** — the app never suggests a load
         // it cannot back up, and a goal is one you have not lifted.
-        number = TwoStageNumber(reps: reps, weight: nil)
+        number = TwoStageNumber(reps: reps, weight: nil, weightUnit: weightUnit)
     }
 
     /// **Weight stage only**, like the log sheet's verdict: until there is a weight there
     /// is nothing to compare. A blank weight says nothing rather than reading as zero —
-    /// "already reached" at 0 kg would be true and useless.
+    /// "already reached" at 0 would be true and useless.
     var line: Line? {
         guard number.stage == .weight, let reps = number.reps else { return nil }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
-            return Line(text: "First goal at \(reps) reps", isReached: false)
+            return Line(text: String(localized: "First goal at \(reps) reps"), isReached: false)
         }
         guard let weight = number.weight, weight > 0 else { return nil }
         if weight > best {
-            return Line(text: "\((weight - best).kilogramsText) kg above your \(reps)-rep best", isReached: false)
+            return Line(text: String(localized: "\(number.weightUnit.text(weight - best)) above your \(reps)-rep best"), isReached: false)
         }
-        return Line(text: "Already reached — your \(reps)-rep best is \(best.kilogramsText) kg", isReached: true)
+        return Line(text: String(localized: "Already reached — your \(reps)-rep best is \(number.weightUnit.text(best))"), isReached: true)
     }
 
     /// `reps >= 1` and `weight > 0`, and nothing more: **no ceiling ever blocks a real

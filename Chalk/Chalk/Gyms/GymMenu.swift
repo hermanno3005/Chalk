@@ -37,7 +37,7 @@ struct GymMenu: View {
         } label: {
             // The label says where you are, because that is the answer you came for —
             // the picker underneath is how you change it.
-            Label(gyms.currentGym?.name ?? "Gym", systemImage: "building.2")
+            Label(gyms.currentGym?.name ?? String(localized: "Gym"), systemImage: "building.2")
         }
     }
 }

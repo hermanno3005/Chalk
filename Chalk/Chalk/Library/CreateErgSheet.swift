@@ -19,6 +19,8 @@ struct CreateErgSheet: View {
     let onCreate: (NewErg) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    /// The scale the speed choice names, `Speed (km/h)` or `Speed (mph)`.
+    @AppStorage(DistanceUnit.key) private var distanceUnit: DistanceUnit = .km
     @State private var draft: NewErg
     @FocusState private var nameFocused: Bool
     private let seedName: String
@@ -47,18 +49,21 @@ struct CreateErgSheet: View {
                         Text(LibraryLayout.ungroupedTitle).tag(UUID?.none)
                     }
                 }
+                .chalkRows()
 
                 Section {
                     Picker("Unit", selection: $draft.unit) {
                         // Starts here, and Add waits until it is left.
                         Text("Choose").tag(ErgUnit?.none)
                         ForEach(ErgUnit.allCases, id: \.self) { unit in
-                            Text(unit.pickerTitle).tag(ErgUnit?.some(unit))
+                            Text(unit.pickerTitle(distanceUnit)).tag(ErgUnit?.some(unit))
                         }
                     }
                 } footer: {
                     Text("What the console shows, and what you set. It cannot change once you have logged on this erg.")
+                        .foregroundStyle(.secondary)
                 }
+                .chalkRows()
 
                 Section {
                     Picker("Kind", selection: $draft.kind) {
@@ -71,8 +76,11 @@ struct CreateErgSheet: View {
                     Text(draft.kind == .gymBound
                          ? "Does the same number mean the same thing on every one of these machines, anywhere? No — so its numbers are kept per machine."
                          : "Does the same number mean the same thing on every one of these machines, anywhere? Yes — so its numbers are kept together, at every gym.")
+                    .foregroundStyle(.secondary)
                 }
+                .chalkRows()
             }
+            .chalkScreen()
             .navigationTitle("New erg")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -95,13 +103,13 @@ struct CreateErgSheet: View {
 }
 
 extension ErgUnit {
-    /// The unit as the create sheet's picker offers it.
-    var pickerTitle: String {
+    /// The unit as the create sheet's picker offers it, a speed in the distance unit.
+    func pickerTitle(_ distance: DistanceUnit) -> String {
         switch self {
-        case .speed: "Speed (km/h)"
-        case .watts: "Watts"
-        case .split: "Split (/500 m)"
-        case .level: "Level"
+        case .speed: String(localized: "Speed (\(distance.speedSymbol))")
+        case .watts: String(localized: "Watts")
+        case .split: String(localized: "Split (/500 m)")
+        case .level: String(localized: "Level")
         }
     }
 }

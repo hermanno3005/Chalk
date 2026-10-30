@@ -71,7 +71,7 @@ struct MachineMenu {
             sections.append(Section(
                 id: Self.gymlessSectionID,
                 gym: nil,
-                title: "No gym",
+                title: String(localized: "No gym"),
                 machines: MachineScope.byRecency(gymless),
                 isArchived: false
             ))
@@ -84,7 +84,7 @@ struct MachineMenu {
             sections.append(Section(
                 id: Self.archivedSectionID,
                 gym: nil,
-                title: "Archived",
+                title: String(localized: "Archived"),
                 machines: MachineScope.byRecency(archived),
                 isArchived: true
             ))

@@ -27,8 +27,10 @@ struct ExerciseTile: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 4) {
                 Text(tile.name)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(2, reservesSpace: true)
+                    .font(.subheadline.weight(.semibold))
+                    // Two lines held, so names line up, and **never cut short**: a
+                    // long name at a large text size takes what it needs (SPEC §15.4).
+                    .lineLimit(2...)
                     .multilineTextAlignment(.leading)
                     .foregroundStyle(.primary)
                 if arranging {
@@ -39,16 +41,31 @@ struct ExerciseTile: View {
 
             // An exercise with nothing logged says nothing — a placeholder line here
             // would be a number that does not exist (SPEC §4).
-            if let subtitle = tile.subtitle() {
-                Text(subtitle)
-                    .font(.caption)
-                    .lineLimit(1)
-                    .foregroundStyle(.secondary)
+            //
+            // **Never truncated** (SPEC §15.4): one line where it fits, otherwise the day
+            // drops under what you did, which wraps if it must — `12 × 102.5 kg` over
+            // `3 days ago` on the smallest iPhone's half-width tile.
+            if let subtitle = tile.subtitleParts() {
+                ViewThatFits(in: .horizontal) {
+                    Text(subtitle.text)
+                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(subtitle.doneKeepingUnits)
+                        Text(subtitle.day)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                // Said in words in Arrange mode too, where the tile is a container.
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(subtitle.spoken)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // Both ways, so the tiles in a grid row split it evenly and share its height.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(12)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.surface, in: RoundedRectangle(cornerRadius: 14))
         .contentShape(RoundedRectangle(cornerRadius: 14))
         .onTapGesture { if !arranging { onOpen() } }
         // The fast path, and only ever the fast path: dragging the length of a 42-tile
@@ -56,12 +73,17 @@ struct ExerciseTile: View {
         // is why `picker` exists and why nothing depends on this landing.
         .draggable(DraggedExercise(id: tile.id)) {
             Text(tile.name)
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline.weight(.semibold))
                 .padding(10)
                 .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 10))
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
+        // One button reading `Bench Press, 8 reps at 100 kilograms, today`. In Arrange
+        // mode the tile opens nothing, so it is a container and its group picker is
+        // reachable on its own.
+        .accessibilityElement(children: arranging ? .contain : .combine)
+        .accessibilityLabel(tile.name)
+        .accessibilityValue(tile.subtitleParts()?.spoken ?? String(localized: "Nothing logged yet"))
+        .accessibilityAddTraits(arranging ? [] : .isButton)
     }
 
     /// **The path that always works.** A plain menu, no gesture at all: tap, pick a
@@ -92,12 +114,14 @@ struct ExerciseTile: View {
         ExerciseTile(
             tile: LibraryTile(
                 exercise: Exercise(name: "Bulgarian Split Squat"),
-                lastEntry: LastEntry(reps: 8, weight: 52.5, date: .now)
+                lastEntry: LastEntry(reps: 8, weight: 52.5, date: .now),
+                weightUnit: .kg,
+                distanceUnit: .km
             ),
             onOpen: {}
         )
         ExerciseTile(
-            tile: LibraryTile(exercise: Exercise(name: "Ab Wheel"), lastEntry: nil),
+            tile: LibraryTile(exercise: Exercise(name: "Ab Wheel"), lastEntry: nil, weightUnit: .kg, distanceUnit: .km),
             arranging: true,
             groups: [ExerciseGroup(name: "Core", sortIndex: 0)],
             onOpen: {}

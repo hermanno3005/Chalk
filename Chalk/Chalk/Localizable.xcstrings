@@ -1,0 +1,2361 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    " " : {
+
+    },
+    " on %@" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ %%" : {
+
+    },
+    "%@ %lf kilograms" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %#@noun@"
+          },
+          "substitutions" : {
+            "noun" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lf",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "kilogram"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "kilograms"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ %lf pounds" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %#@noun@"
+          },
+          "substitutions" : {
+            "noun" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lf",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "pound"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "pounds"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ %lf seconds" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %#@noun@"
+          },
+          "substitutions" : {
+            "noun" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lf",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "second"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "seconds"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ /500 m" : {
+
+    },
+    "%@ W" : {
+
+    },
+    "%@ above your %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ above your %2$@"
+          }
+        }
+      }
+    },
+    "%@ above your %lld-rep best" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ above your %2$lld-rep best"
+          }
+        }
+      }
+    },
+    "%@ already has a %@. Merge into it?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ already has a %2$@. Merge into it?"
+          }
+        }
+      }
+    },
+    "%@ and %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ and %2$@"
+          }
+        }
+      }
+    },
+    "%@ and up" : {
+
+    },
+    "%@ at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ at %2$@"
+          }
+        }
+      }
+    },
+    "%@ at %@ — %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ at %2$@ — %3$@"
+          }
+        }
+      }
+    },
+    "%@ becomes gym-bound, and %@ move to the machine you pick." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ becomes gym-bound, and %2$@ move to the machine you pick."
+          }
+        }
+      }
+    },
+    "%@ becomes gym-bound, and %@ moves to the machine you pick." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ becomes gym-bound, and %2$@ moves to the machine you pick."
+          }
+        }
+      }
+    },
+    "%@ for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ for %2$@"
+          }
+        }
+      }
+    },
+    "%@ for %@ in zone %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ for %2$@ in zone %3$lld"
+          }
+        }
+      }
+    },
+    "%@ for %@ on %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ for %2$@ on %3$@"
+          }
+        }
+      }
+    },
+    "%@ has entries on %lld machines. They'll be read as one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ has entries on %#@machines@. They'll be read as one."
+          },
+          "substitutions" : {
+            "machines" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg machine"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg machines"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ has entries on %lld machines. They'll merge into one curve." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ has entries on %#@machines@. They'll merge into one curve."
+          },
+          "substitutions" : {
+            "machines" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg machine"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg machines"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ has entries on one machine. They'll be read as the erg's own." : {
+
+    },
+    "%@ has entries on one machine. They'll become the exercise's own curve." : {
+
+    },
+    "%@ holds %@ afterwards. This cannot be undone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ holds %2$@ afterwards. This cannot be undone."
+          }
+        }
+      }
+    },
+    "%@ holds no entries. %@ keeps its %@. This cannot be undone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ holds no entries. %2$@ keeps its %3$@. This cannot be undone."
+          }
+        }
+      }
+    },
+    "%@ in Z%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ in Z%2$lld"
+          }
+        }
+      }
+    },
+    "%@ in Z%lld at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ in Z%2$lld at %3$@"
+          }
+        }
+      }
+    },
+    "%@ in zone %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ in zone %2$lld"
+          }
+        }
+      }
+    },
+    "%@ in zone %lld at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ in zone %2$lld at %3$@"
+          }
+        }
+      }
+    },
+    "%@ on %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ on %2$@"
+          }
+        }
+      }
+    },
+    "%@ per %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ per %2$@"
+          }
+        }
+      }
+    },
+    "%@ per 500 metres" : {
+
+    },
+    "%@ percent" : {
+
+    },
+    "%@ percent incline" : {
+
+    },
+    "%@ s" : {
+
+    },
+    "%@ to go" : {
+
+    },
+    "%@ · %@ to go" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ to go"
+          }
+        }
+      }
+    },
+    "%@ · %lld/%lld bpm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$lld/%3$lld bpm"
+          }
+        }
+      }
+    },
+    "%@ · reached" : {
+
+    },
+    "%@ × %lld on %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ × %2$lld on %3$@"
+          }
+        }
+      }
+    },
+    "%@ ›" : {
+
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@ to go" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@ to go"
+          }
+        }
+      }
+    },
+    "%@, %lld entries" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %#@entries@"
+          },
+          "substitutions" : {
+            "entries" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entry"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@, at %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, at %2$@."
+          }
+        }
+      }
+    },
+    "%@, reached" : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld beats per minute" : {
+
+    },
+    "%lld bpm" : {
+
+    },
+    "%lld days ago" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day ago"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days ago"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld entries" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entry"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entries"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld entries over %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@entries@ over %2$@"
+          },
+          "substitutions" : {
+            "entries" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entry"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld entries over 20:00" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entry over 20:00"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entries over 20:00"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld ergs" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld erg"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld ergs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld exercises" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld exercise"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld exercises"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld goals" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld goal"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld goals"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld gyms" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld gym"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld gyms"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld hours" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hour"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hours"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld levels" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld level"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld levels"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld machines" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld machine"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld machines"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld minutes" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minutes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld reps" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rep"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld reps"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld reps and above" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld rep and above"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld reps and above"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld seconds" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld seconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld to %2$@"
+          }
+        }
+      }
+    },
+    "%lld watts" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld watt"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld watts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld+ bpm" : {
+
+    },
+    "%lld/%lld bpm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld bpm"
+          }
+        }
+      }
+    },
+    "%lld–%lld bpm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld–%2$lld bpm"
+          }
+        }
+      }
+    },
+    ", and %@" : {
+
+    },
+    "/500 m" : {
+
+    },
+    "/km" : {
+
+    },
+    "/mi" : {
+
+    },
+    "Add" : {
+
+    },
+    "Add a group" : {
+
+    },
+    "Add an entry" : {
+
+    },
+    "Add your first erg" : {
+
+    },
+    "Add your first exercise" : {
+
+    },
+    "Already reached — your %@ is %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Already reached — your %1$@ is %2$@"
+          }
+        }
+      }
+    },
+    "Already reached — your %lld-rep best is %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Already reached — your %1$lld-rep best is %2$@"
+          }
+        }
+      }
+    },
+    "Already reached. Your %@ is %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Already reached. Your %1$@ is %2$@"
+          }
+        }
+      }
+    },
+    "Archive" : {
+
+    },
+    "Archived" : {
+
+    },
+    "Arrange" : {
+
+    },
+    "Average heart rate" : {
+
+    },
+    "Avg" : {
+
+    },
+    "Beats your %lld-rep best by %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Beats your %1$lld-rep best by %2$@"
+          }
+        }
+      }
+    },
+    "Bikes" : {
+
+    },
+    "Blank" : {
+
+    },
+    "Blank %@" : {
+
+    },
+    "Blank reps" : {
+
+    },
+    "Calibrate the machines you train on" : {
+
+    },
+    "Can't convert" : {
+
+    },
+    "Can't restore" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Chalk backup" : {
+
+    },
+    "Chalk backup %@" : {
+
+    },
+    "Chalk can't open its store" : {
+
+    },
+    "Chalk can't open your library right now." : {
+
+    },
+    "Chalk couldn't convert. Nothing was changed." : {
+
+    },
+    "Chalk couldn't open this file. Nothing was changed." : {
+
+    },
+    "Chalk couldn't restore this backup. Nothing was changed." : {
+
+    },
+    "Chalk writes every weight and speed in these. You can change them later in Settings." : {
+
+    },
+    "Change goal" : {
+
+    },
+    "Change goal…" : {
+
+    },
+    "Change kind" : {
+
+    },
+    "Change unit" : {
+
+    },
+    "Change unit…" : {
+
+    },
+    "Changes the goal" : {
+
+    },
+    "Changes the machine this is logged on" : {
+
+    },
+    "Choose" : {
+
+    },
+    "Clear goal" : {
+
+    },
+    "Clear search" : {
+
+    },
+    "Compound" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Convert" : {
+
+    },
+    "Convert distances to %@?" : {
+
+    },
+    "Convert to %@…" : {
+
+    },
+    "Convert weights to %@?" : {
+
+    },
+    "Converts %@ to %@, rounded to %@. This can't be undone, except by restoring a backup." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Converts %1$@ to %2$@, rounded to %3$@. This can't be undone, except by restoring a backup."
+          }
+        }
+      }
+    },
+    "Core" : {
+
+    },
+    "Create “%@”" : {
+
+    },
+    "Decimal point" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %@ and its %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Delete %1$@ and its %2$@?"
+          }
+        }
+      }
+    },
+    "Delete %@?" : {
+
+    },
+    "Delete erg" : {
+
+    },
+    "Delete exercise" : {
+
+    },
+    "Delete row %lld" : {
+
+    },
+    "Discard %lld Entries" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Discard Entry"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Discard %lld Entries"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Discard %lld entries?" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Discard this entry?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Discard %lld entries?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Discard Changes" : {
+
+    },
+    "Discard changes?" : {
+
+    },
+    "Distances" : {
+
+    },
+    "Does the load transfer between gyms? No — the weight means something different at each gym, so its numbers are kept per machine." : {
+
+    },
+    "Does the load transfer between gyms? Yes — %@ is %@ wherever you lift it, so its numbers are kept together." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Does the load transfer between gyms? Yes — %1$@ is %2$@ wherever you lift it, so its numbers are kept together."
+          }
+        }
+      }
+    },
+    "Does the same number mean the same thing on every one of these machines, anywhere? No — so its numbers are kept per machine." : {
+
+    },
+    "Does the same number mean the same thing on every one of these machines, anywhere? Yes — so its numbers are kept together, at every gym." : {
+
+    },
+    "Done" : {
+
+    },
+    "Down to the next %@" : {
+
+    },
+    "Drag to reorder — this is the order the sections appear in. Tap to rename. Deleting a group keeps its exercises and moves them to Ungrouped." : {
+
+    },
+    "Duration" : {
+
+    },
+    "Edit groups…" : {
+
+    },
+    "Edits this entry" : {
+
+    },
+    "Endurance" : {
+
+    },
+    "Entries" : {
+
+    },
+    "Entries at %lld or more reps" : {
+
+    },
+    "Entries at %lld+ reps" : {
+
+    },
+    "Erg" : {
+
+    },
+    "Erg name" : {
+
+    },
+    "Every entry is kept. %lld machines are deleted, and this cannot be undone." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Every entry is kept. %lld machine is deleted, and this cannot be undone."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Every entry is kept. %lld machines are deleted, and this cannot be undone."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Exercise" : {
+
+    },
+    "Exercise name" : {
+
+    },
+    "First entry at %lld reps" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "First entry at %lld rep"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "First entry at %lld reps"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "First goal at %lld reps" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "First goal at %lld rep"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "First goal at %lld reps"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Free weight" : {
+
+    },
+    "Ghost" : {
+
+    },
+    "Goal %@" : {
+
+    },
+    "Goal %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Goal %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Goal %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Goal %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Goal cleared" : {
+
+    },
+    "Group" : {
+
+    },
+    "Group for %@" : {
+
+    },
+    "Groups" : {
+
+    },
+    "Gym" : {
+
+    },
+    "Gym machine" : {
+
+    },
+    "Gym name" : {
+
+    },
+    "Gym-bound" : {
+
+    },
+    "Gyms" : {
+
+    },
+    "Half" : {
+
+    },
+    "Heart rate" : {
+
+    },
+    "Heart rates are 40–230 bpm" : {
+
+    },
+    "Heart-rate zones" : {
+
+    },
+    "Here are your rep-maxes on %@." : {
+
+    },
+    "In beats per minute" : {
+
+    },
+    "Incline" : {
+
+    },
+    "Incline %@ percent" : {
+
+    },
+    "Intensity" : {
+
+    },
+    "It has no machines, and every entry stays exactly as it is." : {
+
+    },
+    "Its numbers are kept per machine, so pick the gym you use it at — or leave this and the first entry you log will make the machine." : {
+
+    },
+    "Its numbers are kept per machine. Log a lift and name the one you are at." : {
+
+    },
+    "Its numbers will be kept per machine. Log a block and name the machine you are on." : {
+
+    },
+    "Its numbers will be kept per machine. Log a lift and name the one you are at." : {
+
+    },
+    "Keep Editing" : {
+
+    },
+    "Keep Typing" : {
+
+    },
+    "Keep the exercises you actually do" : {
+
+    },
+    "Keep “%@”" : {
+
+    },
+    "Kind" : {
+
+    },
+    "L%@" : {
+
+    },
+    "Legs" : {
+
+    },
+    "Level" : {
+
+    },
+    "Level %@" : {
+
+    },
+    "Log" : {
+
+    },
+    "Log a block and what you held in each zone starts here." : {
+
+    },
+    "Log a lift and your curve starts here." : {
+
+    },
+    "Log again" : {
+
+    },
+    "Log an interval as time, what you set and the heart rate it cost. Chalk works out what to set on this machine to hit a zone." : {
+
+    },
+    "Log what you lifted as plain reps times weight. Chalk works out what you have proven at every rep count, and what to load next time." : {
+
+    },
+    "Log what you lifted as plain reps × weight. Chalk works out what you have proven at every rep count, and what to load next time." : {
+
+    },
+    "Logged" : {
+
+    },
+    "Make %@" : {
+
+    },
+    "Make %@ %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Make %1$@ %2$@?"
+          }
+        }
+      }
+    },
+    "Make %@ gym-bound?" : {
+
+    },
+    "Make a backup" : {
+
+    },
+    "Make gym-bound" : {
+
+    },
+    "Make — optional" : {
+
+    },
+    "Manage gyms…" : {
+
+    },
+    "Matches your %lld-rep best" : {
+
+    },
+    "Merge" : {
+
+    },
+    "Merge into %@" : {
+
+    },
+    "Merge into…" : {
+
+    },
+    "More" : {
+
+    },
+    "Move %@ to %@ and delete %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move %1$@ to %2$@ and delete %3$@?"
+          }
+        }
+      }
+    },
+    "Move anyway" : {
+
+    },
+    "Move to another gym…" : {
+
+    },
+    "Move your goal of %@ to %@ and delete %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Move your goal of %1$@ to %2$@ and delete %3$@?"
+          }
+        }
+      }
+    },
+    "Name" : {
+
+    },
+    "Name this machine" : {
+
+    },
+    "New erg" : {
+
+    },
+    "New exercise" : {
+
+    },
+    "New gym" : {
+
+    },
+    "New gym…" : {
+
+    },
+    "New machine here" : {
+
+    },
+    "New row" : {
+
+    },
+    "Next" : {
+
+    },
+    "No Z%lld on this %@ yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "No Z%1$lld on this %2$@ yet."
+          }
+        }
+      }
+    },
+    "No entries here — %@" : {
+
+    },
+    "No entries here. %@" : {
+
+    },
+    "No entries left" : {
+
+    },
+    "No exercise" : {
+
+    },
+    "No gym" : {
+
+    },
+    "No gyms yet. One is created the first time you log on a machine, or from New gym… in the same menu you opened this from." : {
+
+    },
+    "No history here — %@" : {
+
+    },
+    "No history here. %@" : {
+
+    },
+    "No line in zone %lld" : {
+
+    },
+    "No line yet" : {
+
+    },
+    "No machine" : {
+
+    },
+    "No machines here yet." : {
+
+    },
+    "No preview store." : {
+
+    },
+    "No zone %lld on this %@ yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "No zone %1$lld on this %2$@ yet."
+          }
+        }
+      }
+    },
+    "None" : {
+
+    },
+    "Not held yet at %@" : {
+
+    },
+    "Not held yet — %@" : {
+
+    },
+    "Not yet proven at %@" : {
+
+    },
+    "Nothing is logged on %lld machines. They are deleted, and this cannot be undone." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Nothing is logged on %lld machine. It is deleted, and this cannot be undone."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Nothing is logged on %lld machines. They are deleted, and this cannot be undone."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Nothing logged on %@ yet" : {
+
+    },
+    "Nothing logged yet" : {
+
+    },
+    "Nothing logged yet." : {
+
+    },
+    "Nothing you've logged here averaged %@." : {
+
+    },
+    "Now %@. The unit locks once you log on this erg." : {
+
+    },
+    "OK" : {
+
+    },
+    "Older — not in the line" : {
+
+    },
+    "One file holding every entry, exercise, erg, gym, machine and goal, and your zones. Keep it off the phone, in Files or on a Mac. Restoring one replaces everything Chalk holds." : {
+
+    },
+    "One rep fewer" : {
+
+    },
+    "One rep more" : {
+
+    },
+    "Open Erg" : {
+
+    },
+    "Open Exercise" : {
+
+    },
+    "Opens this exercise" : {
+
+    },
+    "Optional" : {
+
+    },
+    "Optional — you can leave it unnamed." : {
+
+    },
+    "Over %@ in Z%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Over %1$@ in Z%2$lld"
+          }
+        }
+      }
+    },
+    "Over %@ in zone %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Over %1$@ in zone %2$lld"
+          }
+        }
+      }
+    },
+    "Pace" : {
+
+    },
+    "Peak" : {
+
+    },
+    "Peak can't be below the average" : {
+
+    },
+    "Peak heart rate" : {
+
+    },
+    "Pick your units" : {
+
+    },
+    "Power" : {
+
+    },
+    "Projection" : {
+
+    },
+    "Pull" : {
+
+    },
+    "Push" : {
+
+    },
+    "Reaches your goal of %@" : {
+
+    },
+    "Relabel as %@" : {
+
+    },
+    "Relabel if you picked the wrong unit: every %@ and goal keeps its number and is written in %@ instead. Convert if your gym uses %@: every %@ and goal is rewritten in %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Relabel if you picked the wrong unit: every %1$@ and goal keeps its number and is written in %2$@ instead. Convert if your gym uses %3$@: every %4$@ and goal is rewritten in %5$@."
+          }
+        }
+      }
+    },
+    "Rename" : {
+
+    },
+    "Rename group" : {
+
+    },
+    "Rename gym" : {
+
+    },
+    "Rename machine" : {
+
+    },
+    "Renames this group" : {
+
+    },
+    "Renames this gym" : {
+
+    },
+    "Rename…" : {
+
+    },
+    "Rep-Maxes" : {
+
+    },
+    "Rep-max" : {
+
+    },
+    "Rep-maxes on ${exercise}" : {
+
+    },
+    "Reps" : {
+
+    },
+    "Restore" : {
+
+    },
+    "Restore from a backup…" : {
+
+    },
+    "Restore this backup?" : {
+
+    },
+    "Row %lld · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Row %1$lld · %2$@"
+          }
+        }
+      }
+    },
+    "Row %lld, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Row %1$lld, %2$@"
+          }
+        }
+      }
+    },
+    "Rowing & Ski" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save %lld" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Save"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Save %lld"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Saved" : {
+
+    },
+    "Search or add an erg" : {
+
+    },
+    "Search or add an exercise" : {
+
+    },
+    "Series" : {
+
+    },
+    "Set a goal" : {
+
+    },
+    "Set a goal…" : {
+
+    },
+    "Set goal" : {
+
+    },
+    "Set your heart-rate zones" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Settings…" : {
+
+    },
+    "Shows the machines at %@" : {
+
+    },
+    "Shows the steppers" : {
+
+    },
+    "Shows these entries" : {
+
+    },
+    "Shows your twelve rep-maxes on an exercise, on the machine its screen opens on." : {
+
+    },
+    "Skip" : {
+
+    },
+    "Speed" : {
+
+    },
+    "Speed (%@)" : {
+
+    },
+    "Split" : {
+
+    },
+    "Split (/500 m)" : {
+
+    },
+    "Strength" : {
+
+    },
+    "Strength curve" : {
+
+    },
+    "Tap to rename — a gym is remembered by identity, so renaming one costs its history nothing. Swipe to archive: an archived gym keeps every entry it holds and comes back the moment you log there again." : {
+
+    },
+    "That exercise is no longer in your library." : {
+
+    },
+    "The lowest heart rate of each zone, in whole beats per minute, from your watch or a lactate test. Each is between 40 and 230 and higher than the one before. Zone 5 has no ceiling." : {
+
+    },
+    "The lowest heart rate of each zone, in whole bpm, from your watch or a lactate test. Each is between 40 and 230 and higher than the one before. Z5 has no ceiling." : {
+
+    },
+    "The projection behind it is guidance only, never a weight you have lifted." : {
+
+    },
+    "This backup holds an endurance goal but no heart-rate zones, so it can't be restored." : {
+
+    },
+    "This backup holds the same row twice, so it can't be restored." : {
+
+    },
+    "This backup holds “%@”, which this version of Chalk doesn't know, so it can't be restored exactly." : {
+
+    },
+    "This backup is damaged and can't be restored." : {
+
+    },
+    "This backup puts an exercise or a machine in a group or gym it doesn't hold, so it can't be restored." : {
+
+    },
+    "This backup was made by a newer version of Chalk. Update Chalk, then restore it." : {
+
+    },
+    "This backup's heart-rate zones aren't four rising values between 40 and 230 bpm, so it can't be restored." : {
+
+    },
+    "This file isn't a Chalk backup." : {
+
+    },
+    "This replaces %@ with %@ from %@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This replaces %1$@ with %2$@ from %3$@%4$@"
+          }
+        }
+      }
+    },
+    "Time" : {
+
+    },
+    "Transferable" : {
+
+    },
+    "Treadmills" : {
+
+    },
+    "Types a number" : {
+
+    },
+    "Ungrouped" : {
+
+    },
+    "Unit" : {
+
+    },
+    "Units" : {
+
+    },
+    "Unlabelled" : {
+
+    },
+    "Up to the next %@" : {
+
+    },
+    "Use %@" : {
+
+    },
+    "W" : {
+
+    },
+    "Watts" : {
+
+    },
+    "Weight" : {
+
+    },
+    "Weights" : {
+
+    },
+    "What is written on the stack — Hammer Strength, Technogym. One gym can hold several of these and their numbers stay separate." : {
+
+    },
+    "What the console shows, and what you set. It cannot change once you have logged on this erg." : {
+
+    },
+    "What you held in zone %lld at each duration you have done, up to 20 minutes" : {
+
+    },
+    "Which machine are these entries on?" : {
+
+    },
+    "Which machine is this on?" : {
+
+    },
+    "Write distances in %@?" : {
+
+    },
+    "Write weights in %@?" : {
+
+    },
+    "You already have a gym called %@. Create this one only if it is a different place." : {
+
+    },
+    "You have a %@ at %@ — same model?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You have a %1$@ at %2$@ — same model?"
+          }
+        }
+      }
+    },
+    "Your %lld-rep best is %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your %1$lld-rep best is %2$@"
+          }
+        }
+      }
+    },
+    "Your goal of %@ and %lld other goals are cleared." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your goal of %1$@ and %#@others@ are cleared."
+          },
+          "substitutions" : {
+            "others" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg other goal"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg other goals"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Your goal of %@ is cleared." : {
+
+    },
+    "Your goal of %@ is kept; %lld other goals are cleared." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your goal of %1$@ is kept; %#@others@ cleared."
+          },
+          "substitutions" : {
+            "others" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg other goal is"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg other goals are"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Your heaviest weight at each rep count from 1 to 12." : {
+
+    },
+    "Your history is still on this device and has not been changed." : {
+
+    },
+    "Z%lld" : {
+
+    },
+    "Z%lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Z%1$lld %2$@"
+          }
+        }
+      }
+    },
+    "Z%lld · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Z%1$lld · %2$@"
+          }
+        }
+      }
+    },
+    "Z1" : {
+
+    },
+    "Zone" : {
+
+    },
+    "Zone %lld" : {
+
+    },
+    "Zone %lld from" : {
+
+    },
+    "Zone %lld line" : {
+
+    },
+    "Zone %lld, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zone %1$lld, %2$@"
+          }
+        }
+      }
+    },
+    "Zone %lld, %@ at %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zone %1$lld, %2$@ at %3$@, %4$@"
+          }
+        }
+      }
+    },
+    "Zone 1" : {
+
+    },
+    "all %lld entries" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld entry"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "all %lld entries"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "average %lld, peak %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "average %1$lld, peak %2$@"
+          }
+        }
+      }
+    },
+    "below %@" : {
+
+    },
+    "below %lld bpm" : {
+
+    },
+    "below Z2" : {
+
+    },
+    "below zone 2" : {
+
+    },
+    "best" : {
+
+    },
+    "bpm" : {
+
+    },
+    "clears your heart-rate zones" : {
+
+    },
+    "distances to %@" : {
+
+    },
+    "erg" : {
+
+    },
+    "free-weight" : {
+
+    },
+    "from" : {
+
+    },
+    "kg" : {
+
+    },
+    "kilograms" : {
+
+    },
+    "kilometre" : {
+
+    },
+    "kilometres" : {
+
+    },
+    "kilometres per hour" : {
+
+    },
+    "km" : {
+
+    },
+    "km/h" : {
+
+    },
+    "lb" : {
+
+    },
+    "level %@" : {
+
+    },
+    "machine" : {
+
+    },
+    "mile" : {
+
+    },
+    "miles" : {
+
+    },
+    "miles per hour" : {
+
+    },
+    "mph" : {
+
+    },
+    "no gym" : {
+
+    },
+    "none" : {
+
+    },
+    "not held yet" : {
+
+    },
+    "not yet proven" : {
+
+    },
+    "not yet proven × %lld" : {
+
+    },
+    "nothing" : {
+
+    },
+    "pace %@" : {
+
+    },
+    "pounds" : {
+
+    },
+    "reached" : {
+
+    },
+    "rep" : {
+
+    },
+    "reps" : {
+
+    },
+    "sets this best" : {
+
+    },
+    "speed" : {
+
+    },
+    "switches %@" : {
+
+    },
+    "the nearest 0.1 %@" : {
+
+    },
+    "the nearest half kilogram" : {
+
+    },
+    "the nearest pound" : {
+
+    },
+    "today" : {
+
+    },
+    "too easy" : {
+
+    },
+    "too hard" : {
+
+    },
+    "transferable" : {
+
+    },
+    "weight" : {
+
+    },
+    "weights to %@" : {
+
+    },
+    "yesterday" : {
+
+    },
+    "your goal of %@" : {
+
+    },
+    "× %lld" : {
+
+    }
+  },
+  "version" : "1.0"
+}

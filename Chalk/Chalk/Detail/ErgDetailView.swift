@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// The erg detail screen (SPEC §13.8), laid out like §5's: zone buttons and the incline
-/// menu, the scrub readout, the 150 pt zone line and its over-20:00 caption, empty space,
-/// and the Log bar into the lap-list sheet (§13.7). The machine qualifier sits in the
-/// toolbar on a gym-bound erg, beside an overflow of the erg's lifetime operations.
-/// Zones not set swap the zone buttons, readout and line for a row into Settings.
+/// The erg detail screen (SPEC §13.8), laid out like §5's as Trade Republic's stock
+/// screen (§15.4): the name in grey over the intensity and `6:00 in Z4`, the goal line,
+/// the zone tabs and the incline menu, the zone line and its over-20:00 caption, the
+/// rows, empty space, and the Log bar into the lap-list sheet (§13.7). The machine
+/// qualifier sits in the toolbar on a gym-bound erg, beside an overflow of the erg's
+/// lifetime operations. Zones not set swap the tabs, readout and line for a row into
+/// Settings.
 struct ErgDetailView: View {
     /// Held in `@State` for the life of the push, as `ExerciseDetailView`'s model is.
     @State var model: ErgDetailModel
@@ -25,58 +27,19 @@ struct ErgDetailView: View {
     @State private var goalSheet: EnduranceGoalSheetModel?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if model.isEmpty {
-                empty
-                goalLine
-            } else if !model.needsZones, let selection = model.selection {
-                zoneBar(selection)
-                if let readout = model.readout {
-                    readoutView(readout)
-                } else if let noLine = model.noLine {
-                    ErgNoLineView(noLine: noLine)
-                }
-                // Under the readout, or the no-line text, whatever zone is selected: it
-                // is the goal's point, not the screen's (SPEC §13.10).
-                goalLine
-                if let points = model.reading.line?.points, !points.isEmpty {
-                    ZoneLineChart(
-                        points: points,
-                        unit: model.unit ?? .speed,
-                        selectedDuration: selection.duration,
-                        onSelect: model.select(duration:)
-                    )
-                }
-                if let caption = model.overTheAxisCaption {
-                    // A door to the flat over-20:00 list (SPEC §13.9).
-                    Button {
-                        history = model.overTheAxisSheet()
-                    } label: {
-                        Text("\(caption) ›")
-                            .font(.footnote)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            // Zones not set: one row in place of the buttons, readout and line — under
-            // the empty text too, so a first erg says what it will need.
-            if model.needsZones {
-                zonesRow
-            }
-            Spacer(minLength: 0)
-        }
-        .animation(.snappy, value: model.selection)
-        .padding(.horizontal)
-        .padding(.top, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        DetailBody { content }
+        .chalkScreen()
+        // The name is the readout's (SPEC §13.8); kept as the title for the back menu
+        // and VoiceOver, never drawn in the bar.
         .navigationTitle(model.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(removing: .title)
         .safeAreaInset(edge: .bottom) { logBar }
         .sheet(item: $logging) { LapListSheet(model: $0) }
         .sheet(item: $history) { ErgHistorySheet(model: $0) }
-        // Entries logged before the zones join the lines the moment they are set.
-        .sheet(item: $settings, onDismiss: model.refresh) { SettingsSheet(model: $0) }
+        // Entries logged before the zones join the lines the moment they are set, and a
+        // relabel or a convert there moves the scale this screen and the grid behind it write in.
+        .sheet(item: $settings, onDismiss: model.settingsClosed) { SettingsSheet(model: $0) }
         .sheet(item: $goalSheet) { EnduranceGoalSheet(model: $0) }
         // A unit change says so when it clears a goal (SPEC §13.6).
         .alert(
@@ -132,11 +95,11 @@ struct ErgDetailView: View {
         }
         .confirmationDialog("Change unit", isPresented: $changingUnit, titleVisibility: .visible) {
             ForEach(ErgUnit.allCases.filter { $0 != model.unit }, id: \.self) { unit in
-                Button(unit.pickerTitle) { model.changeUnit(to: unit) }
+                Button(unit.pickerTitle(model.distanceUnit)) { model.changeUnit(to: unit) }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Now \(model.unit?.pickerTitle ?? "none"). The unit locks once you log on this erg.")
+            Text("Now \(model.unit?.pickerTitle(model.distanceUnit) ?? String(localized: "none")). The unit locks once you log on this erg.")
         }
         .confirmationDialog(
             model.deleteConfirmation,
@@ -149,6 +112,71 @@ struct ErgDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    /// Top to bottom, as the type's doc says; `DetailBody` decides whether it scrolls.
+    private var content: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if model.isEmpty {
+                DetailHead(name: model.name)
+                empty
+                goalLine
+                    .padding(.top, 12)
+            } else if !model.needsZones, let selection = model.selection {
+                // A zone with no line keeps the number's place with a dimmed `—`, so
+                // the tabs stay under your thumb as you move between zones.
+                DetailHead(
+                    name: model.name,
+                    number: model.readout?.intensity ?? "—",
+                    aside: model.readout?.aside,
+                    dimmed: model.readout == nil,
+                    spoken: model.readout?.spoken ?? String(localized: "No line in zone \(selection.zone)"),
+                    // The readout opens the point's sheet, as the `Entries` row does
+                    // (SPEC §13.9). A zone with no line hands back no sheet.
+                    opensHistory: model.readout != nil
+                )
+                .onTapGesture { history = model.historySheet() }
+                // Under the number, whatever zone is selected: it is the goal's point,
+                // not the screen's (SPEC §13.10).
+                goalLine
+                    .padding(.top, 12)
+                tabs(selection)
+                    .padding(.top, 24)
+                if let readout = model.readout, let points = model.reading.line?.points, !points.isEmpty,
+                   let audioGraph = model.audioGraph {
+                    ZoneLineChart(
+                        points: points,
+                        unit: model.unit ?? .speed,
+                        selectedDuration: selection.duration,
+                        audioGraph: audioGraph,
+                        spokenValue: readout.spoken,
+                        onSelect: model.select(duration:)
+                    )
+                    .detailChart()
+                    .padding(.top, 16)
+                    overTheAxisCaption
+                    rows(readout)
+                        .padding(.top, 16)
+                } else if let noLine = model.noLine {
+                    ErgNoLineView(noLine: noLine)
+                        .padding(.top, 16)
+                    overTheAxisCaption
+                }
+            } else {
+                DetailHead(name: model.name)
+            }
+            // Zones not set: one row in place of the tabs, readout and line — under
+            // the empty text too, so a first erg says what it will need.
+            if model.needsZones {
+                zonesRow
+                    .padding(.top, 16)
+            }
+            Spacer(minLength: 0)
+        }
+        .animation(.snappy, value: model.selection)
+        .padding(.horizontal)
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The machine qualifier — **gym-bound only**, as on a gym-bound exercise (SPEC §5.3,
@@ -177,7 +205,7 @@ struct ErgDetailView: View {
     private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Nothing logged yet.")
-                .font(.title3.weight(.medium))
+                .font(.title3.weight(.semibold))
             Text("Log a block and what you held in each zone starts here.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -186,10 +214,11 @@ struct ErgDetailView: View {
                 Text(hint.emptyStateLine)
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
+                    .accessibilityLabel(hint.spokenEmptyStateLine)
                     .padding(.top, 4)
             }
         }
-        .padding(.top, 8)
+        .padding(.top, 16)
     }
 
     /// The goal line — no `›`, never on the chart — opening the goal sheet (SPEC §13.10).
@@ -200,49 +229,18 @@ struct ErgDetailView: View {
         }
     }
 
-    /// Opens Settings, which is where zones are set (SPEC §13.3).
+    /// Opens Settings, which is where zones are set (SPEC §13.3): a row like the ones
+    /// under the line, with nothing to read on its trailing end.
     private var zonesRow: some View {
-        Button {
+        FactRow(label: String(localized: "Set your heart-rate zones"), value: "") {
             settings = model.settings()
-        } label: {
-            HStack {
-                Label("Set your heart-rate zones", systemImage: "heart")
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .background(Color.secondary.opacity(0.1), in: .rect(cornerRadius: 10))
         }
-        .buttonStyle(.plain)
     }
 
-    /// `Z1`–`Z5`, with the incline menu at the trailing end on a speed erg. **A zone with
-    /// no line here is dimmed but still tappable.**
-    private func zoneBar(_ selection: ErgReading.Selection) -> some View {
-        HStack(spacing: 6) {
-            ForEach(ZoneLine.zones, id: \.self) { zone in
-                let isSelected = zone == selection.zone
-                let hasLine = model.hasLine(zone)
-                Button {
-                    model.select(zone: zone)
-                } label: {
-                    Text("Z\(zone)")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(width: 40, height: 32)
-                        .foregroundStyle(
-                            isSelected ? Color.white : hasLine ? Color.primary : Color.secondary.opacity(0.5)
-                        )
-                        .background(
-                            isSelected ? Color.accentColor : Color.secondary.opacity(hasLine ? 0.14 : 0.05),
-                            in: .rect(cornerRadius: 8)
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
-            }
+    /// The zones as text tabs, with the incline menu at the trailing end on a speed erg.
+    private func tabs(_ selection: ErgReading.Selection) -> some View {
+        HStack(spacing: 0) {
+            ZoneTabs(selected: selection.zone, hasLine: model.hasLine, onSelect: model.select(zone:))
             Spacer(minLength: 0)
             if model.unit?.hasIncline == true {
                 inclineMenu(selection)
@@ -261,47 +259,57 @@ struct ErgDetailView: View {
                 }
             }
         } label: {
-            Label("\(EnduranceText.incline(selection.incline)) %", systemImage: "arrow.up.right")
-                .font(.subheadline.weight(.medium))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Color.secondary.opacity(0.12), in: .capsule)
+            // Text, as the tabs beside it are: no fill.
+            HStack(spacing: 4) {
+                Text("\(EnduranceText.incline(selection.incline)) %")
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.bold))
+            }
+            .font(.callout)
+            .foregroundStyle(.primary)
+            .frame(height: 32)
+            // Capped with the tabs beside it, for the same width, and on the label alone
+            // as theirs is, so the Large Content Viewer still shows (SPEC §15.4).
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        }
+        .accessibilityShowsLargeContentViewer {
+            Label("\(EnduranceText.incline(selection.incline)) %", systemImage: "chevron.up.chevron.down")
         }
         .accessibilityLabel("Incline \(EnduranceText.incline(selection.incline)) percent")
     }
 
-    /// One large intensity, a speed's pace under it, then the point's duration, zone,
-    /// mean heart rate and entry count. No ± band: the count is the uncertainty.
-    private func readoutView(_ readout: ErgReading.Readout) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(readout.intensity)
-                .font(.system(size: 46, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .contentTransition(.numericText())
-            if let pace = readout.pace {
-                Text(pace)
-                    .font(.title3.weight(.medium))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-            }
-            // `12 entries ›`: **the chart's only door** to the point's entries (SPEC
-            // §13.9). Tapping a point on the line does nothing; scrubbing only selects.
+    /// The dimmed `2 entries over 20:00 ›` caption under the line, or under the no-line
+    /// text: a door to the flat over-20:00 list (SPEC §13.9).
+    @ViewBuilder
+    private var overTheAxisCaption: some View {
+        if let caption = model.overTheAxisCaption {
             Button {
-                history = model.historySheet()
+                history = model.overTheAxisSheet()
             } label: {
-                HStack(spacing: 4) {
-                    Text(readout.detail)
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                }
-                .font(.subheadline)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
+                Text("\(caption) ›")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(model.reading.spokenOverTheAxisCaption ?? caption)
+            .padding(.top, 8)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+    }
+
+    /// The rest of the readout under the line (SPEC §13.8): `Pace` on a speed erg, the
+    /// point's mean `Heart rate`, and `Entries N ›`, **the chart's only door** to the
+    /// point's entries (§13.9) — tapping a point does nothing; scrubbing only selects.
+    /// No ± band: the count is the uncertainty.
+    private func rows(_ readout: ErgReading.Readout) -> some View {
+        VStack(spacing: 0) {
+            if let pace = readout.pace {
+                FactRow(label: String(localized: "Pace"), value: pace, spokenValue: readout.spokenPace)
+            }
+            FactRow(label: String(localized: "Heart rate"), value: readout.averageHeartRate, spokenValue: readout.spokenHeartRate)
+            FactRow(label: String(localized: "Entries"), value: readout.entryCount.formatted()) {
+                history = model.historySheet()
+            }
+        }
     }
 
     private var logBar: some View {
@@ -310,6 +318,7 @@ struct ErgDetailView: View {
         } label: {
             Text("Log")
                 .font(.headline)
+                .foregroundStyle(Color.onAccent)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
         }
