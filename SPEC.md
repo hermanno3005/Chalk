@@ -636,7 +636,8 @@ It shows only when **all** of these hold:
 - **There is no gap line in ordinary logging.** Below the goal the verdict is the ordinary one,
   and nothing about the goal shows.
 - **After Save, nothing new** — §6.7 is unchanged. The only acknowledgement is the greyed goal
-  line you land on.
+  line you land on. _Amended 2026-10-22:_ a save that reaches a goal also plays a distinct
+  haptic (§15.4). Nothing else is new after Save.
 
 **Stage one stays silent.** The line is meaningless until both numbers exist, and showing the
 target on the reps stage would turn the log sheet into a lookup surface — the detail screen's job.
@@ -1158,6 +1159,48 @@ are on `main` ([#122](https://github.com/hermanno3005/Chalk/issues/122)), in thi
 29. **Endurance goals under merge and kind change** (§13.11)
     ([#121](https://github.com/hermanno3005/Chalk/issues/121)).
 
+Store-ready
+([Map: Store-ready — paying is the only step left](https://github.com/hermanno3005/Chalk/issues/127))
+builds on top, in this order. The backup comes first, because it carries the phone's history and
+lets a restore undo a convert you regret:
+
+30. [**Make a backup from Settings**](https://github.com/hermanno3005/Chalk/issues/129) (§15.1).
+31. [**Restore a backup from Settings**](https://github.com/hermanno3005/Chalk/issues/130)
+    (§15.1).
+32. [**Back up the phone's history and keep it off the phone**](https://github.com/hermanno3005/Chalk/issues/131)
+    (§15.1), before any later step goes to the phone.
+33. [**Write weights in the weight unit**](https://github.com/hermanno3005/Chalk/issues/135)
+    (§15.2).
+34. [**Write speeds in the distance unit**](https://github.com/hermanno3005/Chalk/issues/136)
+    (§15.2).
+35. [**Relabel a unit on Settings**](https://github.com/hermanno3005/Chalk/issues/137) (§15.2).
+36. [**Convert a unit on Settings**](https://github.com/hermanno3005/Chalk/issues/138) (§15.2).
+37. [**Pick units, or restore, on first open**](https://github.com/hermanno3005/Chalk/issues/139)
+    (§15.3).
+38. [**Chalk in a monochrome palette and SF Pro semibold**](https://github.com/hermanno3005/Chalk/issues/163)
+    (§15.4).
+39. [**Both detail screens in Trade Republic's layout**](https://github.com/hermanno3005/Chalk/issues/164)
+    (§5.1, §13.8, §15.4).
+40. [**Library tiles stop truncating, and the grid fills its width**](https://github.com/hermanno3005/Chalk/issues/144)
+    (§15.4).
+41. [**Big readouts survive Dynamic Type**](https://github.com/hermanno3005/Chalk/issues/148)
+    (§15.4, §15.6).
+42. [**Haptics at scrub detents, on save, and on reaching a goal**](https://github.com/hermanno3005/Chalk/issues/145)
+    (§15.4).
+43. [**Find every exercise and erg from Spotlight and Shortcuts**](https://github.com/hermanno3005/Chalk/issues/143)
+    (§15.5).
+44. [**Rep-max cards from Siri and Spotlight**](https://github.com/hermanno3005/Chalk/issues/158)
+    (§15.5).
+45. [**VoiceOver throughout, and the curve and zone line as audio graphs**](https://github.com/hermanno3005/Chalk/issues/147)
+    (§15.6).
+46. [**Every string in a String Catalog**](https://github.com/hermanno3005/Chalk/issues/146)
+    (§15.6).
+47. [**Ship a privacy manifest**](https://github.com/hermanno3005/Chalk/issues/150) (§15.6).
+48. [**Publish Chalk's privacy and support pages**](https://github.com/hermanno3005/Chalk/issues/172)
+    (§15.6), built in Hermann's site rather than here.
+49. [**Draft the store listing: screenshots and copy**](https://github.com/hermanno3005/Chalk/issues/169)
+    (§15.6), shot last.
+
 ---
 
 ## 11. Out of scope
@@ -1202,6 +1245,8 @@ Storage is governed by ADR-0004. Prototype:
 On each **scope** you can name one **goal**: a weight at a rep count you have not lifted yet. A
 free-weight exercise has one scope; a gym-bound exercise has one per machine. Chalk shows the goal
 quietly, never tells you what to lift, never celebrates, and keeps no record of past goals.
+_Amended 2026-10-22:_ a save that reaches a goal plays a distinct haptic, and nothing more
+(§15.4).
 
 ### 12.1 What is stored
 
@@ -1313,7 +1358,8 @@ Beyond §11's two:
 - **Goals on library tiles**, or on any surface that would have to resolve a scope via the current
   gym. **Borrowing another machine's goal** anywhere, the resume card included.
 - **Drawing the goal on the chart**, and any change to the ghost curve.
-- **Celebration** — prompts, animations, haptics, or a post-Save message on reaching a goal.
+- **Celebration** — prompts, animations, ~~haptics,~~ or a post-Save message on reaching a goal.
+  _Amended 2026-10-22:_ a save that reaches a goal plays a distinct haptic (§15.4).
 - **A gap line in ordinary logging**, and any goal text on the reps stage.
 - **An "un-reaches your goal" state** when editing.
 - **A goal at a not-yet-created machine.** A gym-bound exercise with no machine offers no
@@ -1981,7 +2027,11 @@ and may be revised. Nothing in this spec waits on it, and an icon is made, not d
 
 ## 15. Store-ready
 
-From the launch-polish grilling of 2026-10-22, which has no ticket yet. The words are in
+From the launch-polish grilling of 2026-10-22
+([Decide what a store-ready Chalk adds](https://github.com/hermanno3005/Chalk/pull/126)), worked
+through the map
+[Map: Store-ready — paying is the only step left](https://github.com/hermanno3005/Chalk/issues/127):
+each rule a map ticket decided cites it, and its build order is §10. The words are in
 `CONTEXT.md`: **Weight unit**, **Distance unit**, **Relabel**, **Convert**, **Backup**,
 **Restore**, **Rep-max card**. Read
 [ADR-0009](docs/adr/0009-units-are-rewritten-never-converted-for-display.md) and
@@ -1995,27 +2045,32 @@ is adopted.
 ### 15.1 Backup and restore
 
 - **A backup** is one readable file holding everything Chalk knows, made from Settings and
-  handed to the share sheet. It round-trips exactly.
+  handed to the share sheet. It round-trips exactly
+  ([How does a Chalk library round-trip exactly through a readable backup file?](https://github.com/hermanno3005/Chalk/issues/128)).
 - **A restore** replaces everything and never merges. Over a library that is not empty, it first
   says what will be lost and how old the backup is: `This replaces 1,240 entries with 980 from
   12 Mar 2026`. Chalk makes no automatic backup of its own, not even before a restore.
 - **A library is empty when it holds no exercise, no erg and no gym.** Groups, zones and units
   do not count, since a fresh install already holds its seeded groups. The same line decides
-  onboarding (§15.3) ([#134](https://github.com/hermanno3005/Chalk/issues/134)).
+  onboarding (§15.3)
+  ([What counts as an install that already has a library, and what units does it get?](https://github.com/hermanno3005/Chalk/issues/134)).
 - **The confirmation counts what each side holds**: its entries when it has any, otherwise its
   exercises, ergs and gyms, otherwise nothing. `This replaces 3 exercises and 1 gym with 980
-  entries from 12 Mar 2026`, or `This replaces 1,240 entries with nothing from 12 Mar 2026`.
+  entries from 12 Mar 2026`, or `This replaces 1,240 entries with nothing from 12 Mar 2026`
+  ([What counts as an install that already has a library, and what units does it get?](https://github.com/hermanno3005/Chalk/issues/134)).
 - **A restore sets both units from the backup**, from Settings as from onboarding. When that
   switches a unit, the confirmation says so: `…from 12 Mar 2026, and switches weights to kg`.
-  Over an empty library there is no confirmation, and the units simply follow the file.
+  Over an empty library there is no confirmation, and the units simply follow the file
+  ([What counts as an install that already has a library, and what units does it get?](https://github.com/hermanno3005/Chalk/issues/134)).
 - **A restore sets the zones from the backup too**, so a backup made before zones were set
   clears them. It is the only way zones are ever unset. Only the clear is named, not changed
   boundaries: `…from 12 Mar 2026, and clears your heart-rate zones`, or with a unit switch,
   `…from 12 Mar 2026, switches weights to kg and clears your heart-rate zones`. A file holding
   an endurance goal but no zones is refused, since Chalk never writes one
-  ([#153](https://github.com/hermanno3005/Chalk/issues/153)).
+  ([Does a restore clear zones the backup doesn't have?](https://github.com/hermanno3005/Chalk/issues/153)).
 - **Make a backup before the team switch** and before a convert. This replaces *pull a
-  container first*.
+  container first*. The phone's history already has one, kept off the phone
+  ([Back up the phone's history and keep it off the phone](https://github.com/hermanno3005/Chalk/issues/131)).
 
 ### 15.2 Units
 
@@ -2031,11 +2086,11 @@ is adopted.
   on the same grid as entries. A weight convert rewrites strength entries and strength goals at
   both scopes. A distance convert rewrites speed-erg entries and speed goals. Incline, watts,
   splits (always per 500 m), levels, durations, heart rates and zones have no scale and are untouched
-  ([#132](https://github.com/hermanno3005/Chalk/issues/132)).
+  ([Does a convert round to 0.5 kg, 1 lb and 0.1 km/h or mph?](https://github.com/hermanno3005/Chalk/issues/132)).
 - **The stepper grid follows the weight unit**: 2.5 kg, or 5 lb, a pair of the smallest
   standard plates, and it is not a setting (§6.2,
-  [#133](https://github.com/hermanno3005/Chalk/issues/133)). The goal sheet steps on the same
-  grid, and VoiceOver says `Up to the next 5 pounds`.
+  [Is the stepper grid 5 lb on the lb scale?](https://github.com/hermanno3005/Chalk/issues/133)).
+  The goal sheet steps on the same grid, and VoiceOver says `Up to the next 5 pounds`.
 
 ### 15.3 Onboarding
 
@@ -2048,7 +2103,7 @@ onboarding never comes back, not even after the last exercise is deleted. A laun
 units stored over a library that is not empty (§15.1) writes **kg and km** silently instead,
 because every number an install from before units wrote is already kg and km/h (§2). That is
 the phone's update, and it never risks a relabel
-([#134](https://github.com/hermanno3005/Chalk/issues/134)).
+([What counts as an install that already has a library, and what units does it get?](https://github.com/hermanno3005/Chalk/issues/134)).
 
 ### 15.4 Design
 
@@ -2086,14 +2141,18 @@ the phone's update, and it never risks a relabel
   width empty.
 - **Haptics in three places only:** a tick at each scrub detent (a rep count on the curve, a
   duration on the zone line), a success tap when an entry saves, and a distinct one when a save
-  reaches a goal. §6.5's *no haptic* at the stepper crossing stands.
+  reaches a goal, a strength goal or an endurance one
+  ([Haptics at scrub detents, on save, and on reaching a goal](https://github.com/hermanno3005/Chalk/issues/145)).
+  This amends §6.5's *After Save, nothing new*, §12's *never celebrates* and §12.6's
+  *Celebration*, while §6.5's *no haptic* at the stepper crossing stands.
 
 ### 15.5 Features
 
 - **Spotlight and Shortcuts.** Every exercise and erg is findable from the system search and
-  from Shortcuts, and opens on its detail screen. A result shows the name alone, so logging
-  never touches the index. *Open Bench Press in Chalk* and *Open Rower in Chalk* give each one
-  a Spotlight tile and a voice opener
+  from Shortcuts, and opens on its detail screen, through App Intents alone
+  ([How are exercises and ergs found from Spotlight and App Shortcuts?](https://github.com/hermanno3005/Chalk/issues/142)).
+  A result shows the name alone, so logging never touches the index. *Open Bench Press in
+  Chalk* and *Open Rower in Chalk* give each one a Spotlight tile and a voice opener
   ([Does Chalk ship App Shortcuts, given they bring Siri phrases?](https://github.com/hermanno3005/Chalk/issues/151)).
   **A result opened over something unfinished does what a swipe-down would do**
   ([What wins when a Spotlight result opens over an unsaved log?](https://github.com/hermanno3005/Chalk/issues/152)).
@@ -2116,7 +2175,8 @@ the phone's update, and it never risks a relabel
   named when the exercise is gym-bound. A phrase carries one value, the exercise, so the card
   holds every rep count rather than the one you said, and can never answer the wrong one.
   Tapping it opens the detail screen. Strength only: an erg has no single number to read out.
-  Every phrase names Chalk, and Chalk declares no other name for itself.
+  Every phrase names Chalk, and Chalk declares no other name for itself
+  ([Does Chalk ship App Shortcuts, given they bring Siri phrases?](https://github.com/hermanno3005/Chalk/issues/151)).
 
 ### 15.6 Baseline
 
@@ -2125,7 +2185,14 @@ the phone's update, and it never risks a relabel
   heard as audio graphs.
 - **Dynamic Type** that the big readouts survive, up to the largest accessibility size, with the
   detail screens giving way as §15.4 orders it, and dark mode checked on the phone.
-- **A privacy manifest**, and the store listing's screenshots and copy, ready for the day.
+- **A privacy manifest** declaring only `UserDefaults` for the app's own use, with no tracking
+  and no collected data
+  ([What must Chalk's privacy manifest declare?](https://github.com/hermanno3005/Chalk/issues/149)).
+- **A privacy policy and a support page** on Hermann's site, at `hermann-aust.com/chalk/privacy`
+  and `hermann-aust.com/chalk/support`
+  ([Where do Chalk's privacy policy and support pages live?](https://github.com/hermanno3005/Chalk/issues/168)).
+- **The store listing's screenshots and copy**, ready for the day
+  ([Draft the store listing: screenshots and copy](https://github.com/hermanno3005/Chalk/issues/169)).
 
 ### 15.7 Decided against, or parked
 
@@ -2137,7 +2204,8 @@ the phone's update, and it never risks a relabel
   stands).
 - **Asking Siri without saying *Chalk***, until Apple offers a schema that fits a strength log.
   Siri reaches the same intents then, so nothing built for rep-max cards changes. A synonym
-  such as *rep max* is refused, since App Review rejects generic aliases.
+  such as *rep max* is refused, since App Review rejects generic aliases
+  ([Does Chalk ship App Shortcuts, given they bring Siri phrases?](https://github.com/hermanno3005/Chalk/issues/151)).
 - **Swiping between exercises.**
 - **A log widget**, parked rather than rejected.
 - **Plate breakdown**: the plates per side under a readout, for an exercise given a bar. Cut
