@@ -14,10 +14,10 @@ struct NumberKeypad: View {
             ForEach(1...9, id: \.self) { digit in
                 key(String(digit), .digit(digit))
             }
-            key(WeightText.decimalSeparator, .decimal, accessibilityLabel: "Decimal point")
+            key(WeightText.decimalSeparator, .decimal, accessibilityLabel: String(localized: "Decimal point"))
                 .disabled(decimalIsDead)
             key("0", .digit(0))
-            key(nil, .delete, symbol: "delete.backward", accessibilityLabel: "Delete")
+            key(nil, .delete, symbol: "delete.backward", accessibilityLabel: String(localized: "Delete"))
         }
     }
 

@@ -114,7 +114,7 @@ struct LibraryView: View {
                             }
                         ),
                         isFocused: $searchFocused,
-                        prompt: model.half == .endurance ? "Search or add an erg" : "Search or add an exercise"
+                        prompt: model.half == .endurance ? String(localized: "Search or add an erg") : String(localized: "Search or add an exercise")
                     )
                 }
                 .sheet(item: $loggingAgain) { request in
@@ -425,8 +425,8 @@ private extension Half {
     /// The half's name, on the switch and on a pushed screen's back button.
     var title: String {
         switch self {
-        case .strength: "Strength"
-        case .endurance: "Endurance"
+        case .strength: String(localized: "Strength")
+        case .endurance: String(localized: "Endurance")
         }
     }
 }

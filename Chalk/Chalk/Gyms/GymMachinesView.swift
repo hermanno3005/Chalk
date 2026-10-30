@@ -205,7 +205,7 @@ struct GymMachinesView: View {
     /// A machine under the exercise it belongs to.
     private func label(_ machine: Machine) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(machine.exercise?.name ?? "No exercise")
+            Text(machine.exercise?.name ?? String(localized: "No exercise"))
             Text(machine.name)
                 .font(.caption)
                 .foregroundStyle(.secondary)

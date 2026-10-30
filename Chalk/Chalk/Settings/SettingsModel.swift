@@ -151,7 +151,7 @@ final class SettingsModel: Identifiable {
         pendingConvert = nil
     }
 
-    private static let convertFailed = "Chalk couldn't convert. Nothing was changed."
+    private static let convertFailed = String(localized: "Chalk couldn't convert. Nothing was changed.")
 
     /// Holds `change` for the question, and makes it at once while nothing is written on
     /// its scale: with no number to keep, a relabel is just a change.

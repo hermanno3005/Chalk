@@ -78,7 +78,7 @@ struct KindChange {
     var question: String {
         switch direction {
         case .toGymBound:
-            return "Make \(exercise.name) gym-bound?"
+            return String(localized: "Make \(exercise.name) gym-bound?")
         case .toFreeWeight:
             guard let clause = machineGoals.lostGoalClause else { return poolingSentence }
             return entryCount == 0 ? clause : "\(poolingSentence) \(clause)"
@@ -89,19 +89,19 @@ struct KindChange {
     private var poolingSentence: String {
             switch loggedMachineCount {
             case 0:
-                return "Make \(exercise.name) \(transferableWord)?"
+                return String(localized: "Make \(exercise.name) \(transferableWord)?")
             case 1:
                 // One curve does not merge with anything; saying it would is a lie about
                 // the only thing this confirmation exists to say.
                 return exercise.isErg
-                    ? "\(exercise.name) has entries on one machine. They'll be read as the erg's own."
-                    : "\(exercise.name) has entries on one machine. They'll become the exercise's own curve."
+                    ? String(localized: "\(exercise.name) has entries on one machine. They'll be read as the erg's own.")
+                    : String(localized: "\(exercise.name) has entries on one machine. They'll become the exercise's own curve.")
             default:
                 // **The endurance wording never says *curve*** (SPEC §13.11): an erg
                 // has zone lines, and what pooling does to them is read them as one.
                 return exercise.isErg
-                    ? "\(exercise.name) has entries on \(phrase(machines: loggedMachineCount)). They'll be read as one."
-                    : "\(exercise.name) has entries on \(phrase(machines: loggedMachineCount)). They'll merge into one curve."
+                    ? String(localized: "\(exercise.name) has entries on \(loggedMachineCount) machines. They'll be read as one.")
+                    : String(localized: "\(exercise.name) has entries on \(loggedMachineCount) machines. They'll merge into one curve.")
             }
     }
 
@@ -111,27 +111,27 @@ struct KindChange {
     var detail: String {
         switch direction {
         case .toGymBound where exercise.isErg:
-            return "Its numbers will be kept per machine. Log a block and name the machine you are on."
+            return String(localized: "Its numbers will be kept per machine. Log a block and name the machine you are on.")
         case .toGymBound:
-            return "Its numbers will be kept per machine. Log a lift and name the one you are at."
+            return String(localized: "Its numbers will be kept per machine. Log a lift and name the one you are at.")
         case .toFreeWeight where machines.isEmpty:
-            return "It has no machines, and every entry stays exactly as it is."
+            return String(localized: "It has no machines, and every entry stays exactly as it is.")
         case .toFreeWeight where loggedMachineCount == 0:
-            return "Nothing is logged on \(phrase(machines: machines.count)). \(machines.count == 1 ? "It is" : "They are") deleted, and this cannot be undone."
+            return String(localized: "Nothing is logged on \(machines.count) machines. They are deleted, and this cannot be undone.")
         case .toFreeWeight:
-            return "Every entry is kept. \(phrase(machines: machines.count)) \(machines.count == 1 ? "is" : "are") deleted, and this cannot be undone."
+            return String(localized: "Every entry is kept. \(machines.count) machines are deleted, and this cannot be undone.")
         }
     }
 
     /// The confirming button, phrased as the kind you end up with rather than as *OK*.
     var confirmButton: String {
-        direction == .toGymBound ? "Make gym-bound" : "Make \(transferableWord)"
+        direction == .toGymBound ? String(localized: "Make gym-bound") : String(localized: "Make \(transferableWord)")
     }
 
     /// The not-gym-bound kind in the exercise's own half's words: one stored kind,
     /// *free-weight* on a lift and *transferable* on an erg (ADR-0008).
     private var transferableWord: String {
-        exercise.isErg ? "transferable" : "free-weight"
+        exercise.isErg ? String(localized: "transferable") : String(localized: "free-weight")
     }
 
     /// The machine prompt's question — **one machine, for every entry there is**. It is
@@ -142,29 +142,22 @@ struct KindChange {
     /// **An erg is always asked about itself** (SPEC §13.11): the machine is what the erg
     /// is, and the entries going with it are the line underneath.
     var prompt: String {
-        entryCount == 0 || exercise.isErg ? "Which machine is this on?" : "Which machine are these entries on?"
+        entryCount == 0 || exercise.isErg
+            ? String(localized: "Which machine is this on?")
+            : String(localized: "Which machine are these entries on?")
     }
 
     /// What moves: the entries, the goal, or both — the goal keeping the moment it was
     /// set (SPEC §8).
     var promptDetail: String {
+        // `1 entry`, `all 12 entries`: the catalog's singular drops the *all*.
         let moving = [
-            entryCount == 0 ? nil : entryCount == 1 ? "1 entry" : "all \(phrase(entries: entryCount))",
-            exerciseGoal.map { "your goal of \($0.text)" },
+            entryCount == 0 ? nil : String(localized: "all \(entryCount) entries"),
+            exerciseGoal.map { String(localized: "your goal of \($0.text)") },
         ].compactMap { $0 }
         // One entry or one goal moves; several entries, or entries and a goal, move.
-        let verb = moving.count == 1 && entryCount <= 1 ? "moves" : "move"
-        return "\(exercise.name) becomes gym-bound, and \(moving.joined(separator: " and ")) \(verb) to the machine you pick."
-    }
-
-    /// Counted nouns, so no sentence here says *1 machines*. Labelled rather than
-    /// overloaded on the count alone: `machines` is already the collection this type
-    /// reads, and a call that formats it must not look like a call that indexes it.
-    private func phrase(machines count: Int) -> String {
-        count == 1 ? "1 machine" : "\(count) machines"
-    }
-
-    private func phrase(entries count: Int) -> String {
-        count == 1 ? "1 entry" : "\(count) entries"
+        return moving.count == 1 && entryCount <= 1
+            ? String(localized: "\(exercise.name) becomes gym-bound, and \(listed(moving) ?? "") moves to the machine you pick.")
+            : String(localized: "\(exercise.name) becomes gym-bound, and \(listed(moving) ?? "") move to the machine you pick.")
     }
 }

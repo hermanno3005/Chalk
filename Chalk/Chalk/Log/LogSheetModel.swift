@@ -217,30 +217,30 @@ final class LogSheetModel: Identifiable {
     var verdict: Verdict? {
         guard stage == .weight, let reps else { return nil }
         if let goal, let weight, goal.isCrossed(byReps: reps, weight: weight) {
-            return .goal("Reaches your goal of \(goal.text)")
+            return .goal(String(localized: "Reaches your goal of \(goal.text)"))
         }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
             if let hint {
                 return .hint(hint.verdictLine)
             }
-            return .measured("First entry at \(reps) reps")
+            return .measured(String(localized: "First entry at \(reps) reps"))
         }
         // A blank weight compares as the nothing it is, which reads as "below".
         let weight = weight ?? 0
         if weight > best {
-            return .measured("Beats your \(reps)-rep best by \(number.weightUnit.text(weight - best))")
+            return .measured(String(localized: "Beats your \(reps)-rep best by \(number.weightUnit.text(weight - best))"))
         }
         if weight == best {
-            return .measured("Matches your \(reps)-rep best")
+            return .measured(String(localized: "Matches your \(reps)-rep best"))
         }
-        return .measured("Your \(reps)-rep best is \(number.weightUnit.text(best))")
+        return .measured(String(localized: "Your \(reps)-rep best is \(number.weightUnit.text(best))"))
     }
 
     /// `verdict` as VoiceOver says it, where the drawn line carries a `×`.
     var spokenVerdict: String? {
         switch verdict {
         case .goal:
-            return goal.map { "Reaches your goal of \($0.spokenText(in: number.weightUnit))" }
+            return goal.map { String(localized: "Reaches your goal of \($0.spokenText(in: number.weightUnit))") }
         case .hint:
             return hint?.spokenVerdictLine
         case .measured(let text):

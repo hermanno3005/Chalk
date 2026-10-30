@@ -40,8 +40,8 @@ final class ExerciseDetailModel {
         /// The number and its aside as VoiceOver says them: `102.5 pounds for 5 reps`, or
         /// `Not yet proven at 9 reps`.
         var spoken: String {
-            guard let weight else { return "Not yet proven at \(Spoken.reps(reps))" }
-            return "\(weightUnit.spokenText(weight)) for \(Spoken.reps(reps))"
+            guard let weight else { return String(localized: "Not yet proven at \(Spoken.reps(reps))") }
+            return String(localized: "\(weightUnit.spokenText(weight)) for \(Spoken.reps(reps))")
         }
     }
 
@@ -155,9 +155,11 @@ final class ExerciseDetailModel {
     /// chart never carries one either way.
     var goalLine: GoalLine? {
         guard let goal else { return nil }
-        let target = "Goal \(goal.text)"
+        let target = String(localized: "Goal \(goal.text)")
         return GoalLine(
-            text: goal.isReached ? "\(target) · reached" : "\(target) · \(weightUnit.text(goal.gap)) to go",
+            text: goal.isReached
+                ? String(localized: "\(target) · reached")
+                : String(localized: "\(target) · \(weightUnit.text(goal.gap)) to go"),
             spoken: goal.spokenLine(in: weightUnit),
             isReached: goal.isReached,
             progress: goal.progress
@@ -169,15 +171,15 @@ final class ExerciseDetailModel {
     /// to act on is left out rather than greyed (SPEC §7.5).
     var goalMenuLabel: String? {
         guard !needsFirstMachine else { return nil }
-        return goal == nil ? "Set a goal…" : "Change goal…"
+        return goal == nil ? String(localized: "Set a goal…") : String(localized: "Change goal…")
     }
 
     /// The destructive confirmation, phrased as the outcome with its count (SPEC §5.5).
     /// An exercise with nothing logged is not asked about entries it does not have.
     var deleteConfirmation: String {
-        guard entryCount > 0 else { return "Delete \(name)?" }
-        let entries = entryCount == 1 ? "1 entry" : "\(entryCount) entries"
-        return "Delete \(name) and its \(entries)?"
+        guard entryCount > 0 else { return String(localized: "Delete \(name)?") }
+        let entries = String(localized: "\(entryCount) entries")
+        return String(localized: "Delete \(name) and its \(entries)?")
     }
 
     /// Re-scopes the screen to another machine and **re-derives the whole curve**

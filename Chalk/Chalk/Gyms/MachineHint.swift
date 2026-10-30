@@ -32,21 +32,21 @@ struct MachineHint: Equatable {
     /// `55 kg × 5 on Hammer Strength` — the clause both surfaces draw, and the whole of
     /// what the lookup found.
     var text: String {
-        "\(weightUnit.text(weight)) × \(Self.reps) on \(machineName)"
+        String(localized: "\(weightUnit.text(weight)) × \(Self.reps) on \(machineName)")
     }
 
     /// The line under the empty state's text, on the detail screen (SPEC §5.4).
-    var emptyStateLine: String { "No entries here — \(text)" }
+    var emptyStateLine: String { String(localized: "No entries here — \(text)") }
 
     /// `emptyStateLine` as VoiceOver says it: `No entries here. 55 kilograms for 5 reps on
     /// Hammer Strength`.
     var spokenEmptyStateLine: String {
-        "No entries here. \(spokenText)"
+        String(localized: "No entries here. \(spokenText)")
     }
 
     /// `text` as VoiceOver says it: `55 kilograms for 5 reps on Hammer Strength`.
     private var spokenText: String {
-        "\(weightUnit.spokenText(weight)) for \(Spoken.reps(Self.reps)) on \(machineName)"
+        String(localized: "\(weightUnit.spokenText(weight)) for \(Spoken.reps(Self.reps)) on \(machineName)")
     }
 
     /// The verdict line's fifth state, in the log sheet (SPEC §6.5).
@@ -54,10 +54,10 @@ struct MachineHint: Equatable {
     /// The two lead-ins are the spec's own words, kept here beside the clause they wrap
     /// so the app's copy for one idea lives in one place rather than either surface's
     /// view code.
-    var verdictLine: String { "No history here — \(text)" }
+    var verdictLine: String { String(localized: "No history here — \(text)") }
 
     /// `verdictLine` as VoiceOver says it.
-    var spokenVerdictLine: String { "No history here. \(spokenText)" }
+    var spokenVerdictLine: String { String(localized: "No history here. \(spokenText)") }
 
     /// The hint for one gym-bound screen, or `nil` where there is nothing honest to say.
     ///

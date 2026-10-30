@@ -57,8 +57,8 @@ final class LapListModel: Identifiable {
         }
     }
 
-    static let peakBelowAverage = "Peak can't be below the average"
-    static let heartRateOutOfRange = "Heart rates are 40–230 bpm"
+    static let peakBelowAverage = String(localized: "Peak can't be below the average")
+    static let heartRateOutOfRange = String(localized: "Heart rates are 40–230 bpm")
 
     let id = UUID()
     let erg: Exercise
@@ -208,12 +208,12 @@ final class LapListModel: Identifiable {
 
     /// Over the keypad: `Row 2 · Average heart rate`.
     var focusTitle: String {
-        "Row \(focus.row + 1) · \(focus.field.name(unit))"
+        String(localized: "Row \(focus.row + 1) · \(focus.field.name(unit))")
     }
 
     /// `focusTitle` as VoiceOver says it: `Row 2, Average heart rate`.
     var spokenFocusTitle: String {
-        "Row \(focus.row + 1), \(focus.field.name(unit))"
+        String(localized: "Row \(focus.row + 1), \(focus.field.name(unit))")
     }
 
     /// The sheet's title: the erg while logging; **the entry's date on an edit**, shown
@@ -259,7 +259,7 @@ final class LapListModel: Identifiable {
 
     /// `Save 5`, or plain `Save` for one row.
     var saveTitle: String {
-        rows.count == 1 ? "Save" : "Save \(rows.count)"
+        String(localized: "Save \(rows.count)")
     }
 
     /// Every row complete and valid — and, on a gym-bound erg, a machine to write onto.
@@ -273,8 +273,8 @@ final class LapListModel: Identifiable {
 
     /// Cancel's question once the sheet is touched: *Discard 5 entries?*
     var discardConfirmation: String {
-        if editing != nil { return "Discard changes?" }
-        return rows.count == 1 ? "Discard this entry?" : "Discard \(rows.count) entries?"
+        if editing != nil { return String(localized: "Discard changes?") }
+        return String(localized: "Discard \(rows.count) entries?")
     }
 
     // MARK: - A result opened over the grid

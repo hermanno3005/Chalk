@@ -148,9 +148,9 @@ final class EnduranceGoalSheetModel: Identifiable {
     /// 4 at 1 percent incline`.
     var spokenLine: String? {
         guard line != nil, let goal = goal(intensity: value(.intensity) ?? 0) else { return nil }
-        guard let current = goal.current, let gap = goal.gap else { return "Not held yet at \(goal.spokenPoint)" }
-        if gap > 0 { return "\(EnduranceText.spokenSteps(gap, unit, distanceUnit)) above your \(goal.spokenPoint)" }
-        return "Already reached. Your \(goal.spokenPoint) is \(EnduranceText.spokenIntensity(current, unit, distanceUnit))"
+        guard let current = goal.current, let gap = goal.gap else { return String(localized: "Not held yet at \(goal.spokenPoint)") }
+        if gap > 0 { return String(localized: "\(EnduranceText.spokenSteps(gap, unit, distanceUnit)) above your \(goal.spokenPoint)") }
+        return String(localized: "Already reached. Your \(goal.spokenPoint) is \(EnduranceText.spokenIntensity(current, unit, distanceUnit))")
     }
 
     /// The one line under the intensity: how the goal on screen stands against **the
@@ -162,16 +162,16 @@ final class EnduranceGoalSheetModel: Identifiable {
     /// an intensity to compare: "already reached" at nothing would be true and useless.
     var line: GoalSheetModel.Line? {
         guard let goal = goal(intensity: value(.intensity) ?? 0) else { return nil }
-        let point = "\(EnduranceText.clock(goal.duration)) in Z\(goal.zone)"
+        let point = String(localized: "\(EnduranceText.clock(goal.duration)) in Z\(goal.zone)")
         guard let current = goal.current, let gap = goal.gap else {
-            return .init(text: "Not held yet — \(goal.pointText)", isReached: false)
+            return .init(text: String(localized: "Not held yet — \(goal.pointText)"), isReached: false)
         }
         guard goal.intensity > 0 else { return nil }
         if gap > 0 {
-            return .init(text: "\(EnduranceText.steps(gap, unit, distanceUnit)) above your \(point)", isReached: false)
+            return .init(text: String(localized: "\(EnduranceText.steps(gap, unit, distanceUnit)) above your \(point)"), isReached: false)
         }
         return .init(
-            text: "Already reached — your \(point) is \(EnduranceText.intensity(current, unit, distanceUnit, pace: false))",
+            text: String(localized: "Already reached — your \(point) is \(EnduranceText.intensity(current, unit, distanceUnit, pace: false))"),
             isReached: true
         )
     }

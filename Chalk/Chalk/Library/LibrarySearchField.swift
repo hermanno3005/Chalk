@@ -12,7 +12,7 @@ struct LibrarySearchField: View {
     @FocusState.Binding var isFocused: Bool
     /// The half's own words: *an exercise* on strength, *an erg* on endurance (SPEC
     /// §13.5).
-    var prompt = "Search or add an exercise"
+    var prompt = String(localized: "Search or add an exercise")
 
     var body: some View {
         HStack(spacing: 8) {

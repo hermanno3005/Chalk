@@ -127,8 +127,8 @@ struct LapListSheet: View {
     private static let addRowID = "add-row"
 
     private var discardTitle: String {
-        if !model.canAddRows { return "Discard Changes" }
-        return model.rows.count == 1 ? "Discard Entry" : "Discard \(model.rows.count) Entries"
+        if !model.canAddRows { return String(localized: "Discard Changes") }
+        return String(localized: "Discard \(model.rows.count) Entries")
     }
 
     private var grid: some View {

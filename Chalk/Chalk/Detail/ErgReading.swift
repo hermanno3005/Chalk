@@ -135,11 +135,11 @@ struct ErgReading {
         guard let selection, let point, let unit else { return nil }
         return Readout(
             intensity: EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false),
-            aside: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone)",
+            aside: String(localized: "\(EnduranceText.clock(point.duration)) in Z\(selection.zone)"),
             pace: unit == .speed && point.intensity > 0 ? EnduranceText.pace(point.intensity, distanceUnit) : nil,
-            averageHeartRate: "\(point.averageHeartRate) bpm",
+            averageHeartRate: String(localized: "\(point.averageHeartRate) bpm"),
             entryCount: point.entryCount,
-            spoken: "\(EnduranceText.spokenIntensity(point.intensity, unit, distanceUnit)) for \(Spoken.duration(point.duration)) in zone \(selection.zone)",
+            spoken: String(localized: "\(EnduranceText.spokenIntensity(point.intensity, unit, distanceUnit)) for \(Spoken.duration(point.duration)) in zone \(selection.zone)"),
             spokenPace: unit == .speed && point.intensity > 0 ? EnduranceText.spokenPace(point.intensity, distanceUnit) : nil,
             spokenHeartRate: Spoken.heartRate(point.averageHeartRate)
         )
@@ -150,13 +150,13 @@ struct ErgReading {
     /// so they move no point (SPEC §13.8).
     var overTheAxisCaption: String? {
         guard let count = line?.entriesOverTheAxis.count, count > 0 else { return nil }
-        return count == 1 ? "1 entry over 20:00" : "\(count) entries over 20:00"
+        return String(localized: "\(count) entries over 20:00")
     }
 
     /// The caption as VoiceOver says it: `2 entries over 20 minutes`.
     var spokenOverTheAxisCaption: String? {
         guard let count = line?.entriesOverTheAxis.count, count > 0 else { return nil }
-        return "\(Spoken.count(count, "entry")) over \(Spoken.duration(ZoneLine.axisEnd))"
+        return String(localized: "\(count) entries over \(Spoken.duration(ZoneLine.axisEnd))")
     }
 
     // MARK: - Selecting

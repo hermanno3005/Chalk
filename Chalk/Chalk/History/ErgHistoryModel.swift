@@ -57,7 +57,7 @@ final class ErgHistoryModel: Identifiable {
     }
 
     /// Where the point's window ends, between `rows` and `older`.
-    static let divider = "Older — not in the line"
+    static let divider = String(localized: "Older — not in the line")
 
     let id = UUID()
     let listing: Listing
@@ -114,8 +114,8 @@ final class ErgHistoryModel: Identifiable {
     /// `Over 20:00 in Z4`, with the incline on a speed erg (`· 1 %`).
     var title: String {
         var title = switch listing {
-        case .point(let duration): "\(EnduranceText.clock(duration)) in Z\(zone)"
-        case .overTheAxis: "Over \(EnduranceText.clock(ZoneLine.axisEnd)) in Z\(zone)"
+        case .point(let duration): String(localized: "\(EnduranceText.clock(duration)) in Z\(zone)")
+        case .overTheAxis: String(localized: "Over \(EnduranceText.clock(ZoneLine.axisEnd)) in Z\(zone)")
         }
         if erg.ergUnit?.hasIncline == true { title += " · \(EnduranceText.incline(incline)) %" }
         return title
@@ -124,8 +124,8 @@ final class ErgHistoryModel: Identifiable {
     /// `title` as VoiceOver says it: `6 minutes in zone 4, 1 percent incline`.
     var spokenTitle: String {
         var title = switch listing {
-        case .point(let duration): "\(Spoken.duration(duration)) in zone \(zone)"
-        case .overTheAxis: "Over \(Spoken.duration(ZoneLine.axisEnd)) in zone \(zone)"
+        case .point(let duration): String(localized: "\(Spoken.duration(duration)) in zone \(zone)")
+        case .overTheAxis: String(localized: "Over \(Spoken.duration(ZoneLine.axisEnd)) in zone \(zone)")
         }
         if erg.ergUnit?.hasIncline == true { title += ", \(Spoken.incline(incline))" }
         return title
@@ -197,19 +197,19 @@ final class ErgHistoryModel: Identifiable {
 
     private func row(_ entry: Entry, _ unit: ErgUnit, _ distanceUnit: DistanceUnit, duration: Bool) -> Row {
         let day = RelativeDay.text(for: entry.date, asOf: .now)
-        let pace = unit == .speed && entry.intensity > 0 ? "pace \(EnduranceText.spokenPace(entry.intensity, distanceUnit))" : nil
+        let pace = unit == .speed && entry.intensity > 0 ? String(localized: "pace \(EnduranceText.spokenPace(entry.intensity, distanceUnit))") : nil
         return Row(
             id: entry.id,
             day: day,
             duration: duration ? EnduranceText.clock(entry.duration) : nil,
             intensity: EnduranceText.intensity(entry.intensity, unit, distanceUnit),
-            heartRate: "\(entry.averageHeartRate)/\(entry.peakHeartRate) bpm",
+            heartRate: String(localized: "\(entry.averageHeartRate)/\(entry.peakHeartRate) bpm"),
             spoken: [
                 day,
                 duration ? Spoken.duration(entry.duration) : nil,
                 EnduranceText.spokenIntensity(entry.intensity, unit, distanceUnit),
                 pace,
-                "average \(entry.averageHeartRate), peak \(Spoken.heartRate(entry.peakHeartRate))",
+                String(localized: "average \(entry.averageHeartRate), peak \(Spoken.heartRate(entry.peakHeartRate))"),
             ].compactMap(\.self).joined(separator: ", "),
             entry: entry
         )

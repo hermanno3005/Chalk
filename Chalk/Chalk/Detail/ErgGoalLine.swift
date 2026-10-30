@@ -6,7 +6,7 @@ extension GoalLine {
     /// short — led by the same donut, filled from the goal's origin.
     init(endurance goal: EnduranceGoal) {
         self.init(
-            text: "Goal \(goal.text) · \(goal.status)",
+            text: String(localized: "Goal \(goal.text) · \(goal.status)"),
             spoken: goal.spokenLine,
             isReached: goal.isReached,
             progress: goal.progress

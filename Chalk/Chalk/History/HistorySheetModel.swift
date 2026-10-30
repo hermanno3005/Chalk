@@ -90,7 +90,7 @@ final class HistorySheetModel: Identifiable {
 
     /// The sheet's title: the filter, said out loud, so the list is never mistaken for
     /// the entries at exactly `N` reps.
-    var title: String { reps == 1 ? "1 rep and above" : "\(reps) reps and above" }
+    var title: String { String(localized: "\(reps) reps and above") }
 
     /// **The sheet has outlived the cell it was opened from.** Reachable two ways —
     /// deleting the last row, or editing one below the threshold — and neither is a

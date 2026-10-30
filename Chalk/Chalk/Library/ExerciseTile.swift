@@ -82,7 +82,7 @@ struct ExerciseTile: View {
         // reachable on its own.
         .accessibilityElement(children: arranging ? .contain : .combine)
         .accessibilityLabel(tile.name)
-        .accessibilityValue(tile.subtitleParts()?.spoken ?? "Nothing logged yet")
+        .accessibilityValue(tile.subtitleParts()?.spoken ?? String(localized: "Nothing logged yet"))
         .accessibilityAddTraits(arranging ? [] : .isButton)
     }
 

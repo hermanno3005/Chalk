@@ -17,10 +17,10 @@ struct ErgMachineHint: Equatable {
     let spoken: String
 
     /// The line under the empty state's text, as strength's `MachineHint.emptyStateLine`.
-    var emptyStateLine: String { "No entries here — \(text)" }
+    var emptyStateLine: String { String(localized: "No entries here — \(text)") }
 
     /// `emptyStateLine` as VoiceOver says it.
-    var spokenEmptyStateLine: String { "No entries here. \(spoken)" }
+    var spokenEmptyStateLine: String { String(localized: "No entries here. \(spoken)") }
 
     /// The hint for one gym-bound erg screen, or `nil` where there is nothing honest to say:
     ///
@@ -49,15 +49,15 @@ struct ErgMachineHint: Equatable {
         let line = ZoneLine(entries: sibling.entries ?? [], zones: zones, unit: unit, zone: zone, incline: latest.incline)
         guard let point = line.points.first(where: { $0.duration == latest.duration }) else { return nil }
 
-        var text = "\(EnduranceText.clock(point.duration)) in Z\(zone) at \(EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false))"
+        var text = String(localized: "\(EnduranceText.clock(point.duration)) in Z\(zone) at \(EnduranceText.intensity(point.intensity, unit, distanceUnit, pace: false))")
         // As the written form: incline on a speed erg only, and left out at 0 % (SPEC §13.2).
         let incline = ErgUnit.roundedIncline(latest.incline)
         if unit.hasIncline, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
-        text += " on \(sibling.caption)"
+        text += String(localized: " on \(sibling.caption)")
 
-        var spoken = "\(Spoken.duration(point.duration)) in zone \(zone) at \(EnduranceText.spokenIntensity(point.intensity, unit, distanceUnit))"
+        var spoken = String(localized: "\(Spoken.duration(point.duration)) in zone \(zone) at \(EnduranceText.spokenIntensity(point.intensity, unit, distanceUnit))")
         if unit.hasIncline, incline > 0 { spoken += ", \(Spoken.incline(incline))," }
-        spoken += " on \(sibling.spokenCaption)"
+        spoken += String(localized: " on \(sibling.spokenCaption)")
         return ErgMachineHint(text: text, spoken: spoken)
     }
 

@@ -106,10 +106,10 @@ extension ErgUnit {
     /// The unit as the create sheet's picker offers it, a speed in the distance unit.
     func pickerTitle(_ distance: DistanceUnit) -> String {
         switch self {
-        case .speed: "Speed (\(distance.speedSymbol))"
-        case .watts: "Watts"
-        case .split: "Split (/500 m)"
-        case .level: "Level"
+        case .speed: String(localized: "Speed (\(distance.speedSymbol))")
+        case .watts: String(localized: "Watts")
+        case .split: String(localized: "Split (/500 m)")
+        case .level: String(localized: "Level")
         }
     }
 }

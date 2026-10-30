@@ -70,11 +70,11 @@ struct MachineMerge {
     var question: String {
         let outcome: String
         if movingCount > 0 {
-            outcome = "Move \(entries(movingCount)) to \(siblingName) and delete \(loserName)?"
+            outcome = String(localized: "Move \(entries(movingCount)) to \(siblingName) and delete \(loserName)?")
         } else if losersGoalIsKept, let kept = machineGoals.kept {
-            outcome = "Move your goal of \(kept.text) to \(siblingName) and delete \(loserName)?"
+            outcome = String(localized: "Move your goal of \(kept.text) to \(siblingName) and delete \(loserName)?")
         } else {
-            outcome = "Delete \(loserName)?"
+            outcome = String(localized: "Delete \(loserName)?")
         }
         guard let clause = machineGoals.lostGoalClause else { return outcome }
         return "\(outcome) \(clause)"
@@ -84,9 +84,9 @@ struct MachineMerge {
     /// them back.
     var detail: String {
         guard movingCount > 0 else {
-            return "\(loserName) holds no entries. \(siblingName) keeps its \(entries(resultingCount)). This cannot be undone."
+            return String(localized: "\(loserName) holds no entries. \(siblingName) keeps its \(entries(resultingCount)). This cannot be undone.")
         }
-        return "\(siblingName) holds \(entries(resultingCount)) afterwards. This cannot be undone."
+        return String(localized: "\(siblingName) holds \(entries(resultingCount)) afterwards. This cannot be undone.")
     }
 
     /// The machines as the confirmation names them: by name between same-gym siblings,
@@ -98,6 +98,6 @@ struct MachineMerge {
     private var siblingName: String { crossesGyms ? sibling.caption : sibling.name }
 
     private func entries(_ count: Int) -> String {
-        count == 1 ? "1 entry" : "\(count) entries"
+        String(localized: "\(count) entries")
     }
 }

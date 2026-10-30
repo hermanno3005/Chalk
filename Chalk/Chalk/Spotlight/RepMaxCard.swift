@@ -25,7 +25,7 @@ struct RepMaxCard: Equatable, Sendable {
 
         /// The cell as VoiceOver says it: `5 reps, 95 kilograms`, `9 reps, not yet proven`.
         var spoken: String {
-            "\(Spoken.reps(reps)), \(weight.map(weightUnit.spokenText) ?? "not yet proven")"
+            "\(Spoken.reps(reps)), \(weight.map(weightUnit.spokenText) ?? String(localized: "not yet proven"))"
         }
     }
 
@@ -54,16 +54,16 @@ struct RepMaxCard: Equatable, Sendable {
         cells = RepMaxCurve.repRange.map { reps in
             Cell(reps: reps, weight: curve.best[reps], weightUnit: weightUnit)
         }
-        nothingLogged = curve.entryCount == 0 ? "Nothing logged on \(exercise.name) yet" : nil
+        nothingLogged = curve.entryCount == 0 ? String(localized: "Nothing logged on \(exercise.name) yet") : nil
     }
 
     /// The card in words, the value the intent returns, so Siri can answer from the
     /// numbers where it doesn't show the card: `Bench Press: 110 kg × 1, 95 kg × 2, …`.
     var summary: String {
         if let nothingLogged { return nothingLogged }
-        let scope = machine.map { "\(name) on \($0)" } ?? name
+        let scope = machine.map { String(localized: "\(name) on \($0)") } ?? name
         let cells = cells.map { cell in
-            cell.weight == nil ? "not yet proven × \(cell.reps)" : "\(cell.text) × \(cell.reps)"
+            cell.weight == nil ? String(localized: "not yet proven × \(cell.reps)") : "\(cell.text) × \(cell.reps)"
         }
         return "\(scope): \(cells.joined(separator: ", "))"
     }

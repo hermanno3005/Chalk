@@ -65,8 +65,8 @@ enum UnitChange: Equatable {
     /// restore's confirmation does: `Write weights in lb?`, `Write distances in miles?`.
     var title: String {
         switch self {
-        case .weights: "Write weights in \(scaleName)?"
-        case .distances: "Write distances in \(scaleName)?"
+        case .weights: String(localized: "Write weights in \(scaleName)?")
+        case .distances: String(localized: "Write distances in \(scaleName)?")
         }
     }
 
@@ -74,26 +74,26 @@ enum UnitChange: Equatable {
     /// Relabel is named as the repair for a wrong pick and convert as the move to a gym on
     /// the other scale, which is what each is for (SPEC §15.2).
     var message: String {
-        "Relabel if you picked the wrong unit: every \(noun) and goal keeps its number and is written in \(symbol) instead. Convert if your gym uses \(symbol): every \(noun) and goal is rewritten in \(symbol)."
+        String(localized: "Relabel if you picked the wrong unit: every \(noun) and goal keeps its number and is written in \(symbol) instead. Convert if your gym uses \(symbol): every \(noun) and goal is rewritten in \(symbol).")
     }
 
     /// The answer that relabels: `Relabel as lb`, `Relabel as miles`.
     var relabelLabel: String {
-        "Relabel as \(scaleName)"
+        String(localized: "Relabel as \(scaleName)")
     }
 
     /// The answer that converts, which asks once more before it does: `Convert to lb…`,
     /// `Convert to miles…`.
     var convertLabel: String {
-        "Convert to \(scaleName)…"
+        String(localized: "Convert to \(scaleName)…")
     }
 
     /// What a convert's confirmation asks: `Convert weights to lb?`, `Convert distances to
     /// miles?`.
     var convertTitle: String {
         switch self {
-        case .weights: "Convert weights to \(scaleName)?"
-        case .distances: "Convert distances to \(scaleName)?"
+        case .weights: String(localized: "Convert weights to \(scaleName)?")
+        case .distances: String(localized: "Convert distances to \(scaleName)?")
         }
     }
 
@@ -101,17 +101,17 @@ enum UnitChange: Equatable {
     /// pound`, `the nearest 0.1 mph`.
     var convertGrid: String {
         switch self {
-        case .weights(.kg): "the nearest half kilogram"
-        case .weights(.lb): "the nearest pound"
-        case .distances(let unit): "the nearest 0.1 \(unit.speedSymbol)"
+        case .weights(.kg): String(localized: "the nearest half kilogram")
+        case .weights(.lb): String(localized: "the nearest pound")
+        case .distances(let unit): String(localized: "the nearest 0.1 \(unit.speedSymbol)")
         }
     }
 
     /// What the scale holds: `weight` or `speed`.
     private var noun: String {
         switch self {
-        case .weights: "weight"
-        case .distances: "speed"
+        case .weights: String(localized: "weight")
+        case .distances: String(localized: "speed")
         }
     }
 

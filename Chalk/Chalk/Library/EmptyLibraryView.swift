@@ -34,17 +34,17 @@ struct EmptyLibraryView: View {
 
     private var title: String {
         switch half {
-        case .strength: "Keep the exercises you actually do"
-        case .endurance: "Calibrate the machines you train on"
+        case .strength: String(localized: "Keep the exercises you actually do")
+        case .endurance: String(localized: "Calibrate the machines you train on")
         }
     }
 
     private var detail: String {
         switch half {
         case .strength:
-            "Log what you lifted as plain reps × weight. Chalk works out what you have proven at every rep count, and what to load next time."
+            String(localized: "Log what you lifted as plain reps × weight. Chalk works out what you have proven at every rep count, and what to load next time.")
         case .endurance:
-            "Log an interval as time, what you set and the heart rate it cost. Chalk works out what to set on this machine to hit a zone."
+            String(localized: "Log an interval as time, what you set and the heart rate it cost. Chalk works out what to set on this machine to hit a zone.")
         }
     }
 
@@ -52,15 +52,15 @@ struct EmptyLibraryView: View {
     private var spokenDetail: String {
         switch half {
         case .strength:
-            "Log what you lifted as plain reps times weight. Chalk works out what you have proven at every rep count, and what to load next time."
+            String(localized: "Log what you lifted as plain reps times weight. Chalk works out what you have proven at every rep count, and what to load next time.")
         case .endurance: detail
         }
     }
 
     private var button: String {
         switch half {
-        case .strength: "Add your first exercise"
-        case .endurance: "Add your first erg"
+        case .strength: String(localized: "Add your first exercise")
+        case .endurance: String(localized: "Add your first erg")
         }
     }
 }

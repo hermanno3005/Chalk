@@ -72,27 +72,27 @@ extension AudioGraph {
         // Framed to both, as the chart is: the ghost is drawn data too.
         let weights = (best + ghost).map(\.y)
         self.init(
-            title: "Strength curve",
+            title: String(localized: "Strength curve"),
             summary: [
-                "Your heaviest weight at each rep count from 1 to 12.",
-                "The projection behind it is guidance only, never a weight you have lifted.",
+                String(localized: "Your heaviest weight at each rep count from 1 to 12."),
+                String(localized: "The projection behind it is guidance only, never a weight you have lifted."),
                 goal.map { "\($0.spokenLine(in: weightUnit))." },
             ].compactMap(\.self).joined(separator: " "),
             x: Axis(
-                title: "Reps",
+                title: String(localized: "Reps"),
                 range: Double(RepMaxCurve.repRange.lowerBound)...Double(RepMaxCurve.repRange.upperBound),
                 says: { Spoken.reps(Int($0.rounded())) }
             ),
             y: Axis(
-                title: "Weight",
+                title: String(localized: "Weight"),
                 range: (weights.min() ?? 0)...(weights.max() ?? 1),
                 says: weightUnit.spokenText
             ),
             series: [
                 // A tone per rep count: the staircase holds each value to the next, and
                 // nothing between two counts is a weight you lifted.
-                Series(name: "Rep-max", isContinuous: false, points: best),
-                Series(name: "Projection", isContinuous: true, points: ghost),
+                Series(name: String(localized: "Rep-max"), isContinuous: false, points: best),
+                Series(name: String(localized: "Projection"), isContinuous: true, points: ghost),
             ]
         )
     }
@@ -118,19 +118,19 @@ extension AudioGraph {
             Point(
                 x: Double(point.duration),
                 y: point.intensity * unit.hardnessSign,
-                label: "\(Spoken.heartRate(point.averageHeartRate)), \(Spoken.count(point.entryCount, "entry"))"
+                label: String(localized: "\(Spoken.heartRate(point.averageHeartRate)), \(point.entryCount) entries")
             )
         }
         let values = line.map(\.y)
-        let held = "What you held in zone \(zone) at each duration you have done, up to 20 minutes"
+        let held = String(localized: "What you held in zone \(zone) at each duration you have done, up to 20 minutes")
         self.init(
-            title: "Zone \(zone) line",
+            title: String(localized: "Zone \(zone) line"),
             summary: [
-                unit.hasIncline ? "\(held), at \(Spoken.incline(incline ?? 0))." : "\(held).",
+                unit.hasIncline ? String(localized: "\(held), at \(Spoken.incline(incline ?? 0)).") : "\(held).",
                 goal.map { "\($0.spokenLine)." },
             ].compactMap(\.self).joined(separator: " "),
             x: Axis(
-                title: "Duration",
+                title: String(localized: "Duration"),
                 range: 0...Double(ZoneLine.axisEnd),
                 says: { Spoken.duration(Int($0.rounded())) }
             ),
@@ -139,7 +139,7 @@ extension AudioGraph {
                 range: (values.min() ?? 0)...(values.max() ?? 1),
                 says: { EnduranceText.spokenIntensity($0 * unit.hardnessSign, unit, distanceUnit) }
             ),
-            series: [Series(name: "Zone \(zone)", isContinuous: true, points: line)]
+            series: [Series(name: String(localized: "Zone \(zone)"), isContinuous: true, points: line)]
         )
     }
 }
@@ -148,10 +148,10 @@ extension ErgUnit {
     /// What the audio graph calls the intensity axis.
     var spokenTitle: String {
         switch self {
-        case .speed: "Speed"
-        case .watts: "Power"
-        case .split: "Split"
-        case .level: "Level"
+        case .speed: String(localized: "Speed")
+        case .watts: String(localized: "Power")
+        case .split: String(localized: "Split")
+        case .level: String(localized: "Level")
         }
     }
 }

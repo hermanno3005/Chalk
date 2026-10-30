@@ -222,21 +222,21 @@ extension Backup {
         var message: String {
             switch self {
             case .notABackup:
-                "This file isn't a Chalk backup."
+                String(localized: "This file isn't a Chalk backup.")
             case .newerVersion:
-                "This backup was made by a newer version of Chalk. Update Chalk, then restore it."
+                String(localized: "This backup was made by a newer version of Chalk. Update Chalk, then restore it.")
             case .unknownKey(let word), .unknownValue(let word):
-                "This backup holds “\(word)”, which this version of Chalk doesn't know, so it can't be restored exactly."
+                String(localized: "This backup holds “\(word)”, which this version of Chalk doesn't know, so it can't be restored exactly.")
             case .invalidZones:
-                "This backup's heart-rate zones aren't four rising values between 40 and 230 bpm, so it can't be restored."
+                String(localized: "This backup's heart-rate zones aren't four rising values between 40 and 230 bpm, so it can't be restored.")
             case .missingReference:
-                "This backup puts an exercise or a machine in a group or gym it doesn't hold, so it can't be restored."
+                String(localized: "This backup puts an exercise or a machine in a group or gym it doesn't hold, so it can't be restored.")
             case .duplicateID:
-                "This backup holds the same row twice, so it can't be restored."
+                String(localized: "This backup holds the same row twice, so it can't be restored.")
             case .enduranceGoalWithoutZones:
-                "This backup holds an endurance goal but no heart-rate zones, so it can't be restored."
+                String(localized: "This backup holds an endurance goal but no heart-rate zones, so it can't be restored.")
             case .damaged:
-                "This backup is damaged and can't be restored."
+                String(localized: "This backup is damaged and can't be restored.")
             }
         }
     }

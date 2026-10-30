@@ -61,7 +61,7 @@ final class Machine {
 
     /// `caption` as VoiceOver says it: `Technogym Run at Urban Gym`.
     var spokenCaption: String {
-        gymName.map { "\(name) at \($0)" } ?? name
+        gymName.map { String(localized: "\(name) at \($0)") } ?? name
     }
 
     /// The gym's name as the caption reads it, nil where there is none to read.
@@ -77,7 +77,7 @@ final class Machine {
         (entries ?? []).filter { $0.isALift || $0.isAnInterval }.map(\.date).max()
     }
 
-    static let unlabelled = "Unlabelled"
+    static let unlabelled = String(localized: "Unlabelled")
 
     /// The optional one-field answer to `Name this machine`, normalised: **a blank name
     /// is no name at all**, and renders as `Unlabelled` rather than as an empty row.

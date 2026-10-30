@@ -99,7 +99,7 @@ struct ErgDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Now \(model.unit?.pickerTitle(model.distanceUnit) ?? "none"). The unit locks once you log on this erg.")
+            Text("Now \(model.unit?.pickerTitle(model.distanceUnit) ?? String(localized: "none")). The unit locks once you log on this erg.")
         }
         .confirmationDialog(
             model.deleteConfirmation,
@@ -130,7 +130,7 @@ struct ErgDetailView: View {
                     number: model.readout?.intensity ?? "—",
                     aside: model.readout?.aside,
                     dimmed: model.readout == nil,
-                    spoken: model.readout?.spoken ?? "No line in zone \(selection.zone)",
+                    spoken: model.readout?.spoken ?? String(localized: "No line in zone \(selection.zone)"),
                     // The readout opens the point's sheet, as the `Entries` row does
                     // (SPEC §13.9). A zone with no line hands back no sheet.
                     opensHistory: model.readout != nil
@@ -232,7 +232,7 @@ struct ErgDetailView: View {
     /// Opens Settings, which is where zones are set (SPEC §13.3): a row like the ones
     /// under the line, with nothing to read on its trailing end.
     private var zonesRow: some View {
-        FactRow(label: "Set your heart-rate zones", value: "") {
+        FactRow(label: String(localized: "Set your heart-rate zones"), value: "") {
             settings = model.settings()
         }
     }
@@ -303,10 +303,10 @@ struct ErgDetailView: View {
     private func rows(_ readout: ErgReading.Readout) -> some View {
         VStack(spacing: 0) {
             if let pace = readout.pace {
-                FactRow(label: "Pace", value: pace, spokenValue: readout.spokenPace)
+                FactRow(label: String(localized: "Pace"), value: pace, spokenValue: readout.spokenPace)
             }
-            FactRow(label: "Heart rate", value: readout.averageHeartRate, spokenValue: readout.spokenHeartRate)
-            FactRow(label: "Entries", value: "\(readout.entryCount)") {
+            FactRow(label: String(localized: "Heart rate"), value: readout.averageHeartRate, spokenValue: readout.spokenHeartRate)
+            FactRow(label: String(localized: "Entries"), value: readout.entryCount.formatted()) {
                 history = model.historySheet()
             }
         }

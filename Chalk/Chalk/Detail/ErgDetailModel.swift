@@ -110,9 +110,9 @@ final class ErgDetailModel {
 
     /// The destructive confirmation, phrased as the outcome with its count (SPEC §5.5).
     var deleteConfirmation: String {
-        guard entryCount > 0 else { return "Delete \(name)?" }
-        let entries = entryCount == 1 ? "1 entry" : "\(entryCount) entries"
-        return "Delete \(name) and its \(entries)?"
+        guard entryCount > 0 else { return String(localized: "Delete \(name)?") }
+        let entries = String(localized: "\(entryCount) entries")
+        return String(localized: "Delete \(name) and its \(entries)?")
     }
 
     /// Changes the erg's unit, **refused once it has any entry** — there is no repair for
@@ -241,7 +241,7 @@ final class ErgDetailModel {
 
     /// The text and quotes in place of the chart when the selected zone has no line here;
     /// nil when it has one, or there is nothing to select.
-    var noLine: ErgNoLine? { ErgNoLine(reading, place: isGymBound ? "machine" : "erg") }
+    var noLine: ErgNoLine? { ErgNoLine(reading, place: isGymBound ? String(localized: "machine") : String(localized: "erg")) }
 
     /// Whether a zone has a line on this scope and incline. A zone without one is dimmed
     /// but still tappable.
@@ -311,7 +311,7 @@ final class ErgDetailModel {
     /// hold it.
     var goalMenuLabel: String? {
         guard !needsZones, goalScope != nil else { return nil }
-        return goal == nil ? "Set a goal…" : "Change goal…"
+        return goal == nil ? String(localized: "Set a goal…") : String(localized: "Change goal…")
     }
 
     /// The line under the readout, whatever zone is selected; nil without a goal.

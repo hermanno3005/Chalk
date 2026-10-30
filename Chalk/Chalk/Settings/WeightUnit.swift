@@ -29,21 +29,36 @@ enum WeightUnit: String, CaseIterable, Sendable {
         defaults.set(rawValue, forKey: Self.key)
     }
 
-    /// The symbol written after a weight: `kg` or `lb`.
-    var symbol: String { rawValue }
+    /// The symbol written after a weight: `kg` or `lb`. Spelled out rather than the raw
+    /// value, which a backup stores and the screen must not depend on.
+    var symbol: String {
+        switch self {
+        case .kg: String(localized: "kg")
+        case .lb: String(localized: "lb")
+        }
+    }
 
     /// What VoiceOver says for it: `kilograms` or `pounds`.
     var spokenName: String {
         switch self {
-        case .kg: "kilograms"
-        case .lb: "pounds"
+        case .kg: String(localized: "kilograms")
+        case .lb: String(localized: "pounds")
         }
     }
 
     /// A weight as VoiceOver says it: `102.5 pounds`, `1 kilogram`.
     func spokenText(_ weight: Double) -> String {
-        let name = weight == 1 ? String(spokenName.dropLast()) : spokenName
-        return "\(weight.weightText) \(name)"
+        spokenText(weight, written: weight.weightText)
+    }
+
+    /// `weight` as VoiceOver says it, with its number said as `written` shows it, a
+    /// half-typed `62.` included. The weight goes in beside it as the number the catalog
+    /// picks the noun's plural by, so `1.5` takes the plural that `1` does not.
+    func spokenText(_ weight: Double, written: String) -> String {
+        switch self {
+        case .kg: String(localized: "\(written) \(weight) kilograms")
+        case .lb: String(localized: "\(written) \(weight) pounds")
+        }
     }
 
     /// The grid the steppers snap to: **2.5 kg or 5 lb**, the smallest change a pair of

@@ -112,7 +112,7 @@ struct ManageGymsSheet: View {
                     .contentShape(Rectangle())
             }
             .fixedSize()
-            .accessibilityLabel(Spoken.count(gym.machines?.count ?? 0, "machine"))
+            .accessibilityLabel("\(gym.machines?.count ?? 0) machines")
             .accessibilityHint("Shows the machines at \(gym.name)")
         }
         // **The full swipe is the delete, and only where there is nothing to lose.** A

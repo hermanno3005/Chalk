@@ -75,17 +75,20 @@ struct TwoStageNumber {
     /// The quiet unit beside the number.
     var unitText: String {
         switch stage {
-        case .reps: return reps == 1 ? "rep" : "reps"
+        // The noun alone, with no number of its own, so not a catalog plural: a plural
+        // variant must say the number it varies by.
+        case .reps: return reps == 1 ? String(localized: "rep") : String(localized: "reps")
         case .weight: return weightUnit.symbol
         }
     }
 
     /// What VoiceOver says for the giant number: `8 reps`, `102.5 pounds`, `Blank pounds`.
     var spokenNumber: String {
-        let number = numberText.isEmpty ? "Blank" : numberText
         switch stage {
-        case .reps: return "\(number) \(unitText)"
-        case .weight: return "\(number) \(weightUnit.spokenName)"
+        case .reps: return reps.map(Spoken.reps) ?? String(localized: "Blank reps")
+        case .weight:
+            return weight.map { weightUnit.spokenText($0, written: numberText) }
+                ?? String(localized: "Blank \(weightUnit.spokenName)")
         }
     }
 
@@ -94,18 +97,18 @@ struct TwoStageNumber {
     func stepperLabel(_ direction: Int) -> String {
         let up = direction > 0
         switch stage {
-        case .reps: return up ? "One rep more" : "One rep fewer"
+        case .reps: return up ? String(localized: "One rep more") : String(localized: "One rep fewer")
         case .weight:
-            let grid = "\(weightUnit.grid.weightText) \(weightUnit.spokenName)"
-            return up ? "Up to the next \(grid)" : "Down to the next \(grid)"
+            let grid = weightUnit.spokenText(weightUnit.grid)
+            return up ? String(localized: "Up to the next \(grid)") : String(localized: "Down to the next \(grid)")
         }
     }
 
     /// The stage-two header: the earlier answer, always visible and one tap from being
     /// corrected without cancelling (SPEC §6.1).
     var repsLabel: String {
-        guard let reps else { return "reps" }
-        return reps == 1 ? "1 rep" : "\(reps) reps"
+        guard let reps else { return String(localized: "reps") }
+        return Spoken.reps(reps)
     }
 
     var canAdvance: Bool { (reps ?? 0) >= 1 }

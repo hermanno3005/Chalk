@@ -73,7 +73,7 @@ struct MachineCaption {
 
     /// What the caption reads before any machine exists — the one case no caller can
     /// resolve, closed by `New machine here` inside the picker (SPEC §6.4).
-    static let noMachine = "No machine"
+    static let noMachine = String(localized: "No machine")
 
     /// Whether there is something to write onto: a machine, or an exercise that carries
     /// none. **A gym-bound exercise can never log with no machine** (SPEC §3,

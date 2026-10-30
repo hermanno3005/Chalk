@@ -4,34 +4,35 @@ import Foundation
 enum Spoken {
     /// `1 rep`, `5 reps`.
     static func reps(_ reps: Int) -> String {
-        reps == 1 ? "1 rep" : "\(reps) reps"
+        String(localized: "\(reps) reps")
     }
 
     /// A duration in words, where Chalk writes `m:ss`: `6 minutes`, `1 minute 30 seconds`,
     /// `1 hour 2 minutes`, `45 seconds`.
     static func duration(_ seconds: Int) -> String {
-        let units: [(count: Int, noun: String)] = [
-            (seconds / 3600, "hour"),
-            ((seconds % 3600) / 60, "minute"),
-            (seconds % 60, "second"),
-        ]
-        let parts = units.filter { $0.count > 0 }.map { count($0.count, $0.noun) }
-        return parts.isEmpty ? "0 seconds" : parts.joined(separator: " ")
+        let hours = seconds / 3600, minutes = (seconds % 3600) / 60, rest = seconds % 60
+        let parts = [
+            hours > 0 ? String(localized: "\(hours) hours") : nil,
+            minutes > 0 ? String(localized: "\(minutes) minutes") : nil,
+            rest > 0 ? String(localized: "\(rest) seconds") : nil,
+        ].compactMap(\.self)
+        return parts.isEmpty ? String(localized: "\(seconds) seconds") : parts.joined(separator: " ")
     }
 
-    /// `1 minute`, `2 minutes`, `1 entry`, `12 entries`.
-    static func count(_ count: Int, _ noun: String) -> String {
-        if count == 1 { return "1 \(noun)" }
-        return noun.hasSuffix("y") ? "\(count) \(noun.dropLast())ies" : "\(count) \(noun)s"
+    /// Seconds that may hold a tenth, said as `written` shows them: `1 second`, `45.3
+    /// seconds`. The number goes in beside `written` as the one the catalog picks the
+    /// noun's plural by, so `1.5` takes the plural that `1` does not.
+    static func seconds(_ seconds: Double, written: String) -> String {
+        String(localized: "\(written) \(seconds) seconds")
     }
 
     /// `164 beats per minute`.
     static func heartRate(_ bpm: Int) -> String {
-        "\(bpm) beats per minute"
+        String(localized: "\(bpm) beats per minute")
     }
 
     /// `1 percent incline`, `1.5 percent incline`.
     static func incline(_ incline: Double) -> String {
-        "\(EnduranceText.incline(incline)) percent incline"
+        String(localized: "\(EnduranceText.incline(incline)) percent incline")
     }
 }

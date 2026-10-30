@@ -192,7 +192,7 @@ struct ExerciseDetailView: View {
             // The machine in scope, said out loud: the number below it means nothing
             // without it. An exercise with no machine yet says so rather than staying
             // blank — the qualifier reads as unset until the first log makes one.
-            Label(model.machine?.name ?? "No machine", systemImage: "square.stack.3d.up")
+            Label(model.machine?.name ?? MachineCaption.noMachine, systemImage: "square.stack.3d.up")
         }
         .disabled(model.machines.isEmpty)
     }
@@ -203,14 +203,14 @@ struct ExerciseDetailView: View {
     private func rows(_ readout: ExerciseDetailModel.Readout) -> some View {
         VStack(spacing: 0) {
             FactRow(
-                label: "Entries at \(readout.reps)+ reps",
-                value: "\(readout.entriesBehind)",
-                spokenLabel: "Entries at \(readout.reps) or more reps",
+                label: String(localized: "Entries at \(readout.reps)+ reps"),
+                value: readout.entriesBehind.formatted(),
+                spokenLabel: String(localized: "Entries at \(readout.reps) or more reps"),
                 action: readout.weight == nil ? nil : { history = model.historySheet() }
             )
             FactRow(
-                label: "Logged",
-                value: readout.entriesInScope == 1 ? "1 entry" : "\(readout.entriesInScope) entries"
+                label: String(localized: "Logged"),
+                value: String(localized: "\(readout.entriesInScope) entries")
             )
         }
     }
@@ -248,7 +248,7 @@ struct ExerciseDetailView: View {
     private func flashConfirmation() {
         withAnimation(.snappy) { flashingConfirmation = true }
         // Said as well as shown: VoiceOver's focus is wherever the sheet left it.
-        AccessibilityNotification.Announcement("Logged").post()
+        AccessibilityNotification.Announcement(String(localized: "Logged")).post()
         Task {
             try? await Task.sleep(for: .seconds(1.4))
             withAnimation(.easeOut) { flashingConfirmation = false }
@@ -290,8 +290,8 @@ struct ExerciseDetailView: View {
     /// makes the first machine lives in the sheet's own picker (SPEC §6.4).
     private var emptyDetail: String {
         model.needsFirstMachine
-            ? "Its numbers are kept per machine. Log a lift and name the one you are at."
-            : "Log a lift and your curve starts here."
+            ? String(localized: "Its numbers are kept per machine. Log a lift and name the one you are at.")
+            : String(localized: "Log a lift and your curve starts here.")
     }
 
     /// Full width, pinned at the bottom. Opens the log sheet (SPEC §6.1), handing it the

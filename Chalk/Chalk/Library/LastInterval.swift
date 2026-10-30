@@ -75,10 +75,10 @@ struct LastInterval: Equatable {
     /// The resume card's line as VoiceOver says it: the written form in words, pace and
     /// heart rates included, then the day.
     func spoken(in distanceUnit: DistanceUnit, asOf now: Date = .now) -> String {
-        var parts = ["\(Spoken.duration(duration)) at \(EnduranceText.spokenIntensity(intensity, unit, distanceUnit))"]
-        if unit == .speed, intensity > 0 { parts.append("pace \(EnduranceText.spokenPace(intensity, distanceUnit))") }
+        var parts = [String(localized: "\(Spoken.duration(duration)) at \(EnduranceText.spokenIntensity(intensity, unit, distanceUnit))")]
+        if unit == .speed, intensity > 0 { parts.append(String(localized: "pace \(EnduranceText.spokenPace(intensity, distanceUnit))")) }
         if unit.hasIncline, incline > 0 { parts.append(Spoken.incline(incline)) }
-        parts.append("average \(averageHeartRate), peak \(Spoken.heartRate(peakHeartRate))")
+        parts.append(String(localized: "average \(averageHeartRate), peak \(Spoken.heartRate(peakHeartRate))"))
         parts.append(day(asOf: now))
         return parts.joined(separator: ", ")
     }
@@ -86,7 +86,7 @@ struct LastInterval: Equatable {
     /// The tile's words as VoiceOver says them: `6 minutes at 15.0 kilometres per hour, 1
     /// percent incline`.
     func spokenTileText(in distanceUnit: DistanceUnit) -> String {
-        var text = "\(Spoken.duration(duration)) at \(EnduranceText.spokenIntensity(intensity, unit, distanceUnit))"
+        var text = String(localized: "\(Spoken.duration(duration)) at \(EnduranceText.spokenIntensity(intensity, unit, distanceUnit))")
         if unit.hasIncline, incline > 0 { text += ", \(Spoken.incline(incline))" }
         return text
     }
@@ -98,12 +98,12 @@ struct LastInterval: Equatable {
 
     /// The written form (SPEC §13.2): average before peak, incline left out at 0 %.
     func written(in distanceUnit: DistanceUnit) -> String {
-        "\(setting(in: distanceUnit, pace: true)) · \(averageHeartRate)/\(peakHeartRate) bpm"
+        String(localized: "\(setting(in: distanceUnit, pace: true)) · \(averageHeartRate)/\(peakHeartRate) bpm")
     }
 
     /// What you did and set: `6:00 at 15.0 km/h (4:00 /km) · 1 %`.
     private func setting(in distanceUnit: DistanceUnit, pace: Bool) -> String {
-        var text = "\(EnduranceText.clock(duration)) at \(EnduranceText.intensity(intensity, unit, distanceUnit, pace: pace))"
+        var text = String(localized: "\(EnduranceText.clock(duration)) at \(EnduranceText.intensity(intensity, unit, distanceUnit, pace: pace))")
         if unit.hasIncline, incline > 0 { text += " · \(EnduranceText.incline(incline)) %" }
         return text
     }

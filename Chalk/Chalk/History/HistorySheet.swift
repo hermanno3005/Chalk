@@ -134,7 +134,7 @@ struct HistorySheet: View {
                 row.spokenLift,
                 row.day,
                 row.spokenMachine,
-                row.isBest ? "sets this best" : nil,
+                row.isBest ? String(localized: "sets this best") : nil,
             ]
             .compactMap { $0 }
             .joined(separator: ", ")

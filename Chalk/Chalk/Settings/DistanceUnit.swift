@@ -34,32 +34,32 @@ enum DistanceUnit: String, CaseIterable, Sendable {
     /// The symbol written after a speed: `km/h` or `mph`.
     var speedSymbol: String {
         switch self {
-        case .km: "km/h"
-        case .mi: "mph"
+        case .km: String(localized: "km/h")
+        case .mi: String(localized: "mph")
         }
     }
 
     /// What VoiceOver says for the unit itself: `kilometres` or `miles`.
     var spokenName: String {
         switch self {
-        case .km: "kilometres"
-        case .mi: "miles"
+        case .km: String(localized: "kilometres")
+        case .mi: String(localized: "miles")
         }
     }
 
     /// What VoiceOver says for a speed's unit: `kilometres per hour` or `miles per hour`.
     var spokenSpeedName: String {
         switch self {
-        case .km: "kilometres per hour"
-        case .mi: "miles per hour"
+        case .km: String(localized: "kilometres per hour")
+        case .mi: String(localized: "miles per hour")
         }
     }
 
     /// What VoiceOver says a pace is per: `kilometre` or `mile`.
     var spokenPaceDistance: String {
         switch self {
-        case .km: "kilometre"
-        case .mi: "mile"
+        case .km: String(localized: "kilometre")
+        case .mi: String(localized: "mile")
         }
     }
 
@@ -67,16 +67,16 @@ enum DistanceUnit: String, CaseIterable, Sendable {
     /// raw value, which a backup stores and the screen must not depend on.
     var paceSymbol: String {
         switch self {
-        case .km: "/km"
-        case .mi: "/mi"
+        case .km: String(localized: "/km")
+        case .mi: String(localized: "/mi")
         }
     }
 
     /// What a restore's confirmation calls distances on this scale: `km` or `miles`.
     var name: String {
         switch self {
-        case .km: "km"
-        case .mi: "miles"
+        case .km: String(localized: "km")
+        case .mi: String(localized: "miles")
         }
     }
 

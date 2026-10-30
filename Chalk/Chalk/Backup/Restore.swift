@@ -56,7 +56,7 @@ struct Restore {
             ? backupCounts.entries.formatted(.number.locale(locale))
             : backupCounts.description(locale: locale)
         let date = backup.madeAt.formatted(Date.FormatStyle(locale: locale, timeZone: timeZone).day().month(.abbreviated).year())
-        return "This replaces \(libraryCounts.description(locale: locale)) with \(backupSide) from \(date)\(changes)"
+        return String(localized: "This replaces \(libraryCounts.description(locale: locale)) with \(backupSide) from \(date)\(changes)", locale: locale)
     }
 
     /// What the restore changes beyond the rows, as the confirmation's last clause: empty,
@@ -65,15 +65,15 @@ struct Restore {
     /// switch in one clause, and the zones clause joins after it.
     private var changes: String {
         let units = [
-            switchesWeights ? "weights to \(backup.settings.weightUnit.symbol)" : nil,
-            switchesDistances ? "distances to \(backup.settings.distanceUnit.name)" : nil,
+            switchesWeights ? String(localized: "weights to \(backup.settings.weightUnit.symbol)") : nil,
+            switchesDistances ? String(localized: "distances to \(backup.settings.distanceUnit.name)") : nil,
         ].compactMap(\.self)
         let clauses = [
-            listed(units).map { "switches \($0)" },
-            clearsZones ? "clears your heart-rate zones" : nil,
+            listed(units).map { String(localized: "switches \($0)") },
+            clearsZones ? String(localized: "clears your heart-rate zones") : nil,
         ].compactMap(\.self)
         guard let listed = listed(clauses) else { return "" }
-        return clauses.count == 1 ? ", and \(listed)" : ", \(listed)"
+        return clauses.count == 1 ? String(localized: ", and \(listed)") : ", \(listed)"
     }
 
     /// Replaces everything with the backup.
@@ -203,20 +203,14 @@ struct LibraryCounts {
     /// Its entries when it has any, otherwise its exercises, ergs and gyms, otherwise
     /// *nothing*: `1,240 entries`, `3 exercises and 1 gym`, `nothing`.
     func description(locale: Locale) -> String {
-        func counted(_ count: Int, _ one: String, _ many: String) -> String? {
-            count == 0 ? nil : "\(count.formatted(.number.locale(locale))) \(count == 1 ? one : many)"
-        }
-        if let entries = counted(entries, "entry", "entries") { return entries }
-        let parts = [counted(exercises, "exercise", "exercises"), counted(ergs, "erg", "ergs"), counted(gyms, "gym", "gyms")]
-            .compactMap(\.self)
-        return listed(parts) ?? "nothing"
+        if entries > 0 { return String(localized: "\(entries) entries", locale: locale) }
+        let parts = [
+            exercises == 0 ? nil : String(localized: "\(exercises) exercises", locale: locale),
+            ergs == 0 ? nil : String(localized: "\(ergs) ergs", locale: locale),
+            gyms == 0 ? nil : String(localized: "\(gyms) gyms", locale: locale),
+        ].compactMap(\.self)
+        return listed(parts) ?? String(localized: "nothing")
     }
-}
-
-/// `a`, `a and b`, `a, b and c`, or `nil` for nothing to list.
-private func listed(_ parts: [String]) -> String? {
-    guard let last = parts.last else { return nil }
-    return parts.count == 1 ? last : parts.dropLast().joined(separator: ", ") + " and " + last
 }
 
 private extension Backup.GoalFields {

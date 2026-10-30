@@ -46,7 +46,7 @@ struct BackupFile: Transferable, Sendable {
         clear(directory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let day = backup.madeAt.formatted(Date.ISO8601FormatStyle(timeZone: timeZone).year().month().day())
-        let url = directory.appending(path: "Chalk backup \(day).json")
+        let url = directory.appending(path: String(localized: "Chalk backup \(day)") + ".json")
         try data.write(to: url, options: .atomic)
         return url
     }

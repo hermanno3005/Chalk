@@ -61,13 +61,13 @@ final class GoalSheetModel: Identifiable {
     var line: Line? {
         guard number.stage == .weight, let reps = number.reps else { return nil }
         guard let best = RepMaxCurve.best(atLeast: reps, in: entries) else {
-            return Line(text: "First goal at \(reps) reps", isReached: false)
+            return Line(text: String(localized: "First goal at \(reps) reps"), isReached: false)
         }
         guard let weight = number.weight, weight > 0 else { return nil }
         if weight > best {
-            return Line(text: "\(number.weightUnit.text(weight - best)) above your \(reps)-rep best", isReached: false)
+            return Line(text: String(localized: "\(number.weightUnit.text(weight - best)) above your \(reps)-rep best"), isReached: false)
         }
-        return Line(text: "Already reached — your \(reps)-rep best is \(number.weightUnit.text(best))", isReached: true)
+        return Line(text: String(localized: "Already reached — your \(reps)-rep best is \(number.weightUnit.text(best))"), isReached: true)
     }
 
     /// `reps >= 1` and `weight > 0`, and nothing more: **no ceiling ever blocks a real

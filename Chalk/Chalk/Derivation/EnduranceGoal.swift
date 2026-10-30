@@ -124,21 +124,21 @@ struct EnduranceGoal: Equatable {
 
     /// What follows the goal on its line: `0.4 km/h to go`, `reached`, or `not held yet`.
     var status: String {
-        guard let gap else { return "not held yet" }
-        return gap == 0 ? "reached" : "\(EnduranceText.steps(gap, unit, distanceUnit)) to go"
+        guard let gap else { return String(localized: "not held yet") }
+        return gap == 0 ? String(localized: "reached") : String(localized: "\(EnduranceText.steps(gap, unit, distanceUnit)) to go")
     }
 
     /// The goal line as VoiceOver says it: `Goal 15.5 kilometres per hour for 6 minutes in
     /// zone 4 at 1 percent incline, 0.4 kilometres per hour to go`, `…, reached` or
     /// `…, not held yet`.
     var spokenLine: String {
-        let point = "\(EnduranceText.spokenIntensity(intensity, unit, distanceUnit)) for \(spokenPoint)"
+        let point = String(localized: "\(EnduranceText.spokenIntensity(intensity, unit, distanceUnit)) for \(spokenPoint)")
         let status = switch gap {
-        case nil: "not held yet"
-        case 0: "reached"
-        case let gap?: "\(EnduranceText.spokenSteps(gap, unit, distanceUnit)) to go"
+        case nil: String(localized: "not held yet")
+        case 0: String(localized: "reached")
+        case let gap?: String(localized: "\(EnduranceText.spokenSteps(gap, unit, distanceUnit)) to go")
         }
-        return "Goal \(point), \(status)"
+        return String(localized: "Goal \(point), \(status)")
     }
 
     /// What a unit change says of the goals it clears (SPEC §13.6): *Your goal of 260 W ·
@@ -146,22 +146,21 @@ struct EnduranceGoal: Equatable {
     /// when there were none.
     static func clearedNotice(_ goals: [EnduranceGoal]) -> String? {
         guard let named = goals.max(by: { $0.setAt < $1.setAt }) else { return nil }
-        switch goals.count - 1 {
-        case 0: return "Your goal of \(named.text) is cleared."
-        case 1: return "Your goal of \(named.text) and 1 other goal are cleared."
-        case let others: return "Your goal of \(named.text) and \(others) other goals are cleared."
-        }
+        let others = goals.count - 1
+        return others == 0
+            ? String(localized: "Your goal of \(named.text) is cleared.")
+            : String(localized: "Your goal of \(named.text) and \(others) other goals are cleared.")
     }
 
     /// `pointText` as VoiceOver says it: `6 minutes in zone 4 at 1 percent incline`.
     var spokenPoint: String {
-        let point = "\(Spoken.duration(duration)) in zone \(zone)"
-        return incline.map { "\(point) at \(Spoken.incline($0))" } ?? point
+        let point = String(localized: "\(Spoken.duration(duration)) in zone \(zone)")
+        return incline.map { String(localized: "\(point) at \(Spoken.incline($0))") } ?? point
     }
 
     /// `6:00 in Z4 · 1 %` — the point the goal names, with no number.
     var pointText: String {
-        let point = "\(EnduranceText.clock(duration)) in Z\(zone)"
+        let point = String(localized: "\(EnduranceText.clock(duration)) in Z\(zone)")
         return incline.map { "\(point) · \(EnduranceText.incline($0)) %" } ?? point
     }
 }
@@ -176,11 +175,11 @@ extension EnduranceText {
         case .speed:
             return "\(amount.formatted(.number.precision(.fractionLength(1)).grouping(.never))) \(distance.speedSymbol)"
         case .watts:
-            return "\(steps) W"
+            return String(localized: "\(steps.formatted(.number.grouping(.never))) W")
         case .split:
-            return "\(amount.formatted(.number.precision(.fractionLength(0...1)).grouping(.never))) s"
+            return String(localized: "\(amount.formatted(.number.precision(.fractionLength(0...1)).grouping(.never))) s")
         case .level:
-            return steps == 1 ? "1 level" : "\(steps) levels"
+            return String(localized: "\(steps) levels")
         }
     }
 
@@ -192,11 +191,11 @@ extension EnduranceText {
         case .speed:
             return "\(amount.formatted(.number.precision(.fractionLength(1)).grouping(.never))) \(distance.spokenSpeedName)"
         case .watts:
-            return Spoken.count(steps, "watt")
+            return String(localized: "\(steps) watts")
         case .split:
-            return "\(amount.formatted(.number.precision(.fractionLength(0...1)).grouping(.never))) \(amount == 1 ? "second" : "seconds")"
+            return Spoken.seconds(amount, written: amount.formatted(.number.precision(.fractionLength(0...1)).grouping(.never)))
         case .level:
-            return Spoken.count(steps, "level")
+            return String(localized: "\(steps) levels")
         }
     }
 }

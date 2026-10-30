@@ -49,7 +49,7 @@ struct RestoreFlow {
         do {
             restore(try BackupFile.read(url))
         } catch {
-            failure = "Chalk couldn't open this file. Nothing was changed."
+            failure = String(localized: "Chalk couldn't open this file. Nothing was changed.")
         }
     }
 
@@ -76,6 +76,6 @@ struct RestoreFlow {
 
     private mutating func fail(_ error: any Error) {
         failure = (error as? Backup.Refusal)?.message
-            ?? "Chalk couldn't restore this backup. Nothing was changed."
+            ?? String(localized: "Chalk couldn't restore this backup. Nothing was changed.")
     }
 }

@@ -61,7 +61,7 @@ struct LastEntry: Equatable {
 
     /// The numbers as VoiceOver says them: `8 reps at 52.5 kilograms`.
     func spokenLift(in unit: WeightUnit) -> String {
-        "\(Spoken.reps(reps)) at \(unit.spokenText(weight))"
+        String(localized: "\(Spoken.reps(reps)) at \(unit.spokenText(weight))")
     }
 
     /// The day alone, in the same words.
@@ -87,9 +87,9 @@ enum RelativeDay {
         switch days {
         // A clock that runs ahead — or a device crossing a time zone — reads as today.
         // Chalk never says you lifted tomorrow.
-        case ..<1: return "today"
-        case 1: return "yesterday"
-        case 2...6: return "\(days) days ago"
+        case ..<1: return String(localized: "today")
+        case 1: return String(localized: "yesterday")
+        case 2...6: return String(localized: "\(days) days ago")
         default:
             let sameYear = calendar.component(.year, from: date)
                 == calendar.component(.year, from: now)

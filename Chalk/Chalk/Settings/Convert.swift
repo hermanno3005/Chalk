@@ -32,11 +32,11 @@ struct Convert {
     /// rounds to: `Converts 1,240 entries and 6 goals to lb, rounded to the nearest pound.`
     /// A side with nothing on it is left out.
     func confirmation(locale: Locale = .current) -> String {
-        func counted(_ count: Int, _ one: String, _ many: String) -> String? {
-            count == 0 ? nil : "\(count.formatted(.number.locale(locale))) \(count == 1 ? one : many)"
-        }
-        let counts = [counted(entryCount, "entry", "entries"), counted(goalCount, "goal", "goals")].compactMap(\.self)
-        return "Converts \(counts.joined(separator: " and ")) to \(change.symbol), rounded to \(change.convertGrid). This can't be undone, except by restoring a backup."
+        let counts = [
+            entryCount == 0 ? nil : String(localized: "\(entryCount) entries", locale: locale),
+            goalCount == 0 ? nil : String(localized: "\(goalCount) goals", locale: locale),
+        ].compactMap(\.self)
+        return String(localized: "Converts \(listed(counts) ?? "") to \(change.symbol), rounded to \(change.convertGrid). This can't be undone, except by restoring a backup.")
     }
 
     /// Rewrites every number on the scale, then moves the scale.

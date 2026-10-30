@@ -122,8 +122,10 @@ struct LibrarySection: Identifiable {
     /// The header as VoiceOver says it, the count said as what it counts: `Compound, 4
     /// exercises`, `Rowing, 2 ergs`.
     var spokenHeader: String {
-        let noun = tiles.first?.exercise.isErg == true ? "erg" : "exercise"
-        return "\(title), \(Spoken.count(tiles.count, noun))"
+        let count = tiles.first?.exercise.isErg == true
+            ? String(localized: "\(tiles.count) ergs")
+            : String(localized: "\(tiles.count) exercises")
+        return "\(title), \(count)"
     }
 
     /// How many tiles the grid sets side by side: two, and **one at an accessibility
@@ -295,7 +297,7 @@ struct LibraryLayout {
     let resume: LibraryResume?
 
     /// The last section's title. Not a group name — no `ExerciseGroup` is ever called this.
-    static let ungroupedTitle = "Ungrouped"
+    static let ungroupedTitle = String(localized: "Ungrouped")
 
     /// `zones` are the heart-rate zones and the units the weight and distance units, all
     /// read live by the caller: the endurance card's ring is judged in the zones, every

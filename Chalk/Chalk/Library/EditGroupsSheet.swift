@@ -101,7 +101,7 @@ struct EditGroupsSheet: View {
         }
         // `Core, 4 exercises`, a button that renames.
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(group.name), \(Spoken.count(group.exercises?.count ?? 0, "exercise"))")
+        .accessibilityLabel("\(group.name), \(String(localized: "\(group.exercises?.count ?? 0) exercises"))")
         .accessibilityAddTraits(.isButton)
         .accessibilityHint("Renames this group")
     }
