@@ -9,7 +9,7 @@ Copy each field across as it stands. The lengths are App Store Connect's limits.
 
 | Field | Value |
 |---|---|
-| Name | Chalk: Rep Max & Erg Log |
+| Name | Chalk |
 | Subtitle | What to load. What to set. |
 | Primary category | Health & Fitness |
 | Secondary category | none |
@@ -21,15 +21,14 @@ Copy each field across as it stands. The lengths are App Store Connect's limits.
 | Copyright | 2026 Hermann Aust |
 | Price | Free |
 
-### Name: 24 of 30 characters
+### Name: 5 of 30 characters
 
 ```
-Chalk: Rep Max & Erg Log
+Chalk
 ```
 
-*Chalk* alone is likely taken on the App Store, and names are unique across it. The rest of
-the name says what is in it to someone who has never heard of Chalk, and it is also where
-search weighs words most. If *Chalk* turns out to be free, the plain name is better.
+Names are unique across the App Store, and *Chalk* may already be taken. If it is, the
+fallback is `Chalk: Rep Max & Erg Log` (24), which also tells a stranger what is inside.
 
 ### Subtitle: 26 of 30 characters
 
@@ -121,7 +120,7 @@ the phone except a backup you share yourself, which is not collection.
 
 ## Still to do on the day
 
-- Check the name is free, and fall back to the plain *Chalk* if it is.
+- Check *Chalk* is free as a name, and fall back to `Chalk: Rep Max & Erg Log` if it isn't.
 - `MARKETING_VERSION` is `0.1`. Raise it to the version the store should show, probably `1.0`,
   before the first upload.
 - *Export compliance*: Chalk uses no encryption beyond what iOS provides, so add
