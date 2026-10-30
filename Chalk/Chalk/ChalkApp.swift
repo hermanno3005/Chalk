@@ -16,7 +16,16 @@ struct ChalkApp: App {
         BackupFile.clear()
         let router = Self.router
         AppDependencyManager.shared.add(dependency: router)
-        _root = State(initialValue: Self.open())
+        #if DEBUG
+        ScreenshotLibrary.restoreIfAsked()
+        #endif
+        let root = Self.open()
+        #if DEBUG
+        if case .library(let container, let library) = root {
+            ScreenshotLibrary.openIfAsked(in: container.mainContext, library: library)
+        }
+        #endif
+        _root = State(initialValue: root)
     }
 
     var body: some Scene {

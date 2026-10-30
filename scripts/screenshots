@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# Take the App Store screenshots (SPEC §15.6) into docs/store-listing/screenshots/.
+#
+#   scripts/screenshots
+#
+# Builds Chalk for the simulator, then on each device App Store Connect asks for
+# restores the screenshot library (ScreenshotLibrary.swift) at every launch and
+# shoots each screen at 9:41 with a full battery, in light mode and US English.
+# The library's dates count back from today, so a retake is the same library.
+#
+# Saved square, as JPEG at full quality, since App Store Connect refuses a
+# screenshot with an alpha channel and the simulator's PNGs carry one.
+#
+# The devices are the two sizes App Store Connect requires: Dynamic Island
+# (medium) at 1206 × 2622 and Dynamic Island (large) at 1320 × 2868. Set
+# CHALK_MEDIUM and CHALK_LARGE to simulator names to pick others.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+medium="${CHALK_MEDIUM:-iPhone 18 Pro}"
+large="${CHALK_LARGE:-iPhone 18 Pro Max}"
+bundle=com.hermannaust.Chalk
+app=build/DerivedData/Build/Products/Debug-iphonesimulator/Chalk.app
+out=docs/store-listing/screenshots
+
+# Each shot: its file name, then the launch arguments that put it on screen.
+shots=(
+  "1-library|-com.hermannaust.Chalk.half strength"
+  "2-bench-press|-screenshots.open Bench Press"
+  "3-endurance|-com.hermannaust.Chalk.half endurance"
+  "4-treadmill|-screenshots.open Treadmill"
+)
+
+mkdir -p build
+xcodebuild build \
+  -project Chalk/Chalk.xcodeproj \
+  -scheme Chalk \
+  -destination "generic/platform=iOS Simulator" \
+  -derivedDataPath build/DerivedData \
+  >build/screenshots.log 2>&1 || { tail -20 build/screenshots.log; exit 1; }
+
+# The UDID of the newest-runtime simulator called exactly $1.
+udid_of() {
+  xcrun simctl list devices available | awk -v name="$1" '
+    /^-- / { ios = /^-- iOS /; next }
+    ios { line = $0; sub(/^ +/, "", line)
+          if (index(line, name " (") == 1 && match(line, /\([0-9A-F-]+\)/)) id = substr(line, RSTART + 1, RLENGTH - 2) }
+    END { print id }'
+}
+
+for size in medium large; do
+  name="${!size}"
+  udid="$(udid_of "$name")"
+  if [[ -z "$udid" ]]; then
+    echo "scripts/screenshots: no available simulator called $name" >&2
+    exit 1
+  fi
+  xcrun simctl boot "$udid" 2>/dev/null || true
+  xcrun simctl bootstatus "$udid" >/dev/null
+  xcrun simctl ui "$udid" appearance light
+  xcrun simctl status_bar "$udid" override --time 9:41 --dataNetwork wifi --wifiMode active \
+    --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+  xcrun simctl install "$udid" "$app"
+  mkdir -p "$out/$size"
+  # The first launch after an install is slow to draw, so it is thrown away.
+  xcrun simctl launch "$udid" "$bundle" -screenshots.library YES >/dev/null
+  sleep 8
+
+  for shot in "${shots[@]}"; do
+    file="${shot%%|*}"
+    read -r flag value <<<"${shot#*|}"
+    xcrun simctl terminate "$udid" "$bundle" 2>/dev/null || true
+    xcrun simctl launch "$udid" "$bundle" \
+      -AppleLanguages "(en)" -AppleLocale en_US \
+      -screenshots.library YES "$flag" "$value" >/dev/null
+    # Long enough for the restore and for the detail screen's push to settle.
+    sleep 7
+    xcrun simctl io "$udid" screenshot --type png --mask ignored build/screenshot.png >/dev/null
+    sips -s format jpeg -s formatOptions 100 build/screenshot.png --out "$out/$size/$file.jpg" >/dev/null
+    echo "$out/$size/$file.jpg"
+  done
+
+  xcrun simctl terminate "$udid" "$bundle" 2>/dev/null || true
+  xcrun simctl status_bar "$udid" clear
+done
